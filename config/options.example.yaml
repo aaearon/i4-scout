@@ -1,0 +1,85 @@
+# BMW i4 eDrive40 Options Configuration
+# Copy this file to options.yaml and customize
+
+# Required options - listing must have ALL of these to be "qualified"
+required:
+  - name: "Head-Up Display"
+    aliases:
+      - "HUD"
+      - "Head Up Display"
+      - "Heads-Up Display"
+      - "Windschutzscheiben-HUD"
+    category: "driver_assistance"
+
+  - name: "Parking Assistant Plus"
+    aliases:
+      - "Parking Assistant Professional"
+      - "Parkassistent Plus"
+      - "Park Assist Plus"
+      - "Einparkhilfe selbstlenkendes System"
+    category: "driver_assistance"
+
+  - name: "Driving Assistant Professional"
+    aliases:
+      - "Driving Assistant Pro"
+      - "Fahrassistent Professional"
+      - "Driving Assistant Plus"
+      - "Active Cruise Control"
+    category: "driver_assistance"
+
+  - name: "Harman Kardon"
+    aliases:
+      - "Harman/Kardon"
+      - "HK Sound"
+      - "Harman Kardon Surround"
+    category: "entertainment"
+
+# Nice-to-have options - contribute to score but not required
+nice_to_have:
+  - name: "Laser Light"
+    aliases:
+      - "Laserlicht"
+      - "BMW Laserlight"
+      - "Laser headlights"
+    category: "exterior"
+
+  - name: "Panoramic Roof"
+    aliases:
+      - "Panoramadach"
+      - "Panorama glass roof"
+      - "Sky Lounge"
+      - "Schuifdak"
+    category: "comfort"
+
+  - name: "Comfort Access"
+    aliases:
+      - "Komfortzugang"
+      - "Keyless Entry"
+      - "Keyless Go"
+    category: "comfort"
+
+  - name: "Seat Heating"
+    aliases:
+      - "Sitzheizung"
+      - "Heated seats"
+      - "Stoelverwarming"
+    category: "comfort"
+
+  - name: "M Sport Package"
+    aliases:
+      - "M Sportpaket"
+      - "M Sport"
+      - "M-Sport"
+    category: "exterior"
+    is_bundle: true
+    bundle_contents:
+      - "M Sport suspension"
+      - "M Sport steering wheel"
+      - "M Sport brakes"
+
+# Dealbreakers - if found, listing is automatically disqualified
+dealbreakers:
+  - "Unfallwagen"
+  - "Accident damage"
+  - "Salvage"
+  - "Export only"

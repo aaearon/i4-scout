@@ -1,0 +1,339 @@
+﻿# BMW i4 eDrive40 Search Configuration
+# Generated: 2026-01-20
+# Target markets: mobile.de, autoscout24.de, autoscout24.nl
+
+vehicle:
+  model: "BMW i4 eDrive40"
+  model_code: "G26"
+  production_date_min: "2024-06"  # LCI facelift only
+  budget_max_eur: 50000
+
+options:
+  required:
+    - name: "M Sport Package"
+      code: "337"
+      category: "styling"
+      aliases:
+        en: ["M Sport Package", "M Sport", "MSport"]
+        de: ["M Sportpaket", "M Sport Paket", "M-Sportpaket"]
+        nl: ["M Sport pakket", "M Sportpakket", "M-Sport"]
+      included_in_packages: []
+      notes: "Core styling package - non-negotiable"
+
+    - name: "Innovationspaket II"
+      code: "7A2"
+      category: "driver_assistance"
+      aliases:
+        en: ["Innovation Package II", "Innovation Package 2"]
+        de: ["Innovationspaket II", "Innovationspaket 2"]
+        nl: ["Innovatiepakket II", "Innovatiepakket 2"]
+      included_in_packages: []
+      bundles:
+        - "Head-Up Display"
+        - "Parking Assistant Plus"
+        - "Driving Assistant Professional"
+      notes: "Key package - covers HUD, 360 cameras, and adaptive cruise"
+
+    - name: "Head-Up Display"
+      code: "610"
+      category: "driver_assistance"
+      aliases:
+        en: ["Head-Up Display", "HUD", "Heads-Up Display", "Head Up Display"]
+        de: ["Head-Up Display", "Head-Up-Display", "HUD"]
+        nl: ["Head-Up Display", "Head-up display", "HUD"]
+      included_in_packages: ["Innovationspaket II"]
+      notes: "Included in Innovationspaket II (7A2)"
+
+    - name: "Parking Assistant Plus"
+      code: "5DN"
+      category: "driver_assistance"
+      aliases:
+        en: ["Parking Assistant Plus", "360 Camera", "Surround View", "360° Camera", "360 Degree Camera"]
+        de: ["Parking Assistant Plus", "Surround View", "360-Grad-Kamera", "Rundumkamera", "360° Kamera"]
+        nl: ["Parking Assistant Plus", "360 graden camera", "Surround View", "Rondomzichtcamera"]
+      included_in_packages: ["Innovationspaket II"]
+      notes: "Includes 360° cameras - included in Innovationspaket II (7A2)"
+
+    - name: "Driving Assistant Professional"
+      code: "5AU"
+      category: "driver_assistance"
+      aliases:
+        en: ["Driving Assistant Professional", "Active Cruise Control", "ACC with Stop & Go", "Adaptive Cruise Control"]
+        de: ["Driving Assistant Professional", "Aktiver Tempomat", "ACC", "Driving Assistant Prof."]
+        nl: ["Driving Assistant Professional", "Actieve cruisecontrol", "Adaptieve cruisecontrol"]
+      included_in_packages: ["Innovationspaket II"]
+      notes: "Adaptive cruise with stop & go - included in Innovationspaket II (7A2)"
+
+    - name: "Comfort Access"
+      code: "322"
+      category: "comfort"
+      aliases:
+        en: ["Comfort Access", "Keyless Entry", "Keyless Go", "Keyless Access"]
+        de: ["Komfortzugang", "Schlüsselloser Zugang", "Keyless Entry", "Keyless Go"]
+        nl: ["Comfort Access", "Keyless entry", "Sleutelloze toegang"]
+      included_in_packages: []
+      notes: "Required for automatic key-linked driver profile switching"
+
+    - name: "Electric Seats with Memory"
+      code: "459"
+      category: "comfort"
+      aliases:
+        en: ["Electric Seats with Memory", "Power Seats with Memory", "Memory Seats", "Electric Memory Seats"]
+        de: ["Sitzverstellung elektrisch mit Memory", "Elektrische Sitzverstellung mit Memory", "Memory-Sitze", "Sitze mit Memory"]
+        nl: ["Elektrische stoelverstelling met geheugen", "Elektrische stoelen met geheugen", "Memory stoelen"]
+      included_in_packages: []
+      notes: "Required for automatic key-linked driver profile switching"
+
+    - name: "Heated Seats Front"
+      code: "494"
+      category: "comfort"
+      aliases:
+        en: ["Heated Seats", "Seat Heating", "Front Seat Heating", "Heated Front Seats"]
+        de: ["Sitzheizung", "Sitzheizung vorne", "Sitzheizung Fahrer/Beifahrer", "Beheizbare Sitze"]
+        nl: ["Stoelverwarming", "Verwarmde stoelen", "Stoelverwarming voor"]
+      included_in_packages: []
+
+    - name: "Heated Steering Wheel"
+      code: "248"
+      category: "comfort"
+      aliases:
+        en: ["Heated Steering Wheel", "Steering Wheel Heating"]
+        de: ["Lenkradheizung", "Beheizbares Lenkrad", "Lenkrad beheizbar"]
+        nl: ["Stuurwielverwarming", "Verwarmd stuurwiel"]
+      included_in_packages: []
+
+    - name: "Adaptive LED Headlights"
+      code: "552"
+      category: "lighting"
+      aliases:
+        en: ["Adaptive LED Headlights", "Adaptive LED", "LED Adaptive Headlights"]
+        de: ["Adaptiver LED-Scheinwerfer", "Adaptive LED-Scheinwerfer", "LED Scheinwerfer adaptiv"]
+        nl: ["Adaptieve LED-koplampen", "Adaptieve LED koplampen", "LED koplampen adaptief"]
+      included_in_packages: []
+
+    - name: "BMW Live Cockpit Professional"
+      code: "6U3"
+      category: "connectivity"
+      aliases:
+        en: ["BMW Live Cockpit Professional", "Live Cockpit Professional", "Digital Cockpit Professional"]
+        de: ["BMW Live Cockpit Professional", "Live Cockpit Professional"]
+        nl: ["BMW Live Cockpit Professional", "Live Cockpit Professional"]
+      included_in_packages: []
+      notes: "Required for iDrive 8.5 on LCI models"
+
+  nice_to_have:
+    - name: "Laser Light"
+      code: "5A2"
+      category: "lighting"
+      aliases:
+        en: ["Laser Light", "BMW Laserlight", "Laser Headlights"]
+        de: ["BMW Laserlicht", "Laserlicht", "Laser-Scheinwerfer"]
+        nl: ["BMW Laserlicht", "Laserlicht", "Laser koplampen"]
+      included_in_packages: []
+      notes: "Extended range headlights - upgrade from Adaptive LED"
+
+    - name: "Harman Kardon Surround Sound System"
+      code: "688"
+      category: "audio"
+      aliases:
+        en: ["Harman Kardon", "Harman Kardon Surround Sound", "HK Sound System"]
+        de: ["Harman Kardon Surround Sound System", "Harman Kardon", "HK Soundsystem"]
+        nl: ["Harman Kardon geluidssysteem", "Harman Kardon Surround Sound", "Harman Kardon"]
+      included_in_packages: []
+
+    - name: "Bowers & Wilkins Diamond Surround Sound System"
+      code: "5AV"
+      category: "audio"
+      aliases:
+        en: ["Bowers & Wilkins", "B&W Diamond", "Bowers and Wilkins", "B&W Sound System"]
+        de: ["Bowers & Wilkins Diamond Surround Sound System", "Bowers & Wilkins", "B&W Diamond"]
+        nl: ["Bowers & Wilkins Diamond geluidssysteem", "Bowers & Wilkins", "B&W Diamond"]
+      included_in_packages: []
+      notes: "Premium audio - upgrade from Harman Kardon"
+
+    - name: "Ambient Interior Lighting"
+      code: "4UR"
+      category: "interior"
+      aliases:
+        en: ["Ambient Lighting", "Ambient Interior Lighting", "Interior Lighting Package"]
+        de: ["Ambientes Licht", "Ambiente Beleuchtung", "Ambientebeleuchtung"]
+        nl: ["Sfeerverlichting", "Ambient verlichting", "Omgevingsverlichting"]
+      included_in_packages: []
+
+    - name: "Ventilated Seats"
+      code: "453"
+      category: "comfort"
+      aliases:
+        en: ["Ventilated Seats", "Seat Ventilation", "Cooled Seats", "Active Seat Ventilation"]
+        de: ["Sitzbelüftung", "Belüftete Sitze", "Aktive Sitzbelüftung", "Sitzkühlung"]
+        nl: ["Stoelventilatie", "Geventileerde stoelen", "Stoelkoeling"]
+      included_in_packages: []
+
+    - name: "Panoramic Glass Roof"
+      code: "402"
+      category: "exterior"
+      aliases:
+        en: ["Panoramic Glass Roof", "Glass Roof", "Panorama Roof", "Fixed Glass Roof"]
+        de: ["Panorama-Glasdach", "Glasdach", "Panoramadach"]
+        nl: ["Panoramadak", "Glazen dak", "Panorama glasdak"]
+      included_in_packages: []
+
+    - name: "Electric Slide/Tilt Sunroof"
+      code: "403"
+      category: "exterior"
+      aliases:
+        en: ["Sunroof", "Electric Sunroof", "Slide/Tilt Sunroof", "Power Sunroof"]
+        de: ["Schiebedach", "Elektrisches Schiebedach", "Glas-Schiebedach", "Schiebe-Hubdach"]
+        nl: ["Schuifdak", "Elektrisch schuifdak", "Kanteldak", "Schuif-kanteldak"]
+      included_in_packages: []
+
+    - name: "Cape York Green"
+      code: "C5Y"
+      category: "exterior_color"
+      aliases:
+        en: ["Cape York Green", "Cape York Green Metallic"]
+        de: ["Cape York Grün", "Cape York Grün Metallic", "Cape York Gruen"]
+        nl: ["Cape York groen", "Cape York groen metallic"]
+      included_in_packages: []
+      notes: "Preferred exterior color - flexible on this"
+
+  optional:
+    - name: "Lumbar Support"
+      code: "488"
+      category: "comfort"
+      aliases:
+        en: ["Lumbar Support", "Lumbar Support Driver/Passenger"]
+        de: ["Lordosenstütze", "Lordosenstütze Fahrer/Beifahrer"]
+        nl: ["Lendensteunen", "Lendensteun bestuurder/passagier"]
+      included_in_packages: []
+
+    - name: "Seat Width Adjustment"
+      code: "491"
+      category: "comfort"
+      aliases:
+        en: ["Seat Width Adjustment", "Adjustable Seat Width", "Seat Bolster Adjustment"]
+        de: ["Lehnenbreitenverstellung", "Sitzbreitenverstellung"]
+        nl: ["Zittingbreedteverstelling", "Rugleuningbreedteverstelling"]
+      included_in_packages: []
+
+  standard_features:
+    - name: "Heat Pump"
+      category: "climate"
+      aliases:
+        en: ["Heat Pump"]
+        de: ["Wärmepumpe"]
+        nl: ["Warmtepomp"]
+      notes: "Standard on all BMW i4 since 2022 launch - no option code"
+
+    - name: "Apple CarPlay"
+      category: "connectivity"
+      aliases:
+        en: ["Apple CarPlay", "CarPlay"]
+        de: ["Apple CarPlay", "CarPlay"]
+        nl: ["Apple CarPlay", "CarPlay"]
+      notes: "Standard on all BMW i4"
+
+  excluded:
+    - name: "20 inch wheels"
+      reason: "Efficiency - prefer 18 or 19 inch only"
+      aliases:
+        en: ["20 inch", "20\"", "20-inch wheels"]
+        de: ["20 Zoll", "20\"", "20-Zoll-Räder"]
+        nl: ["20 inch", "20\"", "20-inch velgen"]
+
+packages:
+  - name: "M Sport Package"
+    code: "337"
+    aliases:
+      en: ["M Sport Package", "M Sport"]
+      de: ["M Sportpaket", "M Sport Paket"]
+      nl: ["M Sport pakket", "M Sportpakket"]
+    includes:
+      - "M Sport Suspension"
+      - "M Aerodynamic Package"
+      - "M Leather Steering Wheel"
+      - "M Sport Brakes"
+      - "M Interior Trim"
+      - "M Headliner Anthracite"
+
+  - name: "Innovationspaket II"
+    code: "7A2"
+    aliases:
+      en: ["Innovation Package II", "Innovation Package 2"]
+      de: ["Innovationspaket II", "Innovationspaket 2"]
+      nl: ["Innovatiepakket II", "Innovatiepakket 2"]
+    includes:
+      - "Head-Up Display (610)"
+      - "Parking Assistant Plus (5DN)"
+      - "Driving Assistant Professional (5AU)"
+      - "BMW Live Cockpit Professional (6U3)"
+
+  - name: "Driving Assistant Professional"
+    code: "5AU"
+    aliases:
+      en: ["Driving Assistant Professional"]
+      de: ["Driving Assistant Professional"]
+      nl: ["Driving Assistant Professional"]
+    includes:
+      - "Active Cruise Control with Stop & Go"
+      - "Steering and Lane Control Assistant"
+      - "Lane Keeping Assistant with Active Side Collision Protection"
+      - "Evasion Aid"
+      - "Emergency Stop Assistant"
+      - "Front Collision Warning"
+      - "Crossing Traffic Warning Front"
+
+  - name: "Parking Assistant Plus"
+    code: "5DN"
+    aliases:
+      en: ["Parking Assistant Plus"]
+      de: ["Parking Assistant Plus"]
+      nl: ["Parking Assistant Plus"]
+    includes:
+      - "Surround View (360° Camera)"
+      - "Parking Assistant"
+      - "Remote 3D View"
+      - "Reversing Assistant"
+
+  - name: "Premium Package"
+    code: "ZPP"
+    aliases:
+      en: ["Premium Package"]
+      de: ["Premium Paket"]
+      nl: ["Premium pakket"]
+    includes:
+      - "Comfort Access (322)"
+      - "Lumbar Support (488)"
+      - "Ambient Lighting (4UR)"
+      - "Harman Kardon Sound System (688)"
+    notes: "May vary by market - verify individual options"
+
+wheels:
+  acceptable_sizes:
+    - "18 inch"
+    - "19 inch"
+  excluded_sizes:
+    - "20 inch"
+  notes: "18 and 19 inch preferred for efficiency"
+
+search_filters:
+  model_year_min: 2024
+  production_date_min: "2024-06"
+  price_max_eur: 50000
+  mileage_max_km: null  # No specific limit
+  fuel_type: "Electric"
+  markets:
+    - domain: "mobile.de"
+      language: "de"
+    - domain: "autoscout24.de"
+      language: "de"
+    - domain: "autoscout24.nl"
+      language: "nl"
+
+verification_notes: |
+  1. LCI Identification: Production date mid-2024 or later, iDrive 8.5 system
+  2. Heat pump is STANDARD - no need to verify
+  3. Apple CarPlay is STANDARD - no need to verify
+  4. Innovationspaket II (7A2) bundles HUD + 360 camera + adaptive cruise
+  5. Comfort Access (322) + Memory Seats (459) = automatic key-linked driver profiles
+  6. This feature combination is BMW-exclusive (other brands require manual profile selection)
