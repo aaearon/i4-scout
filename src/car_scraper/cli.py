@@ -168,6 +168,7 @@ async def run_scrape(
                             price=listing_data.get("price"),
                             mileage_km=listing_data.get("mileage_km"),
                             first_registration=listing_data.get("first_registration"),
+                            description=description,
                             match_score=scored_result.score,
                             is_qualified=scored_result.is_qualified,
                         )
