@@ -67,3 +67,7 @@ Thumbs.db
 *.log
 logs/
 .cache/
+
+# Generated data
+*.csv
+data/*.db
