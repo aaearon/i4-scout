@@ -1,81 +1,281 @@
 # BMW i4 eDrive40 Options Configuration
-# Copy this file to options.yaml and customize
+# Based on docs/bmw_i4_search_config.yaml
 
 # Required options - listing must have ALL of these to be "qualified"
 required:
-  - name: "Head-Up Display"
+  - name: "M Sport Package"
+    code: "337"
     aliases:
+      - "M Sport Package"
+      - "M Sport"
+      - "MSport"
+      - "M Sportpaket"
+      - "M Sport Paket"
+      - "M-Sportpaket"
+      - "M Sport pakket"
+      - "M Sportpakket"
+      - "M-Sport"
+      - "Sportpaket"  # Often listed without "M" prefix
+      - "Sport Paket"
+      - "337"  # BMW option code
+    category: "styling"
+    is_bundle: true
+    bundle_contents:
+      - "M Sport Suspension"
+      - "M Aerodynamic Package"
+      - "M Leather Steering Wheel"
+      - "M Sport Brakes"
+
+  - name: "Innovationspaket II"
+    code: "7A2"
+    aliases:
+      - "Innovation Package II"
+      - "Innovation Package 2"
+      - "Innovationspaket II"
+      - "Innovationspaket 2"
+      - "Innovatiepakket II"
+      - "Innovatiepakket 2"
+      - "7A2"  # BMW option code
+    category: "driver_assistance"
+    is_bundle: true
+    bundle_contents:
+      - "Head-Up Display"
+      - "Parking Assistant Plus"
+      - "Driving Assistant Professional"
+      - "BMW Live Cockpit Professional"
+
+  - name: "Head-Up Display"
+    code: "610"
+    aliases:
+      - "Head-Up Display"
+      - "Head-Up-Display"
       - "HUD"
-      - "Head Up Display"
       - "Heads-Up Display"
+      - "Head Up Display"
       - "Windschutzscheiben-HUD"
+      - "610"  # BMW option code
     category: "driver_assistance"
 
   - name: "Parking Assistant Plus"
+    code: "5DN"
     aliases:
-      - "Parking Assistant Professional"
-      - "Parkassistent Plus"
-      - "Park Assist Plus"
-      - "Einparkhilfe selbstlenkendes System"
+      - "Parking Assistant Plus"
+      - "360 Camera"
+      - "Surround View"
+      - "360-Grad-Kamera"
+      - "Rundumkamera"
+      - "360° Kamera"
+      - "360 graden camera"
+      - "Rondomzichtcamera"
+      - "5DN"  # BMW option code
     category: "driver_assistance"
 
   - name: "Driving Assistant Professional"
+    code: "5AU"
     aliases:
+      - "Driving Assistant Professional"
       - "Driving Assistant Pro"
+      - "Driving Assistant Prof."
       - "Fahrassistent Professional"
-      - "Driving Assistant Plus"
       - "Active Cruise Control"
+      - "ACC with Stop & Go"
+      - "Adaptive Cruise Control"
+      - "Aktiver Tempomat"
+      - "ACC"
+      - "Tempomat mit Abstandsregelung"
+      - "Abstandsregeltempomat"
+      - "Geschwindigkeitsregelung"
+      - "Actieve cruisecontrol"
+      - "5AU"  # BMW option code
     category: "driver_assistance"
 
-  - name: "Harman Kardon"
+  - name: "Comfort Access"
+    code: "322"
     aliases:
-      - "Harman/Kardon"
-      - "HK Sound"
-      - "Harman Kardon Surround"
-    category: "entertainment"
+      - "Comfort Access"
+      - "Komfortzugang"
+      - "KZU"  # Common abbreviation
+      - "Keyless Entry"
+      - "Keyless Go"
+      - "Keyless Access"
+      - "Keyless"
+      - "Schlüsselloser Zugang"
+      - "Sleutelloze toegang"
+      - "322"  # BMW option code
+    category: "comfort"
+
+  - name: "Electric Seats with Memory"
+    code: "459"
+    aliases:
+      - "Electric Seats with Memory"
+      - "Power Seats with Memory"
+      - "Memory Seats"
+      - "Electric Memory Seats"
+      - "Sitzverstellung elektrisch mit Memory"
+      - "Elektrische Sitzverstellung mit Memory"
+      - "Memory-Sitze"
+      - "Sitze mit Memory"
+      - "Sitz-Memory"
+      - "Sitzpaket mit Memory"
+      - "Fahrersitzeinstellung mit Memory"
+      - "Memory"  # Often just "Memory" in lists
+      - "Elektrische stoelverstelling met geheugen"
+      - "Memory stoelen"
+      - "459"  # BMW option code
+    category: "comfort"
+
+  - name: "Heated Seats Front"
+    code: "494"
+    aliases:
+      - "Heated Seats"
+      - "Seat Heating"
+      - "Front Seat Heating"
+      - "Heated Front Seats"
+      - "Sitzheizung"
+      - "Sitzheizung vorne"
+      - "Beheizbare Sitze"
+      - "Stoelverwarming"
+      - "Verwarmde stoelen"
+      - "494"  # BMW option code
+    category: "comfort"
+
+  - name: "Heated Steering Wheel"
+    code: "248"
+    aliases:
+      - "Heated Steering Wheel"
+      - "Steering Wheel Heating"
+      - "Lenkradheizung"
+      - "Beheizbares Lenkrad"
+      - "Lenkrad beheizbar"
+      - "Stuurwielverwarming"
+      - "Verwarmd stuurwiel"
+      - "248"  # BMW option code
+    category: "comfort"
+
+  - name: "Adaptive LED Headlights"
+    code: "552"
+    aliases:
+      - "Adaptive LED Headlights"
+      - "Adaptive LED"
+      - "LED Adaptive Headlights"
+      - "Adaptiver LED-Scheinwerfer"
+      - "Adaptive LED-Scheinwerfer"
+      - "LED Scheinwerfer adaptiv"
+      - "Adaptieve LED-koplampen"
+      - "552"  # BMW option code
+    category: "lighting"
+
+  - name: "BMW Live Cockpit Professional"
+    code: "6U3"
+    aliases:
+      - "BMW Live Cockpit Professional"
+      - "Live Cockpit Professional"
+      - "Digital Cockpit Professional"
+      - "Live Cockpit Pro"
+      - "6U3"  # BMW option code
+    category: "connectivity"
 
 # Nice-to-have options - contribute to score but not required
 nice_to_have:
   - name: "Laser Light"
+    code: "5A2"
     aliases:
-      - "Laserlicht"
+      - "Laser Light"
       - "BMW Laserlight"
-      - "Laser headlights"
-    category: "exterior"
+      - "Laserlicht"
+      - "Laser Headlights"
+      - "Laser-Scheinwerfer"
+      - "Laser koplampen"
+      - "5A2"  # BMW option code
+    category: "lighting"
 
-  - name: "Panoramic Roof"
+  - name: "Harman Kardon Surround Sound"
+    code: "688"
     aliases:
+      - "Harman Kardon"
+      - "Harman/Kardon"
+      - "HK Sound"
+      - "Harman Kardon Surround"
+      - "Harman Kardon Surround Sound System"
+      - "HK Soundsystem"
+      - "688"  # BMW option code
+    category: "audio"
+
+  - name: "Bowers & Wilkins Diamond"
+    code: "5AV"
+    aliases:
+      - "Bowers & Wilkins"
+      - "B&W Diamond"
+      - "Bowers and Wilkins"
+      - "B&W Sound System"
+      - "Bowers & Wilkins Diamond Surround Sound System"
+      - "5AV"  # BMW option code
+    category: "audio"
+
+  - name: "Ambient Interior Lighting"
+    code: "4UR"
+    aliases:
+      - "Ambient Lighting"
+      - "Ambient Interior Lighting"
+      - "Interior Lighting Package"
+      - "Ambientes Licht"
+      - "Ambiente Beleuchtung"
+      - "Ambientebeleuchtung"
+      - "Sfeerverlichting"
+      - "4UR"  # BMW option code
+    category: "interior"
+
+  - name: "Ventilated Seats"
+    code: "453"
+    aliases:
+      - "Ventilated Seats"
+      - "Seat Ventilation"
+      - "Cooled Seats"
+      - "Active Seat Ventilation"
+      - "Sitzbelüftung"
+      - "Belüftete Sitze"
+      - "Sitzkühlung"
+      - "Stoelventilatie"
+      - "453"  # BMW option code
+    category: "comfort"
+
+  - name: "Panoramic Glass Roof"
+    code: "402"
+    aliases:
+      - "Panoramic Glass Roof"
+      - "Glass Roof"
+      - "Panorama Roof"
       - "Panoramadach"
-      - "Panorama glass roof"
-      - "Sky Lounge"
-      - "Schuifdak"
-    category: "comfort"
-
-  - name: "Comfort Access"
-    aliases:
-      - "Komfortzugang"
-      - "Keyless Entry"
-      - "Keyless Go"
-    category: "comfort"
-
-  - name: "Seat Heating"
-    aliases:
-      - "Sitzheizung"
-      - "Heated seats"
-      - "Stoelverwarming"
-    category: "comfort"
-
-  - name: "M Sport Package"
-    aliases:
-      - "M Sportpaket"
-      - "M Sport"
-      - "M-Sport"
+      - "Panorama-Glasdach"
+      - "Glasdach"
+      - "Panoramadak"
+      - "Pano"
+      - "402"  # BMW option code
     category: "exterior"
-    is_bundle: true
-    bundle_contents:
-      - "M Sport suspension"
-      - "M Sport steering wheel"
-      - "M Sport brakes"
+
+  - name: "Electric Sunroof"
+    code: "403"
+    aliases:
+      - "Sunroof"
+      - "Electric Sunroof"
+      - "Slide/Tilt Sunroof"
+      - "Power Sunroof"
+      - "Schiebedach"
+      - "Elektrisches Schiebedach"
+      - "Schuifdak"
+      - "403"  # BMW option code
+    category: "exterior"
+
+  - name: "Cape York Green"
+    code: "C5Y"
+    aliases:
+      - "Cape York Green"
+      - "Cape York Green Metallic"
+      - "Cape York Grün"
+      - "Cape York Gruen"
+      - "Cape York groen"
+      - "C5Y"  # BMW color code
+    category: "exterior_color"
 
 # Dealbreakers - if found, listing is automatically disqualified
 dealbreakers:
@@ -83,3 +283,7 @@ dealbreakers:
   - "Accident damage"
   - "Salvage"
   - "Export only"
+  - "20 Zoll"
+  - "20 inch"
+  - '20"'
+  - "20-inch"
