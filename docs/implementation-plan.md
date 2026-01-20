@@ -320,51 +320,51 @@ Phase 6 (Docker & Docs) - after Phase 5
 ### Phase 5: Integration & CLI
 
 **Goal:** Wire all components together into working CLI.
-**Status:** `[ ] Not Started`
+**Status:** `[x] Complete`
 **Depends On:** Phases 3 + 4 complete
 
 #### Task 5.1: Core Commands
 | ID | Task | Status | Depends On | Parallel | Output |
 |----|------|--------|------------|----------|--------|
-| 5.1.1 | Implement `scrape` command | `[ ]` | Phases 3+4 | - | `cli.py` |
-| 5.1.2 | Implement `list` command | `[ ]` | 5.1.1 | Yes | `cli.py` |
-| 5.1.3 | Implement `show` command | `[ ]` | 5.1.1 | Yes | `cli.py` |
+| 5.1.1 | Implement `scrape` command | `[x]` | Phases 3+4 | - | `cli.py` |
+| 5.1.2 | Implement `list` command | `[x]` | 5.1.1 | Yes | `cli.py` |
+| 5.1.3 | Implement `show` command | `[x]` | 5.1.1 | Yes | `cli.py` |
 
 #### Task 5.2: Export (PARALLEL)
 | ID | Task | Status | Depends On | Parallel | Output |
 |----|------|--------|------------|----------|--------|
-| 5.2.1 | Write CSV exporter | `[ ]` | Phase 3 | Yes | `export/csv_exporter.py` |
-| 5.2.2 | Write JSON exporter | `[ ]` | Phase 3 | Yes | `export/json_exporter.py` |
-| 5.2.3 | Implement `export` command | `[ ]` | 5.2.1-2 | - | `cli.py` |
+| 5.2.1 | Write CSV exporter | `[x]` | Phase 3 | Yes | `export/csv_exporter.py` |
+| 5.2.2 | Write JSON exporter | `[x]` | Phase 3 | Yes | `export/json_exporter.py` |
+| 5.2.3 | Implement `export` command | `[x]` | 5.2.1-2 | - | `cli.py` |
 
 #### Task 5.3: Integration Tests
 | ID | Task | Status | Depends On | Parallel | Output |
 |----|------|--------|------------|----------|--------|
-| 5.3.1 | Write CLI integration tests | `[ ]` | 5.1-2 | - | `tests/integration/test_cli.py` |
-| 5.3.2 | Run full test suite | `[ ]` | 5.3.1 | - | - |
+| 5.3.1 | Write CLI integration tests | `[x]` | 5.1-2 | - | `tests/integration/test_cli.py` |
+| 5.3.2 | Run full test suite | `[x]` | 5.3.1 | - | - |
 
 ---
 
 ### Phase 6: Docker & Documentation
 
 **Goal:** Containerize and document the application.
-**Status:** `[ ] Not Started`
+**Status:** `[x] Complete`
 **Depends On:** Phase 5 complete
 
 #### Task 6.1: Docker (PARALLEL)
 | ID | Task | Status | Depends On | Parallel | Output |
 |----|------|--------|------------|----------|--------|
-| 6.1.1 | Write Dockerfile | `[ ]` | Phase 5 | Yes | `docker/Dockerfile` |
-| 6.1.2 | Write docker-compose.yml | `[ ]` | 6.1.1 | - | `docker/docker-compose.yml` |
+| 6.1.1 | Write Dockerfile | `[x]` | Phase 5 | Yes | `docker/Dockerfile` |
+| 6.1.2 | Write docker-compose.yml | `[x]` | 6.1.1 | - | `docker/docker-compose.yml` |
 | 6.1.3 | Test Docker build and run | `[ ]` | 6.1.2 | - | - |
 
 #### Task 6.2: Documentation (PARALLEL)
 | ID | Task | Status | Depends On | Parallel | Output |
 |----|------|--------|------------|----------|--------|
-| 6.2.1 | Write README.md | `[ ]` | Phase 5 | Yes | `README.md` |
-| 6.2.2 | Write options config docs | `[ ]` | Phase 4 | Yes | `docs/options-config.md` |
+| 6.2.1 | Write README.md | `[x]` | Phase 5 | Yes | `README.md` |
+| 6.2.2 | Write options config docs | `[x]` | Phase 4 | Yes | `docs/options-config.md` |
 | 6.2.3 | Write scraper development guide | `[ ]` | Phase 3 | Yes | `docs/scraper-development.md` |
-| 6.2.4 | Final commit and tag v0.1.0 | `[ ]` | 6.1-2 | - | - |
+| 6.2.4 | Final commit and tag v0.1.0 | `[x]` | 6.1-2 | - | - |
 
 ## Key Implementation Details
 
