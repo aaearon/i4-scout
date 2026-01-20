@@ -154,6 +154,7 @@ async def run_scrape(
     total_found = 0
     new_count = 0
     updated_count = 0
+    pages_scraped = 0
 
     async with BrowserManager(browser_config) as browser:
         scraper = scraper_class(browser)
@@ -162,25 +163,32 @@ async def run_scrape(
         # Scrape search pages
         for page_num in range(1, max_pages + 1):
             if not quiet:
-                console.print(f"  Scraping page {page_num}...", end="")
+                console.print(f"\n[bold]Page {page_num}/{max_pages}[/bold] - Fetching search results...", end="")
 
             try:
                 listings_data = await scraper.scrape_search_page(page, page_num)
-                if not quiet:
-                    console.print(f" found {len(listings_data)} listings")
+                page_listing_count = len(listings_data)
 
                 if not listings_data:
                     if not quiet:
-                        console.print("  No more listings found, stopping.")
+                        console.print(" [yellow]no listings found, stopping.[/yellow]")
                     break
 
-                total_found += len(listings_data)
+                pages_scraped += 1
+                if not quiet:
+                    console.print(f" [green]{page_listing_count} listings[/green]")
 
                 # Process each listing
                 with get_session() as session:
                     repo = ListingRepository(session)
 
-                    for listing_data in listings_data:
+                    for idx, listing_data in enumerate(listings_data, 1):
+                        if not quiet:
+                            console.print(
+                                f"  [{idx}/{page_listing_count}] Processing: {listing_data.get('title', 'Unknown')[:50]}...",
+                                end="",
+                            )
+
                         # Get detail page for options and description
                         url = listing_data.get("url")
                         title = listing_data.get("title", "")
@@ -222,8 +230,22 @@ async def run_scrape(
                         _, created = repo.upsert_listing(create_data)
                         if created:
                             new_count += 1
+                            status = "[green]NEW[/green]"
                         else:
                             updated_count += 1
+                            status = "[blue]UPD[/blue]"
+
+                        total_found += 1
+
+                        if not quiet:
+                            score_display = f"{scored_result.score:.0f}%"
+                            qual = "[green]Q[/green]" if scored_result.is_qualified else "[dim]·[/dim]"
+                            console.print(f" {status} {qual} {score_display}")
+
+                if not quiet:
+                    console.print(
+                        f"  [dim]Running total: {total_found} found, {new_count} new, {updated_count} updated[/dim]"
+                    )
 
                 await scraper.random_delay()
 
