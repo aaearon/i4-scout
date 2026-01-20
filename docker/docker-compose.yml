@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  scraper:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    volumes:
+      # Persist database
+      - scraper-data:/app/data
+      # Mount config for customization
+      - ../config:/app/config:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+    # Default: show help
+    command: ["--help"]
+
+  # Run scraping for AutoScout24 DE
+  scrape-de:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    volumes:
+      - scraper-data:/app/data
+      - ../config:/app/config:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: ["scrape", "autoscout24_de", "--max-pages", "5"]
+
+  # Run scraping for AutoScout24 NL
+  scrape-nl:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    volumes:
+      - scraper-data:/app/data
+      - ../config:/app/config:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: ["scrape", "autoscout24_nl", "--max-pages", "5"]
+
+  # List qualified listings
+  list:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    volumes:
+      - scraper-data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: ["list", "--qualified"]
+
+  # Export to JSON
+  export:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    volumes:
+      - scraper-data:/app/data
+      - ./exports:/app/exports
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: ["export", "--format", "json", "--output", "/app/exports/listings.json"]
+
+volumes:
+  scraper-data:

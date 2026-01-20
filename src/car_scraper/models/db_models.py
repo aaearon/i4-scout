@@ -71,6 +71,11 @@ class Listing(Base):
         "PriceHistory", back_populates="listing", cascade="all, delete-orphan"
     )
 
+    @property
+    def matched_options(self) -> list[str]:
+        """Get list of matched option names."""
+        return [lo.option.canonical_name for lo in self.options if lo.option]
+
     def __repr__(self) -> str:
         return f"<Listing(id={self.id}, title='{self.title[:30]}...', price={self.price})>"
 

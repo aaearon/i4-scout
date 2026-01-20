@@ -63,7 +63,7 @@ class TestDatabaseEngine:
 
     def test_get_session(self, temp_db):
         engine, _ = temp_db
-        for session in get_session(engine):
+        with get_session(engine) as session:
             assert isinstance(session, Session)
 
 

@@ -1,5 +1,7 @@
 """Database engine and session management."""
 
+import os
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Generator
 
@@ -11,6 +13,14 @@ from car_scraper.models.db_models import Base
 
 # Default database path
 DEFAULT_DB_PATH = Path(__file__).parent.parent.parent.parent / "data" / "car_scraper.db"
+
+
+def _get_db_path() -> Path:
+    """Get database path from environment variable or default."""
+    env_path = os.environ.get("CAR_SCRAPER_DB_PATH")
+    if env_path:
+        return Path(env_path)
+    return DEFAULT_DB_PATH
 
 _engine: Engine | None = None
 _SessionLocal: sessionmaker[Session] | None = None
@@ -30,7 +40,7 @@ def get_engine(db_path: Path | str | None = None, echo: bool = False) -> Engine:
 
     if _engine is None:
         if db_path is None:
-            db_path = DEFAULT_DB_PATH
+            db_path = _get_db_path()
 
         db_path = Path(db_path)
         db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -63,6 +73,7 @@ def get_session_factory(engine: Engine | None = None) -> sessionmaker[Session]:
     return _SessionLocal
 
 
+@contextmanager
 def get_session(engine: Engine | None = None) -> Generator[Session, None, None]:
     """Get a database session as a context manager.
 
