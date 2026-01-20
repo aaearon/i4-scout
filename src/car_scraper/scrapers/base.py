@@ -16,6 +16,7 @@ from tenacity import (
 
 from car_scraper.models.pydantic_models import ScrapedListing, Source
 from car_scraper.scrapers.browser import BrowserManager
+from car_scraper.scrapers.cache import get_cache
 
 
 T = TypeVar("T")
@@ -223,17 +224,31 @@ class BaseScraper(ABC):
 
         self._last_request_time = asyncio.get_event_loop().time()
 
-    async def navigate_to(self, page: Page, url: str, wait_until: str = "domcontentloaded") -> str:
-        """Navigate to a URL with rate limiting and retries.
+    async def navigate_to(
+        self,
+        page: Page,
+        url: str,
+        wait_until: str = "domcontentloaded",
+        use_cache: bool = False,  # Disabled by default for now
+    ) -> str:
+        """Navigate to a URL with caching, rate limiting and retries.
 
         Args:
             page: Playwright Page instance.
             url: URL to navigate to.
             wait_until: Wait condition for navigation.
+            use_cache: Whether to check/use cache (default: True).
 
         Returns:
             HTML content of the page.
         """
+        # Check cache first
+        if use_cache:
+            cache = get_cache()
+            cached = cache.get(url)
+            if cached:
+                return cached.html
+
         await self.check_rate_limit()
         await self._browser_manager.increment_request_count()
 
@@ -241,7 +256,14 @@ class BaseScraper(ABC):
             await page.goto(url, wait_until=wait_until, timeout=30000)
             return await page.content()
 
-        return await self.with_retry(_navigate)
+        html = await self.with_retry(_navigate)
+
+        # Store in cache
+        if use_cache:
+            cache = get_cache()
+            cache.set(url, html)
+
+        return html
 
     async def scrape_search_page(self, page: Page, page_num: int = 1) -> list[dict[str, Any]]:
         """Scrape a single search results page.

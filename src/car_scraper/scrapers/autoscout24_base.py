@@ -200,6 +200,7 @@ class AutoScout24BaseScraper(BaseScraper):
             ScrapedListing with all extracted data.
         """
         options = self.parse_options_sync(html)
+        description = self.parse_description_sync(html)
         soup = BeautifulSoup(html, "html.parser")
 
         # Extract basic info from detail page
@@ -224,6 +225,7 @@ class AutoScout24BaseScraper(BaseScraper):
             title=title,
             price=price,
             options_list=options,
+            description=description,
         )
 
     @classmethod
@@ -263,6 +265,60 @@ class AutoScout24BaseScraper(BaseScraper):
                                 options.append(option_text)
 
         return options
+
+    @classmethod
+    def parse_description_sync(cls, html: str) -> str | None:
+        """Extract vehicle description (Fahrzeugbeschreibung) from detail page.
+
+        This section often contains detailed option codes and equipment info
+        that dealers add manually.
+
+        Args:
+            html: Raw HTML content of detail page.
+
+        Returns:
+            Description text or None if not found.
+        """
+        soup = BeautifulSoup(html, "html.parser")
+
+        # Look for Fahrzeugbeschreibung section (German: "Fahrzeugbeschreibung")
+        # or "Description" in English/Dutch
+        description_labels = [
+            "Fahrzeugbeschreibung",
+            "Beschreibung",
+            "Description",
+            "Omschrijving",
+            "Voertuigomschrijving",
+        ]
+
+        # Method 1: Find by dt/dd structure with label
+        for label in description_labels:
+            dt = soup.find("dt", string=re.compile(label, re.IGNORECASE))
+            if dt:
+                dd = dt.find_next_sibling("dd")
+                if dd:
+                    return dd.get_text(separator="\n", strip=True)
+
+        # Method 2: Find by class name patterns
+        desc_patterns = [
+            r"Description",
+            r"VehicleDescription",
+            r"description",
+            r"seller-notes",
+        ]
+        for pattern in desc_patterns:
+            desc_elem = soup.find(class_=re.compile(pattern, re.IGNORECASE))
+            if desc_elem:
+                text = desc_elem.get_text(separator="\n", strip=True)
+                if len(text) > 50:  # Only return if substantial content
+                    return text
+
+        # Method 3: Look for data-testid attributes
+        desc_elem = soup.find(attrs={"data-testid": re.compile(r"description", re.IGNORECASE)})
+        if desc_elem:
+            return desc_elem.get_text(separator="\n", strip=True)
+
+        return None
 
     @property
     @abstractmethod

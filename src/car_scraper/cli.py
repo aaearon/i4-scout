@@ -136,19 +136,27 @@ async def run_scrape(
                     repo = ListingRepository(session)
 
                     for listing_data in listings_data:
-                        # Get detail page for options
+                        # Get detail page for options and description
                         url = listing_data.get("url")
+                        title = listing_data.get("title", "")
+                        options_list = []
+                        description = None
                         if url:
                             try:
                                 detail = await scraper.scrape_listing_detail(page, url)
                                 options_list = detail.options_list
+                                description = detail.description
                             except Exception:
-                                options_list = []
-                        else:
-                            options_list = []
+                                pass
 
-                        # Match options
-                        match_result = match_options(options_list, options_config)
+                        # Combine title and description for text search
+                        # Title often contains abbreviated option codes (ACC, KZU, HUD, etc.)
+                        searchable_text = title
+                        if description:
+                            searchable_text = f"{title}\n{description}"
+
+                        # Match options (searches options list + title/description)
+                        match_result = match_options(options_list, options_config, searchable_text)
                         scored_result = calculate_score(match_result, options_config)
 
                         # Create listing data
