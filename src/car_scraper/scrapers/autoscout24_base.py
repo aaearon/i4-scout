@@ -281,8 +281,21 @@ class AutoScout24BaseScraper(BaseScraper):
         """
         soup = BeautifulSoup(html, "html.parser")
 
-        # Look for Fahrzeugbeschreibung section (German: "Fahrzeugbeschreibung")
-        # or "Description" in English/Dutch
+        # Method 1: Find sellerNotesSection div (most reliable for AutoScout24)
+        # Structure: <div id="sellerNotesSection"> > <div class="Expandable..."> >
+        #            <div class="SellerNotesSection_content__...">
+        seller_notes = soup.find("div", id="sellerNotesSection")
+        if seller_notes:
+            # Find the content div inside (class starts with SellerNotesSection_content__)
+            content_div = seller_notes.find(
+                "div", class_=re.compile(r"SellerNotesSection_content__")
+            )
+            if content_div:
+                text = content_div.get_text(separator="\n", strip=True)
+                if text:
+                    return text
+
+        # Method 2: Find by h2 heading and navigate to content
         description_labels = [
             "Fahrzeugbeschreibung",
             "Beschreibung",
@@ -290,8 +303,21 @@ class AutoScout24BaseScraper(BaseScraper):
             "Omschrijving",
             "Voertuigomschrijving",
         ]
+        for label in description_labels:
+            h2 = soup.find("h2", string=re.compile(label, re.IGNORECASE))
+            if h2:
+                # Navigate up to find parent section, then find content
+                parent = h2.find_parent("div", class_=re.compile(r"DetailsSection"))
+                if parent:
+                    content_div = parent.find(
+                        "div", class_=re.compile(r"SellerNotesSection_content__")
+                    )
+                    if content_div:
+                        text = content_div.get_text(separator="\n", strip=True)
+                        if text:
+                            return text
 
-        # Method 1: Find by dt/dd structure with label
+        # Method 3: Find by dt/dd structure with label (legacy structure)
         for label in description_labels:
             dt = soup.find("dt", string=re.compile(label, re.IGNORECASE))
             if dt:
@@ -299,8 +325,9 @@ class AutoScout24BaseScraper(BaseScraper):
                 if dd:
                     return dd.get_text(separator="\n", strip=True)
 
-        # Method 2: Find by class name patterns
+        # Method 4: Find by class name patterns
         desc_patterns = [
+            r"SellerNotesSection",
             r"Description",
             r"VehicleDescription",
             r"description",
@@ -313,8 +340,10 @@ class AutoScout24BaseScraper(BaseScraper):
                 if len(text) > 50:  # Only return if substantial content
                     return text
 
-        # Method 3: Look for data-testid attributes
-        desc_elem = soup.find(attrs={"data-testid": re.compile(r"description", re.IGNORECASE)})
+        # Method 5: Look for data-testid attributes
+        desc_elem = soup.find(
+            attrs={"data-testid": re.compile(r"description", re.IGNORECASE)}
+        )
         if desc_elem:
             return desc_elem.get_text(separator="\n", strip=True)
 

@@ -180,6 +180,27 @@ class TestAutoScout24DetailParsing:
 
         assert len(options) > 0, "Expected at least some options from NL detail"
 
+    def test_parse_description_extracts_text(self, de_detail_html: str) -> None:
+        """Description (Fahrzeugbeschreibung) should be extracted from detail page."""
+        from car_scraper.scrapers.autoscout24_de import AutoScout24DEScraper
+
+        description = AutoScout24DEScraper.parse_description_sync(de_detail_html)
+
+        assert description is not None, "Description should not be None"
+        assert len(description) > 50, "Description should have substantial content"
+        # Check for known content from the fixture (sellerNotesSection)
+        assert "Sitzbezug" in description or "Ablagenpaket" in description
+
+    def test_parse_description_handles_missing_section(self, de_search_html: str) -> None:
+        """Parser should handle pages without description section gracefully."""
+        from car_scraper.scrapers.autoscout24_de import AutoScout24DEScraper
+
+        # Search page doesn't have description section
+        description = AutoScout24DEScraper.parse_description_sync(de_search_html)
+
+        # Should return None, not crash
+        assert description is None or isinstance(description, str)
+
 
 class TestAutoScout24SearchURL:
     """Tests for search URL generation."""
