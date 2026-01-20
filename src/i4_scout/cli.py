@@ -163,7 +163,7 @@ async def run_scrape(
         # Scrape search pages
         for page_num in range(1, max_pages + 1):
             if not quiet:
-                console.print(f"\n[bold]Page {page_num}/{max_pages}[/bold] - Fetching search results...", end="")
+                console.print(f"\n[bold]Page {page_num}[/bold] - Fetching search results...", end="")
 
             try:
                 listings_data = await scraper.scrape_search_page(page, page_num)
@@ -264,10 +264,10 @@ def scrape(
         help="Source to scrape (autoscout24_de, autoscout24_nl).",
     ),
     max_pages: int = typer.Option(
-        10,
+        50,
         "--max-pages",
         "-p",
-        help="Maximum number of pages to scrape.",
+        help="Maximum pages to scrape (stops early if no more results).",
     ),
     headless: bool = typer.Option(
         True,
@@ -288,8 +288,8 @@ def scrape(
 ) -> None:
     """Scrape listings from the specified source."""
     if not json_output:
-        console.print(f"[bold blue]Scraping {source.value}...[/bold blue]")
-        console.print(f"  Max pages: {max_pages}")
+        console.print(f"[bold blue]Scraping {source.value}[/bold blue]")
+        console.print(f"  Page limit: {max_pages} (stops early if no more results)")
         console.print(f"  Headless: {headless}")
 
     # Ensure database exists
