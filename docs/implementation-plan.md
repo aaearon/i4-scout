@@ -204,7 +204,7 @@ Phase 6 (Docker & Docs) - after Phase 5
 ### Phase 1: Project Foundation
 
 **Goal:** Establish project structure, models, and database.
-**Status:** `[ ] Not Started`
+**Status:** `[x] COMPLETED`
 **Depends On:** Phase 0 gate pass
 
 #### Task 1.1: Project Init
@@ -241,30 +241,30 @@ Phase 6 (Docker & Docs) - after Phase 5
 ### Phase 2: Scraper Infrastructure
 
 **Goal:** Create browser automation and base scraper framework.
-**Status:** `[ ] Not Started`
+**Status:** `[x] COMPLETED - 2026-01-20`
 **Depends On:** Phase 1 complete
 **Can Run Parallel With:** Phase 4
 
 #### Task 2.1: Browser Automation
 | ID | Task | Status | Depends On | Parallel | Output |
 |----|------|--------|------------|----------|--------|
-| 2.1.1 | Write Playwright+stealth browser manager | `[ ]` | Phase 1 | - | `scrapers/browser.py` |
-| 2.1.2 | Add context rotation, humanization | `[ ]` | 2.1.1 | - | `scrapers/browser.py` |
-| 2.1.3 | Write browser stealth test | `[ ]` | 2.1.2 | - | `tests/integration/test_browser.py` |
+| 2.1.1 | Write Playwright+stealth browser manager | `[x]` | Phase 1 | - | `scrapers/browser.py` |
+| 2.1.2 | Add context rotation, humanization | `[x]` | 2.1.1 | - | `scrapers/browser.py` |
+| 2.1.3 | Write browser stealth test | `[x]` | 2.1.2 | - | `tests/integration/test_browser.py` |
 
 #### Task 2.2: Base Scraper
 | ID | Task | Status | Depends On | Parallel | Output |
 |----|------|--------|------------|----------|--------|
-| 2.2.1 | Write BaseScraper ABC | `[ ]` | 2.1.1 | - | `scrapers/base.py` |
-| 2.2.2 | Add retry logic (tenacity) | `[ ]` | 2.2.1 | - | `scrapers/base.py` |
-| 2.2.3 | Add rate limiting | `[ ]` | 2.2.1 | Yes | `scrapers/base.py` |
+| 2.2.1 | Write BaseScraper ABC | `[x]` | 2.1.1 | - | `scrapers/base.py` |
+| 2.2.2 | Add retry logic (tenacity) | `[x]` | 2.2.1 | - | `scrapers/base.py` |
+| 2.2.3 | Add rate limiting | `[x]` | 2.2.1 | Yes | `scrapers/base.py` |
 
 #### Task 2.3: Repository Layer
 | ID | Task | Status | Depends On | Parallel | Output |
 |----|------|--------|------------|----------|--------|
-| 2.3.1 | Write CRUD operations | `[ ]` | Phase 1 | Yes | `database/repository.py` |
-| 2.3.2 | Add upsert/dedup logic | `[ ]` | 2.3.1 | - | `database/repository.py` |
-| 2.3.3 | Write repository tests | `[ ]` | 2.3.2 | - | `tests/integration/test_repository.py` |
+| 2.3.1 | Write CRUD operations | `[x]` | Phase 1 | Yes | `database/repository.py` |
+| 2.3.2 | Add upsert/dedup logic | `[x]` | 2.3.1 | - | `database/repository.py` |
+| 2.3.3 | Write repository tests | `[x]` | 2.3.2 | - | `tests/integration/test_repository.py` |
 
 ---
 
