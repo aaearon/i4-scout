@@ -6,8 +6,8 @@ from typing import Any, ClassVar
 
 from bs4 import BeautifulSoup
 
-from car_scraper.models.pydantic_models import ScrapedListing, Source
-from car_scraper.scrapers.base import BaseScraper
+from i4_scout.models.pydantic_models import ScrapedListing, Source
+from i4_scout.scrapers.base import BaseScraper
 
 
 class AutoScout24BaseScraper(BaseScraper):

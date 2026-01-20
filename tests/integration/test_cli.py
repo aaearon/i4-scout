@@ -6,10 +6,10 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from car_scraper.cli import app
-from car_scraper.database.engine import get_session, init_db, reset_engine
-from car_scraper.database.repository import ListingRepository
-from car_scraper.models.pydantic_models import ListingCreate, Source
+from i4_scout.cli import app
+from i4_scout.database.engine import get_session, init_db, reset_engine
+from i4_scout.database.repository import ListingRepository
+from i4_scout.models.pydantic_models import ListingCreate, Source
 
 
 @pytest.fixture
@@ -28,14 +28,14 @@ def test_db(tmp_path: Path) -> Path:
 
     db_path = tmp_path / "test.db"
     # Set environment variable for the CLI
-    os.environ["CAR_SCRAPER_DB_PATH"] = str(db_path)
+    os.environ["I4_SCOUT_DB_PATH"] = str(db_path)
     init_db(db_path)
     yield db_path
 
     # Cleanup: reset engine after test
     reset_engine()
-    if "CAR_SCRAPER_DB_PATH" in os.environ:
-        del os.environ["CAR_SCRAPER_DB_PATH"]
+    if "I4_SCOUT_DB_PATH" in os.environ:
+        del os.environ["I4_SCOUT_DB_PATH"]
 
 
 @pytest.fixture
@@ -234,6 +234,64 @@ class TestExportCommand:
         assert "unknown format" in result.output.lower()
 
 
+class TestJsonOutput:
+    """Tests for --json output option (LLM-friendly output)."""
+
+    def test_list_json_output(self, runner: CliRunner, populated_db: Path) -> None:
+        """list --json should output valid JSON."""
+        result = runner.invoke(app, ["list", "--json"])
+
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert "listings" in data
+        assert "count" in data
+        assert "total" in data
+        assert "filters" in data
+        assert data["count"] == 3
+        assert len(data["listings"]) == 3
+
+    def test_list_json_with_filters(self, runner: CliRunner, populated_db: Path) -> None:
+        """list --json should include filter info."""
+        result = runner.invoke(app, ["list", "--json", "--qualified", "--min-score", "80"])
+
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["filters"]["qualified_only"] is True
+        assert data["filters"]["min_score"] == 80.0
+        assert data["count"] == 1  # Only one listing with score >= 80 and qualified
+
+    def test_list_json_empty_database(self, runner: CliRunner, test_db: Path) -> None:
+        """list --json should handle empty database."""
+        result = runner.invoke(app, ["list", "--json"])
+
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["listings"] == []
+        assert data["count"] == 0
+
+    def test_show_json_output(self, runner: CliRunner, populated_db: Path) -> None:
+        """show --json should output valid JSON."""
+        result = runner.invoke(app, ["show", "1", "--json"])
+
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["id"] == 1
+        assert "BMW i4 eDrive40" in data["title"]
+        assert data["price"] == 45000
+        assert data["is_qualified"] is True
+        assert "url" in data
+        assert "mileage_km" in data
+        assert "match_score" in data
+
+    def test_show_json_not_found(self, runner: CliRunner, populated_db: Path) -> None:
+        """show --json should output error JSON for not found."""
+        result = runner.invoke(app, ["show", "999", "--json"])
+
+        assert result.exit_code == 1
+        data = json.loads(result.output)
+        assert "error" in data
+
+
 class TestVersionOption:
     """Tests for --version option."""
 
@@ -242,4 +300,4 @@ class TestVersionOption:
         result = runner.invoke(app, ["--version"])
 
         assert result.exit_code == 0
-        assert "car-scraper version" in result.output
+        assert "i4-scout version" in result.output

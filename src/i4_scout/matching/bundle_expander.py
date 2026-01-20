@@ -1,7 +1,7 @@
 """Bundle expansion for option matching."""
 
-from car_scraper.matching.normalizer import normalize_text
-from car_scraper.models.pydantic_models import OptionsConfig
+from i4_scout.matching.normalizer import normalize_text
+from i4_scout.models.pydantic_models import OptionsConfig
 
 
 def expand_bundles(raw_options: list[str], config: OptionsConfig) -> list[str]:

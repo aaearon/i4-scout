@@ -11,9 +11,9 @@ Implement site scrapers (Phase 3) and option matching engine (Phase 4) in parall
 ### Phase 3 - Site Scrapers
 | File | Status | Purpose |
 |------|--------|---------|
-| `src/car_scraper/scrapers/autoscout24_base.py` | `[x]` | Shared scraper logic for AS24 sites |
-| `src/car_scraper/scrapers/autoscout24_de.py` | `[x]` | DE-specific configuration |
-| `src/car_scraper/scrapers/autoscout24_nl.py` | `[x]` | NL-specific configuration |
+| `src/i4_scout/scrapers/autoscout24_base.py` | `[x]` | Shared scraper logic for AS24 sites |
+| `src/i4_scout/scrapers/autoscout24_de.py` | `[x]` | DE-specific configuration |
+| `src/i4_scout/scrapers/autoscout24_nl.py` | `[x]` | NL-specific configuration |
 | `tests/fixtures/autoscout24_de_search.html` | `[x]` | HTML fixture from PoC |
 | `tests/fixtures/autoscout24_de_detail.html` | `[x]` | HTML fixture from PoC |
 | `tests/fixtures/autoscout24_nl_search.html` | `[x]` | HTML fixture from PoC |
@@ -23,11 +23,11 @@ Implement site scrapers (Phase 3) and option matching engine (Phase 4) in parall
 ### Phase 4 - Option Matching
 | File | Status | Purpose |
 |------|--------|---------|
-| `src/car_scraper/config.py` | `[x]` | YAML config loader |
-| `src/car_scraper/matching/normalizer.py` | `[x]` | Text normalization |
-| `src/car_scraper/matching/bundle_expander.py` | `[x]` | Package expansion |
-| `src/car_scraper/matching/option_matcher.py` | `[x]` | Alias matching |
-| `src/car_scraper/matching/scorer.py` | `[x]` | Score calculation |
+| `src/i4_scout/config.py` | `[x]` | YAML config loader |
+| `src/i4_scout/matching/normalizer.py` | `[x]` | Text normalization |
+| `src/i4_scout/matching/bundle_expander.py` | `[x]` | Package expansion |
+| `src/i4_scout/matching/option_matcher.py` | `[x]` | Alias matching |
+| `src/i4_scout/matching/scorer.py` | `[x]` | Score calculation |
 | `tests/unit/test_normalizer.py` | `[x]` | Normalizer tests (12 tests) |
 | `tests/unit/test_config.py` | `[x]` | Config loader tests (12 tests) |
 | `tests/unit/test_bundle_expander.py` | `[x]` | Expander tests (10 tests) |
@@ -72,7 +72,7 @@ Create `tests/unit/test_autoscout24_parsing.py`:
 ```
 
 ### Task 3.2: Implement AutoScout24BaseScraper
-Location: `src/car_scraper/scrapers/autoscout24_base.py`
+Location: `src/i4_scout/scrapers/autoscout24_base.py`
 
 Key implementation details:
 1. **Listing cards** - Extract from `<article>` data attributes:
@@ -117,7 +117,7 @@ class AutoScout24NLScraper(AutoScout24BaseScraper):
 ## Phase 4: Option Matching
 
 ### Task 4.1: Text Normalizer
-Location: `src/car_scraper/matching/normalizer.py`
+Location: `src/i4_scout/matching/normalizer.py`
 
 Algorithm:
 1. Lowercase: `text.lower()`
@@ -135,7 +135,7 @@ Test cases:
 - `"360° Kamera"` → `"360 kamera"`
 
 ### Task 4.2: YAML Config Loader
-Location: `src/car_scraper/config.py`
+Location: `src/i4_scout/config.py`
 
 Features:
 - Load YAML from path or use default `config/options.yaml`
@@ -148,7 +148,7 @@ def load_options_config(path: Path | None = None) -> OptionsConfig:
 ```
 
 ### Task 4.3: Bundle Expander
-Location: `src/car_scraper/matching/bundle_expander.py`
+Location: `src/i4_scout/matching/bundle_expander.py`
 
 Two-pass approach (config-driven):
 1. Check if bundle name found in listing options
@@ -163,7 +163,7 @@ def expand_bundles(
 ```
 
 ### Task 4.4: Option Matcher
-Location: `src/car_scraper/matching/option_matcher.py`
+Location: `src/i4_scout/matching/option_matcher.py`
 
 Algorithm:
 1. Normalize all listing options
@@ -181,7 +181,7 @@ def match_options(
 ```
 
 ### Task 4.5: Scorer
-Location: `src/car_scraper/matching/scorer.py`
+Location: `src/i4_scout/matching/scorer.py`
 
 Formula (from implementation plan):
 ```python
@@ -221,7 +221,7 @@ Phase 3 Stream                    Phase 4 Stream
    ```bash
    # Test parsing with fixture
    python -c "
-   from car_scraper.scrapers.autoscout24_de import AutoScout24DEScraper
+   from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
    from pathlib import Path
    html = Path('tests/fixtures/autoscout24_de_search.html').read_text()
    # ... instantiate and parse

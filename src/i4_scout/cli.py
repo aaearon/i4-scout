@@ -1,40 +1,74 @@
-"""CLI interface for car-scraper."""
+"""CLI interface for i4-scout."""
 
 import asyncio
+import json
+import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import typer
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from car_scraper import __version__
-from car_scraper.config import load_options_config
-from car_scraper.database.engine import get_session, init_db
-from car_scraper.database.repository import ListingRepository
-from car_scraper.export.csv_exporter import export_to_csv
-from car_scraper.export.json_exporter import export_to_json
-from car_scraper.matching.option_matcher import match_options
-from car_scraper.matching.scorer import calculate_score
-from car_scraper.models.pydantic_models import ListingCreate, Source
-from car_scraper.scrapers.autoscout24_de import AutoScout24DEScraper
-from car_scraper.scrapers.autoscout24_nl import AutoScout24NLScraper
-from car_scraper.scrapers.browser import BrowserConfig, BrowserManager
+from i4_scout import __version__
+from i4_scout.config import load_options_config
+from i4_scout.database.engine import get_session, init_db
+from i4_scout.database.repository import ListingRepository
+from i4_scout.export.csv_exporter import export_to_csv
+from i4_scout.export.json_exporter import export_to_json
+from i4_scout.matching.option_matcher import match_options
+from i4_scout.matching.scorer import calculate_score
+from i4_scout.models.pydantic_models import ListingCreate, Source
+from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
+from i4_scout.scrapers.autoscout24_nl import AutoScout24NLScraper
+from i4_scout.scrapers.browser import BrowserConfig, BrowserManager
 
 app = typer.Typer(
-    name="car-scraper",
+    name="i4-scout",
     help="BMW i4 eDrive40 listing scraper for AutoScout24 DE/NL",
     add_completion=False,
 )
 console = Console()
 
 
+def listing_to_dict(listing: Any) -> dict[str, Any]:
+    """Convert a Listing ORM object to a JSON-serializable dict."""
+    return {
+        "id": listing.id,
+        "source": listing.source.value if listing.source else None,
+        "external_id": listing.external_id,
+        "url": listing.url,
+        "title": listing.title,
+        "price": listing.price,
+        "mileage_km": listing.mileage_km,
+        "year": listing.year,
+        "first_registration": listing.first_registration,
+        "vin": listing.vin,
+        "location_city": listing.location_city,
+        "location_zip": listing.location_zip,
+        "location_country": listing.location_country,
+        "dealer_name": listing.dealer_name,
+        "dealer_type": listing.dealer_type,
+        "description": listing.description,
+        "match_score": listing.match_score,
+        "is_qualified": listing.is_qualified,
+        "matched_options": listing.matched_options,
+        "first_seen_at": listing.first_seen_at.isoformat() if listing.first_seen_at else None,
+        "last_seen_at": listing.last_seen_at.isoformat() if listing.last_seen_at else None,
+    }
+
+
+def output_json(data: Any) -> None:
+    """Output JSON to stdout (for LLM consumption)."""
+    print(json.dumps(data, indent=2, ensure_ascii=False))
+
+
 def version_callback(value: bool) -> None:
     """Print version and exit."""
     if value:
-        console.print(f"car-scraper version {__version__}")
+        console.print(f"i4-scout version {__version__}")
         raise typer.Exit()
 
 
@@ -73,7 +107,7 @@ def init_database(
 
     try:
         init_db(db_path, echo=verbose)
-        db_location = db_path or "data/car_scraper.db"
+        db_location = db_path or "data/i4_scout.db"
         console.print(f"[green]Database initialized at: {db_location}[/green]")
     except Exception as e:
         console.print(f"[red]Error initializing database: {e}[/red]")
@@ -96,8 +130,16 @@ async def run_scrape(
     max_pages: int,
     headless: bool,
     config_path: Optional[Path],
+    quiet: bool = False,
 ) -> tuple[int, int, int]:
     """Run the scraping process.
+
+    Args:
+        source: The source to scrape.
+        max_pages: Maximum pages to scrape.
+        headless: Run browser in headless mode.
+        config_path: Path to options config YAML.
+        quiet: Suppress progress output (for JSON mode).
 
     Returns:
         Tuple of (total_found, new_count, updated_count).
@@ -119,14 +161,17 @@ async def run_scrape(
 
         # Scrape search pages
         for page_num in range(1, max_pages + 1):
-            console.print(f"  Scraping page {page_num}...", end="")
+            if not quiet:
+                console.print(f"  Scraping page {page_num}...", end="")
 
             try:
                 listings_data = await scraper.scrape_search_page(page, page_num)
-                console.print(f" found {len(listings_data)} listings")
+                if not quiet:
+                    console.print(f" found {len(listings_data)} listings")
 
                 if not listings_data:
-                    console.print("  No more listings found, stopping.")
+                    if not quiet:
+                        console.print("  No more listings found, stopping.")
                     break
 
                 total_found += len(listings_data)
@@ -183,7 +228,8 @@ async def run_scrape(
                 await scraper.random_delay()
 
             except Exception as e:
-                console.print(f" [red]error: {e}[/red]")
+                if not quiet:
+                    console.print(f" [red]error: {e}[/red]")
                 continue
 
     return total_found, new_count, updated_count
@@ -212,24 +258,52 @@ def scrape(
         "-c",
         help="Path to options config YAML file.",
     ),
+    json_output: bool = typer.Option(
+        False,
+        "--json",
+        help="Output as JSON (for LLM/programmatic consumption).",
+    ),
 ) -> None:
     """Scrape listings from the specified source."""
-    console.print(f"[bold blue]Scraping {source.value}...[/bold blue]")
-    console.print(f"  Max pages: {max_pages}")
-    console.print(f"  Headless: {headless}")
+    if not json_output:
+        console.print(f"[bold blue]Scraping {source.value}...[/bold blue]")
+        console.print(f"  Max pages: {max_pages}")
+        console.print(f"  Headless: {headless}")
 
     # Ensure database exists
     init_db()
 
     try:
-        total, new, updated = asyncio.run(run_scrape(source, max_pages, headless, config))
-        console.print()
-        console.print(f"[green]Scraping complete![/green]")
-        console.print(f"  Total found: {total}")
-        console.print(f"  New listings: {new}")
-        console.print(f"  Updated: {updated}")
+        total, new, updated = asyncio.run(
+            run_scrape(source, max_pages, headless, config, quiet=json_output)
+        )
+
+        if json_output:
+            output_json({
+                "status": "success",
+                "source": source.value,
+                "max_pages": max_pages,
+                "results": {
+                    "total_found": total,
+                    "new_listings": new,
+                    "updated_listings": updated,
+                },
+            })
+        else:
+            console.print()
+            console.print(f"[green]Scraping complete![/green]")
+            console.print(f"  Total found: {total}")
+            console.print(f"  New listings: {new}")
+            console.print(f"  Updated: {updated}")
     except Exception as e:
-        console.print(f"[red]Error during scraping: {e}[/red]")
+        if json_output:
+            output_json({
+                "status": "error",
+                "source": source.value,
+                "error": str(e),
+            })
+        else:
+            console.print(f"[red]Error during scraping: {e}[/red]")
         raise typer.Exit(1)
 
 
@@ -258,6 +332,11 @@ def list_listings(
         "--source",
         help="Filter by source.",
     ),
+    json_output: bool = typer.Option(
+        False,
+        "--json",
+        help="Output as JSON (for LLM/programmatic consumption).",
+    ),
 ) -> None:
     """List scraped listings."""
     # Ensure database exists
@@ -271,6 +350,22 @@ def list_listings(
             min_score=min_score if min_score > 0 else None,
             limit=limit,
         )
+        total = repo.count_listings(source=source, qualified_only=qualified)
+
+        # JSON output for LLM consumption
+        if json_output:
+            output_json({
+                "listings": [listing_to_dict(l) for l in listings],
+                "count": len(listings),
+                "total": total,
+                "filters": {
+                    "qualified_only": qualified,
+                    "min_score": min_score if min_score > 0 else None,
+                    "source": source.value if source else None,
+                    "limit": limit,
+                },
+            })
+            return
 
         if not listings:
             console.print("[yellow]No listings found.[/yellow]")
@@ -304,8 +399,6 @@ def list_listings(
 
         console.print(table)
 
-        # Show total count
-        total = repo.count_listings(source=source, qualified_only=qualified)
         if total > limit:
             console.print(f"[dim]Showing {limit} of {total} total listings[/dim]")
 
@@ -313,6 +406,11 @@ def list_listings(
 @app.command()
 def show(
     listing_id: int = typer.Argument(..., help="Listing ID to show."),
+    json_output: bool = typer.Option(
+        False,
+        "--json",
+        help="Output as JSON (for LLM/programmatic consumption).",
+    ),
 ) -> None:
     """Show detailed information for a specific listing."""
     # Ensure database exists
@@ -323,8 +421,16 @@ def show(
         listing = repo.get_listing_by_id(listing_id)
 
         if not listing:
-            console.print(f"[red]Listing #{listing_id} not found.[/red]")
+            if json_output:
+                output_json({"error": f"Listing #{listing_id} not found"})
+            else:
+                console.print(f"[red]Listing #{listing_id} not found.[/red]")
             raise typer.Exit(1)
+
+        # JSON output for LLM consumption
+        if json_output:
+            output_json(listing_to_dict(listing))
+            return
 
         # Build detail panel
         qual_status = "[green]QUALIFIED[/green]" if listing.is_qualified else "[red]NOT QUALIFIED[/red]"

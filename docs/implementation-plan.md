@@ -1,4 +1,4 @@
-# BMW i4 Car Scraper - Implementation Plan
+# BMW i4 i4-scout - Implementation Plan
 
 > **Note:** This plan must be saved to `docs/implementation-plan.md` before starting Phase 0.
 
@@ -57,8 +57,8 @@ scrape_sessions (id, source, started_at, completed_at, status, stats)
 
 ## Project Structure
 ```
-car-scraper/
-├── src/car_scraper/
+i4-scout/
+├── src/i4_scout/
 │   ├── __init__.py
 │   ├── cli.py                 # Typer CLI
 │   ├── config.py              # Settings loader
@@ -99,11 +99,11 @@ car-scraper/
 
 ## CLI Commands
 ```bash
-car-scraper scrape --source mobile_de --max-pages 10
-car-scraper list --qualified --min-score 80 --limit 20
-car-scraper show <listing_id>
-car-scraper export --format csv --qualified
-car-scraper init-db
+i4-scout scrape --source mobile_de --max-pages 10
+i4-scout list --qualified --min-score 80 --limit 20
+i4-scout show <listing_id>
+i4-scout export --format csv --qualified
+i4-scout init-db
 ```
 
 ## Implementation Phases
@@ -421,7 +421,7 @@ dependencies = [
 1. **Unit tests:** `pytest tests/unit/ -v`
 2. **Integration tests:** `pytest tests/integration/ -v`
 3. **Stealth verification:** Run against bot.sannysoft.com
-4. **Manual test:** `car-scraper scrape --source mobile_de --max-pages 1`
+4. **Manual test:** `i4-scout scrape --source mobile_de --max-pages 1`
 5. **Docker test:** `docker-compose run scraper scrape --source mobile_de`
 
 ## Notes

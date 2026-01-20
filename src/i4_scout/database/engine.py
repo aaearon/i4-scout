@@ -9,15 +9,15 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from car_scraper.models.db_models import Base
+from i4_scout.models.db_models import Base
 
 # Default database path
-DEFAULT_DB_PATH = Path(__file__).parent.parent.parent.parent / "data" / "car_scraper.db"
+DEFAULT_DB_PATH = Path(__file__).parent.parent.parent.parent / "data" / "i4_scout.db"
 
 
 def _get_db_path() -> Path:
     """Get database path from environment variable or default."""
-    env_path = os.environ.get("CAR_SCRAPER_DB_PATH")
+    env_path = os.environ.get("I4_SCOUT_DB_PATH")
     if env_path:
         return Path(env_path)
     return DEFAULT_DB_PATH
@@ -30,7 +30,7 @@ def get_engine(db_path: Path | str | None = None, echo: bool = False) -> Engine:
     """Get or create the SQLAlchemy engine.
 
     Args:
-        db_path: Path to SQLite database file. Defaults to data/car_scraper.db.
+        db_path: Path to SQLite database file. Defaults to data/i4_scout.db.
         echo: Whether to echo SQL statements.
 
     Returns:

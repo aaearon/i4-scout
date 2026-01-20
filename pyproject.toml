@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "car-scraper"
+name = "i4-scout"
 version = "0.1.0"
 description = "BMW i4 eDrive40 listing scraper for AutoScout24 DE/NL"
 readme = "README.md"
@@ -48,10 +48,10 @@ dev = [
 ]
 
 [project.scripts]
-car-scraper = "car_scraper.cli:app"
+i4-scout = "i4_scout.cli:app"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/car_scraper"]
+packages = ["src/i4_scout"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -65,7 +65,7 @@ select = ["E", "F", "W", "I", "N", "UP", "B", "C4"]
 ignore = ["E501"]
 
 [tool.ruff.isort]
-known-first-party = ["car_scraper"]
+known-first-party = ["i4_scout"]
 
 [tool.mypy]
 python_version = "3.10"

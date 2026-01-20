@@ -2,7 +2,7 @@
 
 import pytest
 
-from car_scraper.models.pydantic_models import OptionConfig, OptionsConfig
+from i4_scout.models.pydantic_models import OptionConfig, OptionsConfig
 
 
 @pytest.fixture
@@ -51,7 +51,7 @@ class TestBundleExpander:
         self, config_with_bundles: OptionsConfig
     ) -> None:
         """Options without bundles should be returned unchanged."""
-        from car_scraper.matching.bundle_expander import expand_bundles
+        from i4_scout.matching.bundle_expander import expand_bundles
 
         raw_options = ["Sitzheizung", "Klimaanlage", "LED Scheinwerfer"]
 
@@ -63,7 +63,7 @@ class TestBundleExpander:
         self, config_with_bundles: OptionsConfig
     ) -> None:
         """When bundle is detected, its contents should be added."""
-        from car_scraper.matching.bundle_expander import expand_bundles
+        from i4_scout.matching.bundle_expander import expand_bundles
 
         raw_options = ["M Sportpaket", "Sitzheizung"]
 
@@ -79,7 +79,7 @@ class TestBundleExpander:
         self, config_with_bundles: OptionsConfig
     ) -> None:
         """Original bundle name should remain in the expanded list."""
-        from car_scraper.matching.bundle_expander import expand_bundles
+        from i4_scout.matching.bundle_expander import expand_bundles
 
         raw_options = ["M Sport"]
 
@@ -94,7 +94,7 @@ class TestBundleExpander:
         self, config_with_bundles: OptionsConfig
     ) -> None:
         """Multiple bundles should all be expanded."""
-        from car_scraper.matching.bundle_expander import expand_bundles
+        from i4_scout.matching.bundle_expander import expand_bundles
 
         raw_options = ["M Sportpaket", "Technologie Paket"]
 
@@ -110,7 +110,7 @@ class TestBundleExpander:
         self, config_with_bundles: OptionsConfig
     ) -> None:
         """Expanded options should not have duplicates."""
-        from car_scraper.matching.bundle_expander import expand_bundles
+        from i4_scout.matching.bundle_expander import expand_bundles
 
         # Option already present + bundle containing same option
         raw_options = ["Head-Up Display", "Technologie Paket"]
@@ -124,7 +124,7 @@ class TestBundleExpander:
         self, config_with_bundles: OptionsConfig
     ) -> None:
         """Bundle matching should be case insensitive."""
-        from car_scraper.matching.bundle_expander import expand_bundles
+        from i4_scout.matching.bundle_expander import expand_bundles
 
         raw_options = ["m sportpaket"]  # lowercase
 
@@ -137,7 +137,7 @@ class TestBundleExpander:
         self, config_with_bundles: OptionsConfig
     ) -> None:
         """Empty options list should return empty list."""
-        from car_scraper.matching.bundle_expander import expand_bundles
+        from i4_scout.matching.bundle_expander import expand_bundles
 
         result = expand_bundles([], config_with_bundles)
 
@@ -145,7 +145,7 @@ class TestBundleExpander:
 
     def test_expand_empty_config(self) -> None:
         """Config with no bundles should return original options."""
-        from car_scraper.matching.bundle_expander import expand_bundles
+        from i4_scout.matching.bundle_expander import expand_bundles
 
         empty_config = OptionsConfig(required=[], nice_to_have=[], dealbreakers=[])
         raw_options = ["Option 1", "Option 2"]
@@ -158,7 +158,7 @@ class TestBundleExpander:
         self, config_with_bundles: OptionsConfig
     ) -> None:
         """Partial bundle name should not trigger expansion."""
-        from car_scraper.matching.bundle_expander import expand_bundles
+        from i4_scout.matching.bundle_expander import expand_bundles
 
         raw_options = ["M Sport wheels"]  # Not a bundle alias
 

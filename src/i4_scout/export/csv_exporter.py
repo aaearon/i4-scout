@@ -5,7 +5,7 @@ from io import StringIO
 from pathlib import Path
 from typing import TextIO
 
-from car_scraper.models.db_models import Listing
+from i4_scout.models.db_models import Listing
 
 
 # Columns to export

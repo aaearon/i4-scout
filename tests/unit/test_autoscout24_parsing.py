@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 # Import will fail until we implement the scraper
-# from car_scraper.scrapers.autoscout24_base import AutoScout24BaseScraper
+# from i4_scout.scrapers.autoscout24_base import AutoScout24BaseScraper
 
 
 @pytest.fixture
@@ -41,7 +41,7 @@ class TestAutoScout24SearchParsing:
 
     def test_parse_listing_cards_extracts_expected_count(self, de_search_html: str) -> None:
         """Search results should contain at least 10 listings."""
-        from car_scraper.scrapers.autoscout24_de import AutoScout24DEScraper
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
 
         listings = AutoScout24DEScraper.parse_listing_cards_sync(de_search_html)
 
@@ -49,7 +49,7 @@ class TestAutoScout24SearchParsing:
 
     def test_parse_listing_cards_extracts_external_id(self, de_search_html: str) -> None:
         """Each listing should have a GUID extracted from data-guid."""
-        from car_scraper.scrapers.autoscout24_de import AutoScout24DEScraper
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
 
         listings = AutoScout24DEScraper.parse_listing_cards_sync(de_search_html)
 
@@ -60,7 +60,7 @@ class TestAutoScout24SearchParsing:
 
     def test_parse_listing_cards_extracts_url(self, de_search_html: str) -> None:
         """Each listing should have a valid URL."""
-        from car_scraper.scrapers.autoscout24_de import AutoScout24DEScraper
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
 
         listings = AutoScout24DEScraper.parse_listing_cards_sync(de_search_html)
 
@@ -71,7 +71,7 @@ class TestAutoScout24SearchParsing:
 
     def test_parse_listing_cards_extracts_price_from_data_attr(self, de_search_html: str) -> None:
         """Price should be extracted from data-price attribute as integer (EUR)."""
-        from car_scraper.scrapers.autoscout24_de import AutoScout24DEScraper
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
 
         listings = AutoScout24DEScraper.parse_listing_cards_sync(de_search_html)
 
@@ -82,7 +82,7 @@ class TestAutoScout24SearchParsing:
 
     def test_parse_listing_cards_extracts_mileage(self, de_search_html: str) -> None:
         """Mileage should be extracted from data-mileage attribute."""
-        from car_scraper.scrapers.autoscout24_de import AutoScout24DEScraper
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
 
         listings = AutoScout24DEScraper.parse_listing_cards_sync(de_search_html)
 
@@ -93,7 +93,7 @@ class TestAutoScout24SearchParsing:
 
     def test_parse_listing_cards_extracts_first_registration(self, de_search_html: str) -> None:
         """First registration should be extracted and formatted as MM/YYYY."""
-        from car_scraper.scrapers.autoscout24_de import AutoScout24DEScraper
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
 
         listings = AutoScout24DEScraper.parse_listing_cards_sync(de_search_html)
 
@@ -104,7 +104,7 @@ class TestAutoScout24SearchParsing:
 
     def test_parse_listing_cards_extracts_title(self, de_search_html: str) -> None:
         """Title should be extracted from h2 element."""
-        from car_scraper.scrapers.autoscout24_de import AutoScout24DEScraper
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
 
         listings = AutoScout24DEScraper.parse_listing_cards_sync(de_search_html)
 
@@ -114,7 +114,7 @@ class TestAutoScout24SearchParsing:
 
     def test_parse_listing_cards_handles_new_vehicles(self, de_search_html: str) -> None:
         """New vehicles have data-first-registration='new' - should be handled."""
-        from car_scraper.scrapers.autoscout24_de import AutoScout24DEScraper
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
 
         listings = AutoScout24DEScraper.parse_listing_cards_sync(de_search_html)
 
@@ -129,7 +129,7 @@ class TestAutoScout24SearchParsing:
 
     def test_nl_parse_listing_cards_extracts_expected_count(self, nl_search_html: str) -> None:
         """Dutch search results should also parse correctly."""
-        from car_scraper.scrapers.autoscout24_nl import AutoScout24NLScraper
+        from i4_scout.scrapers.autoscout24_nl import AutoScout24NLScraper
 
         listings = AutoScout24NLScraper.parse_listing_cards_sync(nl_search_html)
 
@@ -141,7 +141,7 @@ class TestAutoScout24DetailParsing:
 
     def test_parse_listing_detail_extracts_options(self, de_detail_html: str) -> None:
         """Options should be extracted from detail page."""
-        from car_scraper.scrapers.autoscout24_de import AutoScout24DEScraper
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
 
         options = AutoScout24DEScraper.parse_options_sync(de_detail_html)
 
@@ -154,7 +154,7 @@ class TestAutoScout24DetailParsing:
         self, de_detail_html: str
     ) -> None:
         """Options from all categories (Komfort, Sicherheit, etc.) should be included."""
-        from car_scraper.scrapers.autoscout24_de import AutoScout24DEScraper
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
 
         options = AutoScout24DEScraper.parse_options_sync(de_detail_html)
 
@@ -164,7 +164,7 @@ class TestAutoScout24DetailParsing:
 
     def test_parse_listing_detail_handles_missing_sections(self, de_search_html: str) -> None:
         """Parser should handle pages without equipment sections gracefully."""
-        from car_scraper.scrapers.autoscout24_de import AutoScout24DEScraper
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
 
         # Search page doesn't have detail sections
         options = AutoScout24DEScraper.parse_options_sync(de_search_html)
@@ -174,7 +174,7 @@ class TestAutoScout24DetailParsing:
 
     def test_nl_parse_listing_detail_extracts_options(self, nl_detail_html: str) -> None:
         """Dutch detail page options should also parse correctly."""
-        from car_scraper.scrapers.autoscout24_nl import AutoScout24NLScraper
+        from i4_scout.scrapers.autoscout24_nl import AutoScout24NLScraper
 
         options = AutoScout24NLScraper.parse_options_sync(nl_detail_html)
 
@@ -182,7 +182,7 @@ class TestAutoScout24DetailParsing:
 
     def test_parse_description_extracts_text(self, de_detail_html: str) -> None:
         """Description (Fahrzeugbeschreibung) should be extracted from detail page."""
-        from car_scraper.scrapers.autoscout24_de import AutoScout24DEScraper
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
 
         description = AutoScout24DEScraper.parse_description_sync(de_detail_html)
 
@@ -193,7 +193,7 @@ class TestAutoScout24DetailParsing:
 
     def test_parse_description_handles_missing_section(self, de_search_html: str) -> None:
         """Parser should handle pages without description section gracefully."""
-        from car_scraper.scrapers.autoscout24_de import AutoScout24DEScraper
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
 
         # Search page doesn't have description section
         description = AutoScout24DEScraper.parse_description_sync(de_search_html)
@@ -207,7 +207,7 @@ class TestAutoScout24SearchURL:
 
     def test_get_search_url_includes_pagination(self) -> None:
         """Search URL should include page parameter."""
-        from car_scraper.scrapers.autoscout24_de import AutoScout24DEScraper
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
 
         url_page1 = AutoScout24DEScraper.get_search_url_static(page=1)
         url_page2 = AutoScout24DEScraper.get_search_url_static(page=2)
@@ -218,7 +218,7 @@ class TestAutoScout24SearchURL:
 
     def test_de_search_url_uses_correct_domain(self) -> None:
         """German scraper should use autoscout24.de domain."""
-        from car_scraper.scrapers.autoscout24_de import AutoScout24DEScraper
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
 
         url = AutoScout24DEScraper.get_search_url_static(page=1)
 
@@ -226,7 +226,7 @@ class TestAutoScout24SearchURL:
 
     def test_nl_search_url_uses_correct_domain(self) -> None:
         """Dutch scraper should use autoscout24.nl domain."""
-        from car_scraper.scrapers.autoscout24_nl import AutoScout24NLScraper
+        from i4_scout.scrapers.autoscout24_nl import AutoScout24NLScraper
 
         url = AutoScout24NLScraper.get_search_url_static(page=1)
 

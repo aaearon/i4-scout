@@ -2,8 +2,8 @@
 
 from typing import ClassVar
 
-from car_scraper.models.pydantic_models import Source
-from car_scraper.scrapers.autoscout24_base import AutoScout24BaseScraper
+from i4_scout.models.pydantic_models import Source
+from i4_scout.scrapers.autoscout24_base import AutoScout24BaseScraper
 
 
 class AutoScout24NLScraper(AutoScout24BaseScraper):

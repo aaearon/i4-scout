@@ -2,9 +2,9 @@
 
 import re
 
-from car_scraper.matching.bundle_expander import expand_bundles
-from car_scraper.matching.normalizer import normalize_text
-from car_scraper.models.pydantic_models import MatchResult, OptionsConfig
+from i4_scout.matching.bundle_expander import expand_bundles
+from i4_scout.matching.normalizer import normalize_text
+from i4_scout.models.pydantic_models import MatchResult, OptionsConfig
 
 
 def match_options(

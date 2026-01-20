@@ -7,9 +7,9 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from car_scraper.database.repository import ListingRepository
-from car_scraper.models.db_models import Base, Listing, Option, ListingOption, PriceHistory
-from car_scraper.models.pydantic_models import ListingCreate, Source
+from i4_scout.database.repository import ListingRepository
+from i4_scout.models.db_models import Base, Listing, Option, ListingOption, PriceHistory
+from i4_scout.models.pydantic_models import ListingCreate, Source
 
 
 @pytest.fixture

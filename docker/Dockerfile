@@ -1,4 +1,4 @@
-# BMW i4 Car Scraper - Docker Image
+# i4-scout - Docker Image
 # Uses official Playwright Python image for browser automation
 
 FROM mcr.microsoft.com/playwright/python:v1.40.0-jammy
@@ -26,8 +26,8 @@ RUN mkdir -p /app/data
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
-ENV CAR_SCRAPER_DATA_DIR=/app/data
+ENV I4_SCOUT_DATA_DIR=/app/data
 
 # Default command
-ENTRYPOINT ["python", "-m", "car_scraper.cli"]
+ENTRYPOINT ["python", "-m", "i4_scout.cli"]
 CMD ["--help"]

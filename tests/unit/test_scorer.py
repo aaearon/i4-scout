@@ -2,7 +2,7 @@
 
 import pytest
 
-from car_scraper.models.pydantic_models import MatchResult, OptionConfig, OptionsConfig
+from i4_scout.models.pydantic_models import MatchResult, OptionConfig, OptionsConfig
 
 
 @pytest.fixture
@@ -27,7 +27,7 @@ class TestScorer:
 
     def test_perfect_score_all_options(self, sample_config: OptionsConfig) -> None:
         """All options matched should give 100% score."""
-        from car_scraper.matching.scorer import calculate_score
+        from i4_scout.matching.scorer import calculate_score
 
         match_result = MatchResult(
             matched_required=["Head-Up Display", "Harman Kardon"],
@@ -43,7 +43,7 @@ class TestScorer:
 
     def test_zero_score_no_matches(self, sample_config: OptionsConfig) -> None:
         """No matches should give 0% score."""
-        from car_scraper.matching.scorer import calculate_score
+        from i4_scout.matching.scorer import calculate_score
 
         match_result = MatchResult(
             matched_required=[],
@@ -61,7 +61,7 @@ class TestScorer:
         self, sample_config: OptionsConfig
     ) -> None:
         """Required options should have more weight than nice-to-have."""
-        from car_scraper.matching.scorer import calculate_score
+        from i4_scout.matching.scorer import calculate_score
 
         # Only required
         required_only = MatchResult(
@@ -88,7 +88,7 @@ class TestScorer:
         self, sample_config: OptionsConfig
     ) -> None:
         """is_qualified should be True only when ALL required are matched."""
-        from car_scraper.matching.scorer import calculate_score
+        from i4_scout.matching.scorer import calculate_score
 
         # Missing one required
         partial = MatchResult(
@@ -104,7 +104,7 @@ class TestScorer:
 
     def test_dealbreaker_disqualifies(self, sample_config: OptionsConfig) -> None:
         """Dealbreaker should disqualify even with all required matched."""
-        from car_scraper.matching.scorer import calculate_score
+        from i4_scout.matching.scorer import calculate_score
 
         with_dealbreaker = MatchResult(
             matched_required=["Head-Up Display", "Harman Kardon"],
@@ -123,7 +123,7 @@ class TestScorer:
         self, sample_config: OptionsConfig
     ) -> None:
         """Score formula: required=100, nice_to_have=10."""
-        from car_scraper.matching.scorer import calculate_score
+        from i4_scout.matching.scorer import calculate_score
 
         # 1 required (100) + 2 nice (20) = 120
         # max = 2*100 + 3*10 = 230
@@ -142,7 +142,7 @@ class TestScorer:
 
     def test_score_bounds_0_to_100(self, sample_config: OptionsConfig) -> None:
         """Score should always be between 0 and 100."""
-        from car_scraper.matching.scorer import calculate_score
+        from i4_scout.matching.scorer import calculate_score
 
         # Test various scenarios
         scenarios = [
@@ -156,7 +156,7 @@ class TestScorer:
 
     def test_empty_config_gives_100(self) -> None:
         """Empty config (no requirements) should give 100%."""
-        from car_scraper.matching.scorer import calculate_score
+        from i4_scout.matching.scorer import calculate_score
 
         empty_config = OptionsConfig(required=[], nice_to_have=[], dealbreakers=[])
         match_result = MatchResult()
@@ -168,7 +168,7 @@ class TestScorer:
 
     def test_score_copied_to_match_result(self, sample_config: OptionsConfig) -> None:
         """calculate_score should return a MatchResult with score set."""
-        from car_scraper.matching.scorer import calculate_score
+        from i4_scout.matching.scorer import calculate_score
 
         match_result = MatchResult(
             matched_required=["Head-Up Display"],
@@ -183,7 +183,7 @@ class TestScorer:
 
     def test_only_required_in_config(self) -> None:
         """Config with only required options should work."""
-        from car_scraper.matching.scorer import calculate_score
+        from i4_scout.matching.scorer import calculate_score
 
         config = OptionsConfig(
             required=[OptionConfig(name="HUD", aliases=[])],
@@ -199,7 +199,7 @@ class TestScorer:
 
     def test_only_nice_to_have_in_config(self) -> None:
         """Config with only nice-to-have options should work."""
-        from car_scraper.matching.scorer import calculate_score
+        from i4_scout.matching.scorer import calculate_score
 
         config = OptionsConfig(
             required=[],

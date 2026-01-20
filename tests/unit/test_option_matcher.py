@@ -2,7 +2,7 @@
 
 import pytest
 
-from car_scraper.models.pydantic_models import MatchResult, OptionConfig, OptionsConfig
+from i4_scout.models.pydantic_models import MatchResult, OptionConfig, OptionsConfig
 
 
 @pytest.fixture
@@ -38,7 +38,7 @@ class TestOptionMatcher:
 
     def test_match_required_options(self, sample_config: OptionsConfig) -> None:
         """Should match required options by alias."""
-        from car_scraper.matching.option_matcher import match_options
+        from i4_scout.matching.option_matcher import match_options
 
         listing_options = ["HUD", "Harman/Kardon", "Other option"]
 
@@ -50,7 +50,7 @@ class TestOptionMatcher:
 
     def test_match_nice_to_have_options(self, sample_config: OptionsConfig) -> None:
         """Should match nice-to-have options by alias."""
-        from car_scraper.matching.option_matcher import match_options
+        from i4_scout.matching.option_matcher import match_options
 
         listing_options = ["Sitzheizung", "Laserlicht"]
 
@@ -61,7 +61,7 @@ class TestOptionMatcher:
 
     def test_identify_missing_required(self, sample_config: OptionsConfig) -> None:
         """Should identify missing required options."""
-        from car_scraper.matching.option_matcher import match_options
+        from i4_scout.matching.option_matcher import match_options
 
         listing_options = ["Sitzheizung"]  # No required options
 
@@ -73,7 +73,7 @@ class TestOptionMatcher:
 
     def test_detect_dealbreaker(self, sample_config: OptionsConfig) -> None:
         """Should detect dealbreaker options."""
-        from car_scraper.matching.option_matcher import match_options
+        from i4_scout.matching.option_matcher import match_options
 
         listing_options = ["HUD", "Harman Kardon", "Unfallwagen"]
 
@@ -84,7 +84,7 @@ class TestOptionMatcher:
 
     def test_no_dealbreaker(self, sample_config: OptionsConfig) -> None:
         """Should not flag dealbreaker when not present."""
-        from car_scraper.matching.option_matcher import match_options
+        from i4_scout.matching.option_matcher import match_options
 
         listing_options = ["HUD", "Harman Kardon"]
 
@@ -95,7 +95,7 @@ class TestOptionMatcher:
 
     def test_match_with_normalization(self, sample_config: OptionsConfig) -> None:
         """Should match options with different casing/diacritics."""
-        from car_scraper.matching.option_matcher import match_options
+        from i4_scout.matching.option_matcher import match_options
 
         listing_options = [
             "head-up display",  # lowercase with dash
@@ -111,7 +111,7 @@ class TestOptionMatcher:
 
     def test_match_returns_match_result(self, sample_config: OptionsConfig) -> None:
         """Should return a MatchResult instance."""
-        from car_scraper.matching.option_matcher import match_options
+        from i4_scout.matching.option_matcher import match_options
 
         result = match_options([], sample_config)
 
@@ -119,7 +119,7 @@ class TestOptionMatcher:
 
     def test_match_empty_listing_options(self, sample_config: OptionsConfig) -> None:
         """Should handle empty listing options."""
-        from car_scraper.matching.option_matcher import match_options
+        from i4_scout.matching.option_matcher import match_options
 
         result = match_options([], sample_config)
 
@@ -129,7 +129,7 @@ class TestOptionMatcher:
 
     def test_match_empty_config(self) -> None:
         """Should handle empty config."""
-        from car_scraper.matching.option_matcher import match_options
+        from i4_scout.matching.option_matcher import match_options
 
         empty_config = OptionsConfig(required=[], nice_to_have=[], dealbreakers=[])
 
@@ -142,7 +142,7 @@ class TestOptionMatcher:
 
     def test_match_partial_alias_no_match(self, sample_config: OptionsConfig) -> None:
         """Partial alias matches should not count."""
-        from car_scraper.matching.option_matcher import match_options
+        from i4_scout.matching.option_matcher import match_options
 
         listing_options = ["HUD Pro"]  # Contains HUD but isn't HUD
 
@@ -154,7 +154,7 @@ class TestOptionMatcher:
 
     def test_match_canonical_name_directly(self, sample_config: OptionsConfig) -> None:
         """Should match canonical name (not just aliases)."""
-        from car_scraper.matching.option_matcher import match_options
+        from i4_scout.matching.option_matcher import match_options
 
         listing_options = ["Head-Up Display", "Seat Heating"]
 
@@ -165,7 +165,7 @@ class TestOptionMatcher:
 
     def test_dealbreaker_case_insensitive(self, sample_config: OptionsConfig) -> None:
         """Dealbreaker matching should be case insensitive."""
-        from car_scraper.matching.option_matcher import match_options
+        from i4_scout.matching.option_matcher import match_options
 
         listing_options = ["accident DAMAGE"]  # Mixed case
 
@@ -175,7 +175,7 @@ class TestOptionMatcher:
 
     def test_no_duplicate_matches(self, sample_config: OptionsConfig) -> None:
         """Same option matched multiple times should appear once."""
-        from car_scraper.matching.option_matcher import match_options
+        from i4_scout.matching.option_matcher import match_options
 
         # Multiple aliases for same option
         listing_options = ["HUD", "Head Up Display", "Windschutzscheiben-HUD"]

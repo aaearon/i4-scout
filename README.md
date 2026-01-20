@@ -1,4 +1,4 @@
-# BMW i4 Car Scraper
+# i4-scout
 
 CLI tool to scrape BMW i4 eDrive40 listings from AutoScout24 DE/NL, match against user-defined options, and store results in SQLite.
 
@@ -16,7 +16,7 @@ CLI tool to scrape BMW i4 eDrive40 listings from AutoScout24 DE/NL, match agains
 ```bash
 # Clone and setup
 git clone <repository>
-cd car-scraper
+cd i4-scout
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
@@ -29,22 +29,22 @@ playwright install chromium
 
 ```bash
 # Initialize database
-car-scraper init-database
+i4-scout init-database
 
 # Configure options (copy and edit)
 cp config/options.example.yaml config/options.yaml
 
 # Scrape listings
-car-scraper scrape autoscout24_de --max-pages 5
+i4-scout scrape autoscout24_de --max-pages 5
 
 # List qualified listings
-car-scraper list --qualified
+i4-scout list --qualified
 
 # Show listing details
-car-scraper show 1
+i4-scout show 1
 
 # Export to CSV
-car-scraper export --format csv --qualified
+i4-scout export --format csv --qualified
 ```
 
 ## CLI Commands
@@ -90,8 +90,8 @@ pytest tests/unit/test_normalizer.py -v
 ## Project Structure
 
 ```
-car-scraper/
-├── src/car_scraper/
+i4-scout/
+├── src/i4_scout/
 │   ├── cli.py              # CLI interface (Typer)
 │   ├── config.py           # YAML config loader
 │   ├── scrapers/           # Site scrapers (AutoScout24 DE/NL)

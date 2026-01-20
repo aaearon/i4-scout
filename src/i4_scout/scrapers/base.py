@@ -14,9 +14,9 @@ from tenacity import (
     wait_fixed,
 )
 
-from car_scraper.models.pydantic_models import ScrapedListing, Source
-from car_scraper.scrapers.browser import BrowserManager
-from car_scraper.scrapers.cache import get_cache
+from i4_scout.models.pydantic_models import ScrapedListing, Source
+from i4_scout.scrapers.browser import BrowserManager
+from i4_scout.scrapers.cache import get_cache
 
 
 T = TypeVar("T")

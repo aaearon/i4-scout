@@ -8,8 +8,8 @@ from tempfile import TemporaryDirectory
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from car_scraper.database.engine import get_engine, get_session, init_db, reset_engine
-from car_scraper.models.db_models import (
+from i4_scout.database.engine import get_engine, get_session, init_db, reset_engine
+from i4_scout.models.db_models import (
     Base,
     Listing,
     ListingOption,
@@ -17,7 +17,7 @@ from car_scraper.models.db_models import (
     PriceHistory,
     ScrapeSessionModel,
 )
-from car_scraper.models.pydantic_models import ScrapeStatus, Source
+from i4_scout.models.pydantic_models import ScrapeStatus, Source
 
 
 @pytest.fixture

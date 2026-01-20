@@ -5,7 +5,7 @@ from typing import Any
 
 import yaml
 
-from car_scraper.models.pydantic_models import OptionConfig, OptionsConfig
+from i4_scout.models.pydantic_models import OptionConfig, OptionsConfig
 
 
 def load_options_config(path: Path | None = None) -> OptionsConfig:

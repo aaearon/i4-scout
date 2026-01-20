@@ -4,8 +4,8 @@ import asyncio
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from car_scraper.models.pydantic_models import ScrapedListing, Source
-from car_scraper.scrapers.base import BaseScraper, ScraperConfig
+from i4_scout.models.pydantic_models import ScrapedListing, Source
+from i4_scout.scrapers.base import BaseScraper, ScraperConfig
 
 
 class TestScraperConfig:

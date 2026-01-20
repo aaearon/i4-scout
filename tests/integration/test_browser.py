@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from car_scraper.scrapers.browser import BrowserConfig, BrowserManager
+from i4_scout.scrapers.browser import BrowserConfig, BrowserManager
 
 
 class TestBrowserConfig:
@@ -47,8 +47,8 @@ class TestBrowserManager:
     @pytest.mark.asyncio
     async def test_context_manager_lifecycle(self):
         """BrowserManager should work as async context manager."""
-        with patch("car_scraper.scrapers.browser.async_playwright") as mock_playwright, \
-             patch("car_scraper.scrapers.browser.Stealth") as mock_stealth:
+        with patch("i4_scout.scrapers.browser.async_playwright") as mock_playwright, \
+             patch("i4_scout.scrapers.browser.Stealth") as mock_stealth:
             # Setup mocks
             mock_browser = AsyncMock()
             mock_context = AsyncMock()
@@ -76,8 +76,8 @@ class TestBrowserManager:
     @pytest.mark.asyncio
     async def test_get_context_creates_new_context(self):
         """get_context should create a new browser context."""
-        with patch("car_scraper.scrapers.browser.async_playwright") as mock_playwright, \
-             patch("car_scraper.scrapers.browser.Stealth") as mock_stealth:
+        with patch("i4_scout.scrapers.browser.async_playwright") as mock_playwright, \
+             patch("i4_scout.scrapers.browser.Stealth") as mock_stealth:
             mock_browser = AsyncMock()
             mock_context = AsyncMock()
             mock_browser.new_context.return_value = mock_context
@@ -101,8 +101,8 @@ class TestBrowserManager:
     @pytest.mark.asyncio
     async def test_context_rotation_after_threshold(self):
         """Context should rotate after reaching request threshold."""
-        with patch("car_scraper.scrapers.browser.async_playwright") as mock_playwright, \
-             patch("car_scraper.scrapers.browser.Stealth") as mock_stealth:
+        with patch("i4_scout.scrapers.browser.async_playwright") as mock_playwright, \
+             patch("i4_scout.scrapers.browser.Stealth") as mock_stealth:
             mock_browser = AsyncMock()
             mock_context1 = AsyncMock()
             mock_context2 = AsyncMock()
@@ -137,8 +137,8 @@ class TestBrowserManager:
     @pytest.mark.asyncio
     async def test_get_page_returns_page(self):
         """get_page should return a page from the current context."""
-        with patch("car_scraper.scrapers.browser.async_playwright") as mock_playwright, \
-             patch("car_scraper.scrapers.browser.Stealth") as mock_stealth:
+        with patch("i4_scout.scrapers.browser.async_playwright") as mock_playwright, \
+             patch("i4_scout.scrapers.browser.Stealth") as mock_stealth:
             mock_browser = AsyncMock()
             mock_context = AsyncMock()
             mock_page = AsyncMock()
@@ -163,8 +163,8 @@ class TestBrowserManager:
     @pytest.mark.asyncio
     async def test_user_agent_rotation(self):
         """User agent should be selected from configured list."""
-        with patch("car_scraper.scrapers.browser.async_playwright") as mock_playwright, \
-             patch("car_scraper.scrapers.browser.Stealth") as mock_stealth:
+        with patch("i4_scout.scrapers.browser.async_playwright") as mock_playwright, \
+             patch("i4_scout.scrapers.browser.Stealth") as mock_stealth:
             mock_browser = AsyncMock()
             mock_context = AsyncMock()
             mock_browser.new_context.return_value = mock_context
@@ -189,8 +189,8 @@ class TestBrowserManager:
     @pytest.mark.asyncio
     async def test_stealth_configuration(self):
         """Stealth should be configured with correct language and platform."""
-        with patch("car_scraper.scrapers.browser.async_playwright") as mock_playwright, \
-             patch("car_scraper.scrapers.browser.Stealth") as mock_stealth:
+        with patch("i4_scout.scrapers.browser.async_playwright") as mock_playwright, \
+             patch("i4_scout.scrapers.browser.Stealth") as mock_stealth:
             mock_browser = AsyncMock()
             mock_p = AsyncMock()
             mock_p.chromium.launch.return_value = mock_browser

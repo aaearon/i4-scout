@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any, TextIO
 
-from car_scraper.models.db_models import Listing
+from i4_scout.models.db_models import Listing
 
 
 def listing_to_dict(listing: Listing) -> dict[str, Any]:

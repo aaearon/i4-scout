@@ -1,6 +1,6 @@
 # Options Configuration Guide
 
-The car-scraper uses a YAML configuration file to define which car options to look for when matching listings.
+The i4-scout uses a YAML configuration file to define which car options to look for when matching listings.
 
 ## Configuration File Location
 

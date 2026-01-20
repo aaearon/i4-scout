@@ -1,6 +1,6 @@
 """Score calculation for matched options."""
 
-from car_scraper.models.pydantic_models import MatchResult, OptionsConfig
+from i4_scout.models.pydantic_models import MatchResult, OptionsConfig
 
 
 # Scoring weights

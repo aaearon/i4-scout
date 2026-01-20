@@ -7,8 +7,8 @@ from typing import Any
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
-from car_scraper.models.db_models import Listing, ListingOption, Option, PriceHistory
-from car_scraper.models.pydantic_models import ListingCreate, Source
+from i4_scout.models.db_models import Listing, ListingOption, Option, PriceHistory
+from i4_scout.models.pydantic_models import ListingCreate, Source
 
 
 class ListingRepository:

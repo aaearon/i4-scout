@@ -1,6 +1,6 @@
 """Data models for car scraper."""
 
-from car_scraper.models.pydantic_models import (
+from i4_scout.models.pydantic_models import (
     ListingCreate,
     ListingRead,
     OptionConfig,
