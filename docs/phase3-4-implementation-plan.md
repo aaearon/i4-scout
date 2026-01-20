@@ -1,35 +1,38 @@
 # Implementation Plan: Phase 3 & Phase 4
 
+**Status:** `[x] COMPLETED - 2026-01-20`
+**Tests:** 146 passing (114 unit + 32 integration)
+
 ## Overview
 Implement site scrapers (Phase 3) and option matching engine (Phase 4) in parallel, following TDD methodology.
 
 ## Critical Files to Modify/Create
 
 ### Phase 3 - Site Scrapers
-| File | Action | Purpose |
+| File | Status | Purpose |
 |------|--------|---------|
-| `src/car_scraper/scrapers/autoscout24_base.py` | CREATE | Shared scraper logic for AS24 sites |
-| `src/car_scraper/scrapers/autoscout24_de.py` | CREATE | DE-specific configuration |
-| `src/car_scraper/scrapers/autoscout24_nl.py` | CREATE | NL-specific configuration |
-| `tests/fixtures/autoscout24_de_search.html` | CREATE | HTML fixture from PoC |
-| `tests/fixtures/autoscout24_de_detail.html` | CREATE | HTML fixture from PoC |
-| `tests/fixtures/autoscout24_nl_search.html` | CREATE | HTML fixture from PoC |
-| `tests/fixtures/autoscout24_nl_detail.html` | CREATE | HTML fixture from PoC |
-| `tests/unit/test_autoscout24_parsing.py` | CREATE | Parser unit tests |
+| `src/car_scraper/scrapers/autoscout24_base.py` | `[x]` | Shared scraper logic for AS24 sites |
+| `src/car_scraper/scrapers/autoscout24_de.py` | `[x]` | DE-specific configuration |
+| `src/car_scraper/scrapers/autoscout24_nl.py` | `[x]` | NL-specific configuration |
+| `tests/fixtures/autoscout24_de_search.html` | `[x]` | HTML fixture from PoC |
+| `tests/fixtures/autoscout24_de_detail.html` | `[x]` | HTML fixture from PoC |
+| `tests/fixtures/autoscout24_nl_search.html` | `[x]` | HTML fixture from PoC |
+| `tests/fixtures/autoscout24_nl_detail.html` | `[x]` | HTML fixture from PoC |
+| `tests/unit/test_autoscout24_parsing.py` | `[x]` | Parser unit tests (16 tests) |
 
 ### Phase 4 - Option Matching
-| File | Action | Purpose |
+| File | Status | Purpose |
 |------|--------|---------|
-| `src/car_scraper/config.py` | CREATE | YAML config loader |
-| `src/car_scraper/matching/normalizer.py` | CREATE | Text normalization |
-| `src/car_scraper/matching/bundle_expander.py` | CREATE | Package expansion |
-| `src/car_scraper/matching/option_matcher.py` | CREATE | Alias matching |
-| `src/car_scraper/matching/scorer.py` | CREATE | Score calculation |
-| `tests/unit/test_normalizer.py` | CREATE | Normalizer tests |
-| `tests/unit/test_config.py` | CREATE | Config loader tests |
-| `tests/unit/test_bundle_expander.py` | CREATE | Expander tests |
-| `tests/unit/test_option_matcher.py` | CREATE | Matcher tests |
-| `tests/unit/test_scorer.py` | CREATE | Scorer tests |
+| `src/car_scraper/config.py` | `[x]` | YAML config loader |
+| `src/car_scraper/matching/normalizer.py` | `[x]` | Text normalization |
+| `src/car_scraper/matching/bundle_expander.py` | `[x]` | Package expansion |
+| `src/car_scraper/matching/option_matcher.py` | `[x]` | Alias matching |
+| `src/car_scraper/matching/scorer.py` | `[x]` | Score calculation |
+| `tests/unit/test_normalizer.py` | `[x]` | Normalizer tests (12 tests) |
+| `tests/unit/test_config.py` | `[x]` | Config loader tests (12 tests) |
+| `tests/unit/test_bundle_expander.py` | `[x]` | Expander tests (10 tests) |
+| `tests/unit/test_option_matcher.py` | `[x]` | Matcher tests (14 tests) |
+| `tests/unit/test_scorer.py` | `[x]` | Scorer tests (12 tests) |
 
 ---
 
@@ -229,16 +232,16 @@ Phase 3 Stream                    Phase 4 Stream
 
 ## Git Workflow
 
-1. Create feature branch: `git checkout -b feature/phase3-4-scrapers-matching`
+1. Create feature branch: `git checkout -b feature/phase3-4-scrapers-matching` `[x]`
 2. Commit in logical chunks:
-   - `feat(scrapers): add HTML fixtures from PoC`
-   - `feat(matching): add text normalizer with tests`
-   - `feat(config): add YAML config loader`
-   - `feat(scrapers): add AutoScout24BaseScraper`
-   - `feat(matching): add bundle expander and option matcher`
-   - `feat(scrapers): add DE and NL scraper implementations`
-   - `feat(matching): add scorer`
-3. Final: merge to main after all tests pass
+   - `feat(scrapers): add HTML fixtures from PoC` `[x]`
+   - `feat(matching): add text normalizer with tests` `[x]`
+   - `feat(config): add YAML config loader` `[x]`
+   - `feat(scrapers): add AutoScout24BaseScraper` `[x]`
+   - `feat(matching): add bundle expander and option matcher` `[x]`
+   - `feat(scrapers): add DE and NL scraper implementations` `[x]`
+   - `feat(matching): add scorer` `[x]`
+3. Final: merge to main after all tests pass `[x]`
 
 ---
 

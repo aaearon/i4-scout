@@ -210,31 +210,31 @@ Phase 6 (Docker & Docs) - after Phase 5
 #### Task 1.1: Project Init
 | ID | Task | Status | Depends On | Parallel | Output |
 |----|------|--------|------------|----------|--------|
-| 1.1.1 | Create `pyproject.toml` with dependencies | `[ ]` | - | - | `pyproject.toml` |
-| 1.1.2 | Create project venv, install deps | `[ ]` | 1.1.1 | - | `.venv/` |
-| 1.1.3 | Initialize git repository | `[ ]` | 1.1.1 | Yes | `.git/` |
-| 1.1.4 | Create `.gitignore` | `[ ]` | - | Yes | `.gitignore` |
+| 1.1.1 | Create `pyproject.toml` with dependencies | `[x]` | - | - | `pyproject.toml` |
+| 1.1.2 | Create project venv, install deps | `[x]` | 1.1.1 | - | `.venv/` |
+| 1.1.3 | Initialize git repository | `[x]` | 1.1.1 | Yes | `.git/` |
+| 1.1.4 | Create `.gitignore` | `[x]` | - | Yes | `.gitignore` |
 
 #### Task 1.2: Structure & Models (PARALLEL after 1.1)
 | ID | Task | Status | Depends On | Parallel | Output |
 |----|------|--------|------------|----------|--------|
-| 1.2.1 | Create directory structure | `[ ]` | 1.1.2 | Yes | `src/`, `tests/`, etc. |
-| 1.2.2 | Write Pydantic models | `[ ]` | 1.1.2 | Yes | `models/pydantic_models.py` |
-| 1.2.3 | Write CLI skeleton (Typer) | `[ ]` | 1.1.2 | Yes | `cli.py` |
+| 1.2.1 | Create directory structure | `[x]` | 1.1.2 | Yes | `src/`, `tests/`, etc. |
+| 1.2.2 | Write Pydantic models | `[x]` | 1.1.2 | Yes | `models/pydantic_models.py` |
+| 1.2.3 | Write CLI skeleton (Typer) | `[x]` | 1.1.2 | Yes | `cli.py` |
 
 #### Task 1.3: Database Layer
 | ID | Task | Status | Depends On | Parallel | Output |
 |----|------|--------|------------|----------|--------|
-| 1.3.1 | Write SQLAlchemy ORM models | `[ ]` | 1.2.2 | - | `models/db_models.py` |
-| 1.3.2 | Write DB engine setup | `[ ]` | 1.3.1 | - | `database/engine.py` |
-| 1.3.3 | Write init-db CLI command | `[ ]` | 1.3.2, 1.2.3 | - | `cli.py` |
+| 1.3.1 | Write SQLAlchemy ORM models | `[x]` | 1.2.2 | - | `models/db_models.py` |
+| 1.3.2 | Write DB engine setup | `[x]` | 1.3.1 | - | `database/engine.py` |
+| 1.3.3 | Write init-db CLI command | `[x]` | 1.3.2, 1.2.3 | - | `cli.py` |
 
 #### Task 1.4: Foundation Tests
 | ID | Task | Status | Depends On | Parallel | Output |
 |----|------|--------|------------|----------|--------|
-| 1.4.1 | Write Pydantic model tests | `[ ]` | 1.2.2 | Yes | `tests/unit/test_models.py` |
-| 1.4.2 | Write DB model tests | `[ ]` | 1.3.2 | Yes | `tests/unit/test_db.py` |
-| 1.4.3 | Run all Phase 1 tests | `[ ]` | 1.4.1-2 | - | - |
+| 1.4.1 | Write Pydantic model tests | `[x]` | 1.2.2 | Yes | `tests/unit/test_models.py` |
+| 1.4.2 | Write DB model tests | `[x]` | 1.3.2 | Yes | `tests/unit/test_db.py` |
+| 1.4.3 | Run all Phase 1 tests | `[x]` | 1.4.1-2 | - | - |
 
 ---
 
@@ -271,49 +271,49 @@ Phase 6 (Docker & Docs) - after Phase 5
 ### Phase 3: Site Scrapers
 
 **Goal:** Implement scrapers for all 3 target sites.
-**Status:** `[ ] Not Started`
+**Status:** `[x] COMPLETED - 2026-01-20` (AutoScout24 DE/NL only; mobile.de deferred)
 **Depends On:** Phase 2 complete
 
 #### Task 3.1-3.3: Site Implementations (PARALLEL)
 | ID | Task | Status | Depends On | Parallel | Output |
 |----|------|--------|------------|----------|--------|
-| 3.1.1 | Implement mobile.de scraper | `[ ]` | Phase 2 | Yes | `scrapers/mobile_de.py` |
-| 3.1.2 | Write mobile.de parser tests | `[ ]` | 3.1.1 | - | `tests/unit/test_mobile_de.py` |
-| 3.2.1 | Implement autoscout24.de scraper | `[ ]` | Phase 2 | Yes | `scrapers/autoscout24_de.py` |
-| 3.2.2 | Write autoscout24.de parser tests | `[ ]` | 3.2.1 | - | `tests/unit/test_autoscout24_de.py` |
-| 3.3.1 | Implement autoscout24.nl scraper | `[ ]` | Phase 2 | Yes | `scrapers/autoscout24_nl.py` |
-| 3.3.2 | Write autoscout24.nl parser tests | `[ ]` | 3.3.1 | - | `tests/unit/test_autoscout24_nl.py` |
+| 3.1.1 | Implement mobile.de scraper | `[-]` | Phase 2 | Yes | DEFERRED (bot detection) |
+| 3.1.2 | Write mobile.de parser tests | `[-]` | 3.1.1 | - | DEFERRED |
+| 3.2.1 | Implement autoscout24.de scraper | `[x]` | Phase 2 | Yes | `scrapers/autoscout24_de.py` |
+| 3.2.2 | Write autoscout24.de parser tests | `[x]` | 3.2.1 | - | `tests/unit/test_autoscout24_parsing.py` |
+| 3.3.1 | Implement autoscout24.nl scraper | `[x]` | Phase 2 | Yes | `scrapers/autoscout24_nl.py` |
+| 3.3.2 | Write autoscout24.nl parser tests | `[x]` | 3.3.1 | - | `tests/unit/test_autoscout24_parsing.py` |
 
 #### Task 3.4: Test Fixtures
 | ID | Task | Status | Depends On | Parallel | Output |
 |----|------|--------|------------|----------|--------|
-| 3.4.1 | Capture HTML fixtures from PoC | `[ ]` | 3.1-3.3 | - | `tests/fixtures/` |
-| 3.4.2 | Run all scraper tests | `[ ]` | 3.4.1 | - | - |
+| 3.4.1 | Capture HTML fixtures from PoC | `[x]` | 3.1-3.3 | - | `tests/fixtures/` |
+| 3.4.2 | Run all scraper tests | `[x]` | 3.4.1 | - | 16 tests passing |
 
 ---
 
 ### Phase 4: Option Matching
 
 **Goal:** Implement options matching against user's YAML config.
-**Status:** `[ ] Not Started`
+**Status:** `[x] COMPLETED - 2026-01-20`
 **Depends On:** Phase 1 complete
 **Can Run Parallel With:** Phase 2
 
 #### Task 4.1: Text Processing (PARALLEL)
 | ID | Task | Status | Depends On | Parallel | Output |
 |----|------|--------|------------|----------|--------|
-| 4.1.1 | Write text normalizer | `[ ]` | Phase 1 | Yes | `matching/normalizer.py` |
-| 4.1.2 | Write normalizer tests | `[ ]` | 4.1.1 | - | `tests/unit/test_normalizer.py` |
-| 4.2.1 | Write YAML config loader | `[ ]` | Phase 1 | Yes | `config.py` |
-| 4.2.2 | Write config loader tests | `[ ]` | 4.2.1 | - | `tests/unit/test_config.py` |
+| 4.1.1 | Write text normalizer | `[x]` | Phase 1 | Yes | `matching/normalizer.py` |
+| 4.1.2 | Write normalizer tests | `[x]` | 4.1.1 | - | `tests/unit/test_normalizer.py` |
+| 4.2.1 | Write YAML config loader | `[x]` | Phase 1 | Yes | `config.py` |
+| 4.2.2 | Write config loader tests | `[x]` | 4.2.1 | - | `tests/unit/test_config.py` |
 
 #### Task 4.3: Matching Engine
 | ID | Task | Status | Depends On | Parallel | Output |
 |----|------|--------|------------|----------|--------|
-| 4.3.1 | Write bundle expander | `[ ]` | 4.2.1 | - | `matching/bundle_expander.py` |
-| 4.3.2 | Write option matcher | `[ ]` | 4.1.1, 4.2.1 | - | `matching/option_matcher.py` |
-| 4.3.3 | Write scorer | `[ ]` | 4.3.2 | - | `matching/scorer.py` |
-| 4.3.4 | Write matching tests | `[ ]` | 4.3.1-3 | - | `tests/unit/test_matching.py` |
+| 4.3.1 | Write bundle expander | `[x]` | 4.2.1 | - | `matching/bundle_expander.py` |
+| 4.3.2 | Write option matcher | `[x]` | 4.1.1, 4.2.1 | - | `matching/option_matcher.py` |
+| 4.3.3 | Write scorer | `[x]` | 4.3.2 | - | `matching/scorer.py` |
+| 4.3.4 | Write matching tests | `[x]` | 4.3.1-3 | - | `tests/unit/test_bundle_expander.py`, `test_option_matcher.py`, `test_scorer.py` |
 
 ---
 
