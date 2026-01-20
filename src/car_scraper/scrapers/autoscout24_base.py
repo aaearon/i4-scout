@@ -146,11 +146,19 @@ class AutoScout24BaseScraper(BaseScraper):
             else:
                 first_registration = None
 
-            # Find URL from anchor tag
-            link = article.find("a", href=re.compile(r"/angebote/|/aanbod/"))
+            # Find URL from anchor tag (check both href and data-href attributes)
             url = None
+            href = None
+            # First try href attribute
+            link = article.find("a", href=re.compile(r"/angebote/|/aanbod/"))
             if link and link.get("href"):
                 href = link["href"]
+            else:
+                # Fall back to data-href attribute (AutoScout24 uses this for JS navigation)
+                link = article.find("a", attrs={"data-href": re.compile(r"/angebote/|/aanbod/")})
+                href = link.get("data-href") if link else None
+
+            if href:
                 # Make absolute URL if needed
                 if href.startswith("/"):
                     url = f"{cls.BASE_URL}{href}"
@@ -158,6 +166,11 @@ class AutoScout24BaseScraper(BaseScraper):
                     url = href
                 else:
                     url = f"{cls.BASE_URL}/{href}"
+            elif external_id:
+                # Construct URL from GUID - AutoScout24 accepts /angebote/-{guid} format
+                # Determine path based on locale (DE: angebote, NL: aanbod)
+                path = "aanbod" if "autoscout24.nl" in cls.BASE_URL else "angebote"
+                url = f"{cls.BASE_URL}/{path}/-{external_id}"
 
             # Find title from h2
             h2 = article.find("h2")
