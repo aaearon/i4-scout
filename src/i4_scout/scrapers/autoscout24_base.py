@@ -1,5 +1,6 @@
 """Base scraper for AutoScout24 sites (DE/NL share same DOM structure)."""
 
+import json
 import re
 from abc import abstractmethod
 from typing import Any, ClassVar
@@ -231,6 +232,7 @@ class AutoScout24BaseScraper(BaseScraper):
         """
         options = self.parse_options_sync(html)
         description = self.parse_description_sync(html)
+        json_ld_data = self.parse_json_ld_sync(html)
         soup = BeautifulSoup(html, "html.parser")
 
         # Extract basic info from detail page
@@ -249,6 +251,19 @@ class AutoScout24BaseScraper(BaseScraper):
             if price_match:
                 price = int(price_match.group())
 
+        # Extract location/dealer from JSON-LD data
+        location_city = None
+        location_zip = None
+        location_country = None
+        dealer_name = None
+        dealer_type = None
+        if json_ld_data:
+            location_city = json_ld_data.get("location_city")
+            location_zip = json_ld_data.get("location_zip")
+            location_country = json_ld_data.get("location_country")
+            dealer_name = json_ld_data.get("dealer_name")
+            dealer_type = json_ld_data.get("dealer_type")
+
         return ScrapedListing(
             source=self.source,
             url=url,
@@ -256,6 +271,11 @@ class AutoScout24BaseScraper(BaseScraper):
             price=price,
             options_list=options,
             description=description,
+            location_city=location_city,
+            location_zip=location_zip,
+            location_country=location_country,
+            dealer_name=dealer_name,
+            dealer_type=dealer_type,
         )
 
     @classmethod
@@ -376,6 +396,76 @@ class AutoScout24BaseScraper(BaseScraper):
         )
         if desc_elem:
             return desc_elem.get_text(separator="\n", strip=True)
+
+        return None
+
+    @classmethod
+    def parse_json_ld_sync(cls, html: str) -> dict[str, Any] | None:
+        """Extract location and dealer info from JSON-LD structured data.
+
+        AutoScout24 detail pages contain JSON-LD blocks with Product schema
+        that includes dealer/seller info and address.
+
+        Args:
+            html: Raw HTML content of detail page.
+
+        Returns:
+            Dict with dealer_name, dealer_type, location_city, location_zip,
+            location_country, or None if extraction fails.
+        """
+        soup = BeautifulSoup(html, "html.parser")
+
+        # Find all JSON-LD script blocks
+        scripts = soup.find_all("script", type="application/ld+json")
+
+        for script in scripts:
+            if not script.string:
+                continue
+
+            try:
+                data = json.loads(script.string)
+            except json.JSONDecodeError:
+                continue
+
+            # Look for Product type
+            if data.get("@type") != "Product":
+                continue
+
+            # Navigate to offeredBy
+            offers = data.get("offers", {})
+            offered_by = offers.get("offeredBy")
+
+            if not offered_by:
+                continue
+
+            # Extract dealer info
+            dealer_name = offered_by.get("name")
+            if not dealer_name:
+                continue
+
+            # Normalize dealer type
+            seller_type = offered_by.get("@type", "")
+            dealer_type: str | None = None
+            if seller_type == "AutoDealer":
+                dealer_type = "dealer"
+            elif seller_type == "Person":
+                dealer_type = "private"
+            elif seller_type:
+                dealer_type = seller_type.lower()
+
+            # Extract address (optional)
+            address = offered_by.get("address", {})
+            location_city = address.get("addressLocality")
+            location_zip = address.get("postalCode")
+            location_country = address.get("addressCountry")
+
+            return {
+                "dealer_name": dealer_name,
+                "dealer_type": dealer_type,
+                "location_city": location_city,
+                "location_zip": location_zip,
+                "location_country": location_country,
+            }
 
         return None
 

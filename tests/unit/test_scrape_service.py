@@ -119,6 +119,11 @@ class TestScrapeServiceRunScrape:
         mock_detail = MagicMock()
         mock_detail.options_list = ["HUD", "Laser Light"]
         mock_detail.description = "Great car with HUD"
+        mock_detail.location_city = "Berlin"
+        mock_detail.location_zip = "10115"
+        mock_detail.location_country = "DE"
+        mock_detail.dealer_name = "Test Dealer"
+        mock_detail.dealer_type = "dealer"
 
         with patch.object(scrape_service, '_create_scraper') as mock_create:
             mock_scraper = AsyncMock()

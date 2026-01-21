@@ -76,7 +76,7 @@ i4-scout scrape autoscout24_de --max-pages 3 --json
 ```json
 {
   "listings": [
-    {"id": 1, "title": "...", "price": 45000, "mileage_km": 15000, "match_score": 85.0, "is_qualified": true, "url": "...", ...}
+    {"id": 1, "title": "...", "price": 45000, "mileage_km": 15000, "match_score": 85.0, "is_qualified": true, "url": "...", "location_city": "Berlin", "dealer_name": "...", ...}
   ],
   "count": 10,
   "total": 50,
@@ -86,7 +86,7 @@ i4-scout scrape autoscout24_de --max-pages 3 --json
 
 **`show --json`:**
 ```json
-{"id": 1, "title": "...", "price": 45000, "mileage_km": 15000, "match_score": 85.0, "is_qualified": true, "url": "...", "description": "...", ...}
+{"id": 1, "title": "...", "price": 45000, "mileage_km": 15000, "match_score": 85.0, "is_qualified": true, "url": "...", "description": "...", "location_city": "...", "location_zip": "...", "location_country": "DE", "dealer_name": "...", "dealer_type": "dealer", ...}
 ```
 
 **`scrape --json`:**
@@ -119,8 +119,12 @@ Scraper → Parser → OptionMatcher → Scorer → Repository → SQLite
 1. **Scrapers** (`src/i4_scout/scrapers/`) - Playwright-based scrapers for AutoScout24 sites
    - `base.py`: Abstract base class with retry logic, rate limiting, cookie consent handling, HTML caching
    - `cache.py`: File-based HTML cache with TTL (1h for search pages, 24h for detail pages)
-   - `autoscout24_base.py`: Shared parsing for AutoScout24 sites
+   - `autoscout24_base.py`: Shared parsing for AutoScout24 sites (options, description, JSON-LD)
    - `autoscout24_de.py` / `autoscout24_nl.py`: Site-specific URL patterns and localization
+   - **JSON-LD Extraction**: Detail pages contain structured JSON-LD (schema.org) data with dealer/location info:
+     - `parse_json_ld_sync()`: Extracts `dealer_name`, `dealer_type` (dealer/private), `location_city`, `location_zip`, `location_country`
+     - Normalizes `@type: "AutoDealer"` → "dealer", `@type: "Person"` → "private"
+     - Handles missing/malformed JSON-LD gracefully
 
 2. **Matching Engine** (`src/i4_scout/matching/`)
    - `normalizer.py`: Text normalization (German umlauts, case, punctuation)

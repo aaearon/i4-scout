@@ -201,14 +201,24 @@ class ScrapeService:
                 self._repo.update_listing(existing.id)
             return {"status": "skipped"}
 
-        # Get detail page for options and description
+        # Get detail page for options, description, and location/dealer info
         options_list = []
         description = None
+        location_city = None
+        location_zip = None
+        location_country = None
+        dealer_name = None
+        dealer_type = None
         if url:
             try:
                 detail = await scraper.scrape_listing_detail(page, url, use_cache=use_cache)
                 options_list = detail.options_list
                 description = detail.description
+                location_city = detail.location_city
+                location_zip = detail.location_zip
+                location_country = detail.location_country
+                dealer_name = detail.dealer_name
+                dealer_type = detail.dealer_type
             except Exception:
                 pass
 
@@ -235,6 +245,11 @@ class ScrapeService:
             mileage_km=listing_data.get("mileage_km"),
             first_registration=first_reg_date,
             description=description,
+            location_city=location_city,
+            location_zip=location_zip,
+            location_country=location_country,
+            dealer_name=dealer_name,
+            dealer_type=dealer_type,
             match_score=scored_result.score,
             is_qualified=scored_result.is_qualified,
         )
