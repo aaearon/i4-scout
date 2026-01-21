@@ -42,7 +42,7 @@ When starting a new LLM session, provide this context:
 | 1 | Service Layer | Complete |
 | 2 | Database Improvements | Complete |
 | 3 | FastAPI Foundation | Complete |
-| 4 | Background Scraping | Not Started |
+| 4 | Background Scraping | Complete |
 
 ---
 
@@ -365,36 +365,36 @@ def serve(
 ## Tasks
 
 ### Task 4.1: Create JobService
-- [ ] Create `src/i4_scout/services/job_service.py`
-- [ ] Implement `create_job()`, `get_job()`, `get_recent_jobs()`
-- [ ] Implement `update_status()`, `update_progress()`
-- [ ] Implement `complete_job()`, `fail_job()`
-- [ ] Implement `cleanup_old_jobs()`
-- [ ] Write tests: `tests/unit/test_job_service.py`
-- [ ] Run tests
+- [x] Create `src/i4_scout/services/job_service.py`
+- [x] Implement `create_job()`, `get_job()`, `get_recent_jobs()`
+- [x] Implement `update_status()`, `update_progress()`
+- [x] Implement `complete_job()`, `fail_job()`
+- [x] Implement `cleanup_old_jobs()`
+- [x] Write tests: `tests/unit/test_job_service.py`
+- [x] Run tests
 
 ### Task 4.2: Implement Scrape Endpoints
-- [ ] Create `src/i4_scout/api/routes/scrape.py`
-- [ ] Implement `POST /api/scrape/jobs` to create job
-- [ ] Implement `GET /api/scrape/jobs` to list recent jobs
-- [ ] Implement `GET /api/scrape/jobs/{id}` for status/progress
-- [ ] Write tests: `tests/integration/test_api_scrape.py`
-- [ ] Run tests
+- [x] Create `src/i4_scout/api/routes/scrape.py`
+- [x] Implement `POST /api/scrape/jobs` to create job
+- [x] Implement `GET /api/scrape/jobs` to list recent jobs
+- [x] Implement `GET /api/scrape/jobs/{id}` for status/progress
+- [x] Write tests: `tests/integration/test_api_scrape.py`
+- [x] Run tests
 
 ### Task 4.3: Implement Background Execution
-- [ ] Add `run_scrape_job()` background task function
-- [ ] Wire up `BackgroundTasks` in POST endpoint
-- [ ] Ensure proper error handling and status updates
-- [ ] Test background execution manually
-- [ ] Write integration test for full scrape cycle
+- [x] Add `run_scrape_job()` background task function
+- [x] Wire up `BackgroundTasks` in POST endpoint
+- [x] Ensure proper error handling and status updates
+- [x] Test background execution manually
+- [x] Write integration test for full scrape cycle
 
 ### Task 4.4: Phase 4 Verification
-- [ ] `POST /api/scrape/jobs` creates job and returns immediately
-- [ ] `GET /api/scrape/jobs/{id}` shows progress during execution
-- [ ] Job status updates to "completed" when done
-- [ ] Job status updates to "failed" on error
-- [ ] All tests pass
-- [ ] Create commit: `feat(api): background scraping (Phase 4 complete)`
+- [x] `POST /api/scrape/jobs` creates job and returns immediately
+- [x] `GET /api/scrape/jobs/{id}` shows progress during execution
+- [x] Job status updates to "completed" when done
+- [x] Job status updates to "failed" on error
+- [x] All tests pass (318 tests)
+- [x] Create commit: `feat(api): background scraping (Phase 4 complete)`
 
 ---
 

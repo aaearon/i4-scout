@@ -2,7 +2,7 @@
 
 from fastapi import FastAPI
 
-from i4_scout.api.routes import config, listings, stats
+from i4_scout.api.routes import config, listings, scrape, stats
 
 
 def create_app() -> FastAPI:
@@ -23,6 +23,7 @@ def create_app() -> FastAPI:
     app.include_router(listings.router, prefix="/api/listings", tags=["listings"])
     app.include_router(config.router, prefix="/api/config", tags=["config"])
     app.include_router(stats.router, prefix="/api/stats", tags=["stats"])
+    app.include_router(scrape.router, prefix="/api/scrape/jobs", tags=["scrape"])
 
     @app.get("/health", tags=["health"])
     async def health_check() -> dict[str, str]:

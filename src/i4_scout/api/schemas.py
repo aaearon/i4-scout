@@ -92,3 +92,45 @@ class ErrorResponse(BaseModel):
     """Standard error response."""
 
     detail: str
+
+
+# Scrape job schemas
+
+
+class ScrapeJobCreate(BaseModel):
+    """Request body for creating a scrape job."""
+
+    source: Source = Field(..., description="Source to scrape")
+    max_pages: int = Field(50, ge=1, le=100, description="Maximum pages to scrape")
+    search_filters: dict[str, object] | None = Field(None, description="Optional search filter overrides")
+
+
+class ScrapeJobResponse(BaseModel):
+    """Response for a scrape job."""
+
+    id: int
+    source: str
+    status: str
+    max_pages: int
+    search_filters: dict[str, object] | None = None
+
+    # Progress
+    current_page: int = 0
+    total_found: int = 0
+    new_listings: int = 0
+    updated_listings: int = 0
+
+    # Timestamps
+    created_at: datetime
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+
+    # Error
+    error_message: str | None = None
+
+
+class ScrapeJobListResponse(BaseModel):
+    """Response for listing scrape jobs."""
+
+    jobs: list[ScrapeJobResponse]
+    count: int = Field(description="Number of jobs in this response")
