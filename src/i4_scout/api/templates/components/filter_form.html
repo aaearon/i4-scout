@@ -1,0 +1,148 @@
+<form
+    class="filter-form"
+    hx-get="/partials/listings"
+    hx-target="#listings-table"
+    hx-push-url="true"
+    hx-indicator="#filter-indicator"
+>
+    <div class="filter-group">
+        <label for="source">Source</label>
+        <select name="source" id="source">
+            <option value="">All Sources</option>
+            <option value="autoscout24_de" {% if filters.source == 'autoscout24_de' %}selected{% endif %}>AutoScout24 DE</option>
+            <option value="autoscout24_nl" {% if filters.source == 'autoscout24_nl' %}selected{% endif %}>AutoScout24 NL</option>
+        </select>
+    </div>
+
+    <div class="filter-group">
+        <label for="qualified_only">
+            <input
+                type="checkbox"
+                name="qualified_only"
+                id="qualified_only"
+                value="true"
+                {% if filters.qualified_only %}checked{% endif %}
+            >
+            Qualified Only
+        </label>
+    </div>
+
+    <div class="filter-group">
+        <label for="min_score">Min Score</label>
+        <input
+            type="number"
+            name="min_score"
+            id="min_score"
+            min="0"
+            max="100"
+            step="1"
+            placeholder="0-100"
+            value="{{ filters.min_score if filters.min_score else '' }}"
+        >
+    </div>
+
+    <div class="filter-group">
+        <label for="price_min">Price Min</label>
+        <input
+            type="number"
+            name="price_min"
+            id="price_min"
+            min="0"
+            step="1000"
+            placeholder="EUR"
+            value="{{ filters.price_min if filters.price_min else '' }}"
+        >
+    </div>
+
+    <div class="filter-group">
+        <label for="price_max">Price Max</label>
+        <input
+            type="number"
+            name="price_max"
+            id="price_max"
+            min="0"
+            step="1000"
+            placeholder="EUR"
+            value="{{ filters.price_max if filters.price_max else '' }}"
+        >
+    </div>
+
+    <div class="filter-group">
+        <label for="mileage_max">Mileage Max</label>
+        <input
+            type="number"
+            name="mileage_max"
+            id="mileage_max"
+            min="0"
+            step="5000"
+            placeholder="km"
+            value="{{ filters.mileage_max if filters.mileage_max else '' }}"
+        >
+    </div>
+
+    <div class="filter-group">
+        <label for="year_min">Year Min</label>
+        <input
+            type="number"
+            name="year_min"
+            id="year_min"
+            min="2015"
+            max="2030"
+            placeholder="YYYY"
+            value="{{ filters.year_min if filters.year_min else '' }}"
+        >
+    </div>
+
+    <div class="filter-group">
+        <label for="country">Country</label>
+        <input
+            type="text"
+            name="country"
+            id="country"
+            maxlength="5"
+            placeholder="D, NL, B..."
+            value="{{ filters.country if filters.country else '' }}"
+        >
+    </div>
+
+    <div class="filter-group">
+        <label for="search">Search</label>
+        <input
+            type="search"
+            name="search"
+            id="search"
+            placeholder="Search title/description"
+            value="{{ filters.search if filters.search else '' }}"
+            hx-get="/partials/listings"
+            hx-target="#listings-table"
+            hx-trigger="input changed delay:500ms"
+            hx-push-url="true"
+            hx-include="closest form"
+        >
+    </div>
+
+    <div class="filter-group">
+        <label for="sort_by">Sort By</label>
+        <select name="sort_by" id="sort_by">
+            <option value="first_seen" {% if filters.sort_by == 'first_seen' or not filters.sort_by %}selected{% endif %}>Date Added</option>
+            <option value="price" {% if filters.sort_by == 'price' %}selected{% endif %}>Price</option>
+            <option value="mileage" {% if filters.sort_by == 'mileage' %}selected{% endif %}>Mileage</option>
+            <option value="score" {% if filters.sort_by == 'score' %}selected{% endif %}>Score</option>
+        </select>
+    </div>
+
+    <div class="filter-group">
+        <label for="sort_order">Order</label>
+        <select name="sort_order" id="sort_order">
+            <option value="desc" {% if filters.sort_order == 'desc' or not filters.sort_order %}selected{% endif %}>Descending</option>
+            <option value="asc" {% if filters.sort_order == 'asc' %}selected{% endif %}>Ascending</option>
+        </select>
+    </div>
+
+    <div class="filter-group">
+        <button type="submit">
+            Apply
+            <span id="filter-indicator" class="htmx-indicator spinner"></span>
+        </button>
+    </div>
+</form>

@@ -1,0 +1,30 @@
+{% if listings %}
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th style="text-align: right;">Price</th>
+                <th style="text-align: right;">Mileage</th>
+                <th style="text-align: right;">Score</th>
+                <th>Qualified</th>
+                <th>Source</th>
+                <th>Added</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for listing in listings %}
+            {% include "components/listing_row.html" %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "components/pagination.html" %}
+
+{% else %}
+<div class="empty-state">
+    <p>No listings found matching your criteria.</p>
+</div>
+{% endif %}

@@ -1,10 +1,11 @@
 """HTMX partial routes for dynamic content updates."""
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Query, Request
 from sqlalchemy import func, select
 
 from i4_scout.api.dependencies import DbSession, ListingServiceDep, TemplatesDep
 from i4_scout.models.db_models import Listing
+from i4_scout.models.pydantic_models import Source
 
 router = APIRouter(prefix="/partials")
 
@@ -75,4 +76,76 @@ async def recent_qualified_partial(
         request=request,
         name="partials/recent_qualified.html",
         context={"listings": listings},
+    )
+
+
+@router.get("/listings")
+async def listings_partial(
+    request: Request,
+    service: ListingServiceDep,
+    templates: TemplatesDep,
+    source: str | None = Query(None),
+    qualified_only: bool = Query(False),
+    min_score: float | None = Query(None),
+    price_min: int | None = Query(None),
+    price_max: int | None = Query(None),
+    mileage_max: int | None = Query(None),
+    year_min: int | None = Query(None),
+    country: str | None = Query(None),
+    search: str | None = Query(None),
+    sort_by: str | None = Query(None),
+    sort_order: str = Query("desc"),
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+):
+    """Return listings table HTML fragment."""
+    # Convert source string to Source enum if provided
+    source_enum = None
+    if source:
+        try:
+            source_enum = Source(source)
+        except ValueError:
+            pass
+
+    listings, total = service.get_listings(
+        source=source_enum,
+        qualified_only=qualified_only,
+        min_score=min_score,
+        price_min=price_min,
+        price_max=price_max,
+        mileage_max=mileage_max,
+        year_min=year_min,
+        country=country,
+        search=search,
+        sort_by=sort_by,
+        sort_order=sort_order,
+        limit=limit,
+        offset=offset,
+    )
+
+    filters = {
+        "source": source,
+        "qualified_only": qualified_only,
+        "min_score": min_score,
+        "price_min": price_min,
+        "price_max": price_max,
+        "mileage_max": mileage_max,
+        "year_min": year_min,
+        "country": country,
+        "search": search,
+        "sort_by": sort_by,
+        "sort_order": sort_order,
+    }
+
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/listings_table.html",
+        context={
+            "listings": listings,
+            "total": total,
+            "count": len(listings),
+            "limit": limit,
+            "offset": offset,
+            "filters": filters,
+        },
     )

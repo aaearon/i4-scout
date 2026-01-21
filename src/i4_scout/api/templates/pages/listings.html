@@ -4,5 +4,19 @@
 
 {% block content %}
 <h1>Listings</h1>
-<p>Listings content will be implemented in Phase 3.</p>
+
+<!-- Filter form -->
+{% include "components/filter_form.html" %}
+
+<!-- Listings table -->
+<div
+    id="listings-table"
+    hx-get="/partials/listings"
+    hx-trigger="load"
+    hx-swap="innerHTML"
+>
+    <div class="empty-state">
+        <p>Loading listings...</p>
+    </div>
+</div>
 {% endblock %}

@@ -1,0 +1,40 @@
+<tr
+    data-href="/listings/{{ listing.id }}"
+    onclick="window.location.href='/listings/{{ listing.id }}'"
+    style="cursor: pointer;"
+>
+    <td>{{ listing.id }}</td>
+    <td class="truncate" title="{{ listing.title }}">{{ listing.title }}</td>
+    <td style="text-align: right;">
+        {% if listing.price %}
+            {{ "{:,.0f}".format(listing.price) }}
+        {% else %}
+            --
+        {% endif %}
+    </td>
+    <td style="text-align: right;">
+        {% if listing.mileage_km %}
+            {{ "{:,.0f}".format(listing.mileage_km) }}
+        {% else %}
+            --
+        {% endif %}
+    </td>
+    <td style="text-align: right;">
+        {% if listing.match_score is not none %}
+            {{ "{:.1f}".format(listing.match_score) }}
+        {% else %}
+            --
+        {% endif %}
+    </td>
+    <td>
+        {% if listing.is_qualified %}
+        <span class="badge badge-qualified">Yes</span>
+        {% else %}
+        <span class="badge badge-not-qualified">No</span>
+        {% endif %}
+    </td>
+    <td>
+        <span class="badge badge-source">{{ listing.source.value if listing.source else '' }}</span>
+    </td>
+    <td>{{ listing.first_seen.strftime('%Y-%m-%d') if listing.first_seen else '--' }}</td>
+</tr>
