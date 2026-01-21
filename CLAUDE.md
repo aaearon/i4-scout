@@ -506,7 +506,7 @@ i4-scout serve
 **Compare (`/compare?ids=1,2,3`):**
 - Side-by-side comparison of up to 4 listings
 - Basic info section: price, mileage, year, location, dealer, source
-- Match score section with qualification status
+- Match score section with qualification and issue status
 - Required options matrix with color-coded Yes/No badges
 - Nice-to-have options matrix
 - Best values highlighted (lowest price/mileage, highest score/year)

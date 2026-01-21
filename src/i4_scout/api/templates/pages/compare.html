@@ -141,6 +141,19 @@
             </div>
             {% endfor %}
         </div>
+
+        <div class="compare-row">
+            <div class="compare-label">Issue</div>
+            {% for listing in listings %}
+            <div class="compare-value">
+                {% if listing.has_issue %}
+                <span class="badge badge-issue">Yes</span>
+                {% else %}
+                <span style="color: var(--pico-muted-color);">--</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
     </div>
 </section>
 
