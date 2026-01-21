@@ -269,3 +269,94 @@ class TestSearchFiltersConfig:
         assert isinstance(search_filters, SearchFilters)
         assert len(options_config.required) == 1
         assert search_filters.price_max_eur == 55000
+
+
+class TestMergeSearchFilters:
+    """Tests for merge_search_filters helper."""
+
+    def test_merge_with_no_overrides(self) -> None:
+        """Should return config filters when no overrides provided."""
+        from i4_scout.config import merge_search_filters
+        from i4_scout.models.pydantic_models import SearchFilters
+
+        config_filters = SearchFilters(
+            price_max_eur=55000,
+            mileage_max_km=50000,
+            year_min=2023,
+            countries=["D", "NL"],
+        )
+
+        result = merge_search_filters(config_filters, {})
+
+        assert result.price_max_eur == 55000
+        assert result.mileage_max_km == 50000
+        assert result.year_min == 2023
+        assert result.countries == ["D", "NL"]
+
+    def test_merge_overrides_take_precedence(self) -> None:
+        """Overrides should take precedence over config values."""
+        from i4_scout.config import merge_search_filters
+        from i4_scout.models.pydantic_models import SearchFilters
+
+        config_filters = SearchFilters(
+            price_max_eur=55000,
+            mileage_max_km=50000,
+            year_min=2023,
+        )
+        overrides = {
+            "price_max": 45000,
+            "year_min": 2024,
+        }
+
+        result = merge_search_filters(config_filters, overrides)
+
+        assert result.price_max_eur == 45000  # Overridden
+        assert result.mileage_max_km == 50000  # From config
+        assert result.year_min == 2024  # Overridden
+
+    def test_merge_countries_override(self) -> None:
+        """Should allow overriding countries list."""
+        from i4_scout.config import merge_search_filters
+        from i4_scout.models.pydantic_models import SearchFilters
+
+        config_filters = SearchFilters(countries=["D", "NL"])
+        overrides = {"countries": ["B", "A"]}
+
+        result = merge_search_filters(config_filters, overrides)
+
+        assert result.countries == ["B", "A"]
+
+    def test_merge_preserves_year_max_from_config(self) -> None:
+        """Should preserve year_max from config (no override support)."""
+        from i4_scout.config import merge_search_filters
+        from i4_scout.models.pydantic_models import SearchFilters
+
+        config_filters = SearchFilters(year_max=2025)
+        overrides = {}
+
+        result = merge_search_filters(config_filters, overrides)
+
+        assert result.year_max == 2025
+
+    def test_merge_with_empty_config(self) -> None:
+        """Should work with empty config filters."""
+        from i4_scout.config import merge_search_filters
+        from i4_scout.models.pydantic_models import SearchFilters
+
+        config_filters = SearchFilters()
+        overrides = {"price_max": 40000}
+
+        result = merge_search_filters(config_filters, overrides)
+
+        assert result.price_max_eur == 40000
+        assert result.mileage_max_km is None
+
+    def test_merge_returns_search_filters_type(self) -> None:
+        """Should return a SearchFilters instance."""
+        from i4_scout.config import merge_search_filters
+        from i4_scout.models.pydantic_models import SearchFilters
+
+        config_filters = SearchFilters()
+        result = merge_search_filters(config_filters, {})
+
+        assert isinstance(result, SearchFilters)

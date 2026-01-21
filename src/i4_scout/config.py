@@ -135,3 +135,31 @@ def load_full_config(path: Path | None = None) -> tuple[OptionsConfig, SearchFil
         Tuple of (OptionsConfig, SearchFilters).
     """
     return load_options_config(path), load_search_filters(path)
+
+
+def merge_search_filters(
+    config_filters: SearchFilters,
+    overrides: dict[str, Any],
+) -> SearchFilters:
+    """Merge CLI/API overrides with config filters.
+
+    Overrides take precedence over config values.
+
+    Args:
+        config_filters: Base search filters from config.
+        overrides: Dict with override values. Keys:
+            - price_max: Override price_max_eur
+            - mileage_max: Override mileage_max_km
+            - year_min: Override year_min
+            - countries: Override countries list
+
+    Returns:
+        New SearchFilters with merged values.
+    """
+    return SearchFilters(
+        price_max_eur=overrides.get("price_max") or config_filters.price_max_eur,
+        mileage_max_km=overrides.get("mileage_max") or config_filters.mileage_max_km,
+        year_min=overrides.get("year_min") or config_filters.year_min,
+        year_max=config_filters.year_max,
+        countries=overrides.get("countries") or config_filters.countries,
+    )

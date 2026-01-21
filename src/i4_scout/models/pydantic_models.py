@@ -157,3 +157,25 @@ class SearchFilters(BaseModel):
     countries: Optional[list[str]] = Field(
         None, description="Country codes to include (e.g., D, NL, B)"
     )
+
+
+class ScrapeProgress(BaseModel):
+    """Progress update during scraping."""
+
+    page: int = Field(..., description="Current page being scraped")
+    total_pages: int = Field(..., description="Total pages to scrape")
+    listings_found: int = Field(..., description="Total listings found so far")
+    new_count: int = Field(..., description="New listings created")
+    updated_count: int = Field(..., description="Existing listings updated")
+    skipped_count: int = Field(..., description="Listings skipped (unchanged)")
+    current_listing: Optional[str] = Field(None, description="Title of listing being processed")
+
+
+class ScrapeResult(BaseModel):
+    """Final result of a scrape operation."""
+
+    total_found: int = Field(..., description="Total listings found")
+    new_listings: int = Field(..., description="New listings created")
+    updated_listings: int = Field(..., description="Existing listings updated")
+    skipped_unchanged: int = Field(..., description="Listings skipped (price unchanged)")
+    fetched_details: int = Field(..., description="Detail pages actually fetched")
