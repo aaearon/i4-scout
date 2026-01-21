@@ -2,7 +2,8 @@
 
 from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Request
+from fastapi.responses import HTMLResponse, JSONResponse
 
 from i4_scout.api.dependencies import DbSession, OptionsConfigDep
 from i4_scout.api.schemas import ScrapeJobCreate, ScrapeJobListResponse, ScrapeJobResponse
@@ -31,24 +32,29 @@ def _job_to_response(job: ScrapeJobRead) -> ScrapeJobResponse:
     )
 
 
-@router.post("", response_model=ScrapeJobResponse, status_code=201)
+@router.post("", status_code=201, response_model=None)
 async def create_scrape_job(
+    http_request: Request,
     request: ScrapeJobCreate,
     session: DbSession,
     options_config: OptionsConfigDep,
     background_tasks: BackgroundTasks,
-) -> ScrapeJobResponse:
+) -> HTMLResponse | JSONResponse:
     """Create a new scrape job.
 
     Creates a scrape job and starts background execution.
     Returns immediately with job details - poll the status endpoint
     for progress updates.
 
+    For HTMX requests (HX-Request header), returns HTML success message
+    and triggers jobCreated event to refresh the jobs list.
+
     Args:
+        http_request: HTTP request object.
         request: Job creation request.
 
     Returns:
-        Created job details.
+        Created job details (JSON) or success message (HTML for HTMX).
     """
     service = JobService(session)
 
@@ -68,7 +74,22 @@ async def create_scrape_job(
         options_config=options_config,
     )
 
-    return _job_to_response(job)
+    # Check if this is an HTMX request
+    if http_request.headers.get("HX-Request") == "true":
+        html_content = f"""
+        <div class="alert alert-success">
+            Scrape job #{job.id} started for {request.source.value}.
+            Scraping up to {request.max_pages} pages.
+        </div>
+        """
+        return HTMLResponse(
+            content=html_content,
+            status_code=201,
+            headers={"HX-Trigger": "jobCreated"},
+        )
+
+    response = _job_to_response(job)
+    return JSONResponse(content=response.model_dump(mode="json"), status_code=201)
 
 
 @router.get("", response_model=ScrapeJobListResponse)

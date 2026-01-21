@@ -7,6 +7,7 @@ from i4_scout.api.dependencies import DbSession, ListingServiceDep, TemplatesDep
 from i4_scout.database.repository import ListingRepository
 from i4_scout.models.db_models import Listing
 from i4_scout.models.pydantic_models import Source
+from i4_scout.services.job_service import JobService
 
 router = APIRouter(prefix="/partials")
 
@@ -183,4 +184,47 @@ async def listing_price_chart_partial(
         request=request,
         name="components/price_chart.html",
         context={"history": history, "enumerate": enumerate},
+    )
+
+
+@router.get("/scrape/jobs")
+async def scrape_jobs_partial(
+    request: Request,
+    session: DbSession,
+    templates: TemplatesDep,
+    limit: int = Query(20, ge=1, le=100),
+):
+    """Return scrape jobs list HTML fragment."""
+    service = JobService(session)
+    jobs = service.get_recent_jobs(limit=limit)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/scrape_jobs_list.html",
+        context={"jobs": jobs},
+    )
+
+
+@router.get("/scrape/job/{job_id}")
+async def scrape_job_partial(
+    request: Request,
+    job_id: int,
+    session: DbSession,
+    templates: TemplatesDep,
+):
+    """Return single scrape job row HTML fragment."""
+    service = JobService(session)
+    job = service.get_job(job_id)
+
+    if job is None:
+        return templates.TemplateResponse(
+            request=request,
+            name="components/scrape_job_row.html",
+            context={"job": None},
+        )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="components/scrape_job_row.html",
+        context={"job": job},
     )

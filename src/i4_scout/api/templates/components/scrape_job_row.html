@@ -1,0 +1,36 @@
+<tr
+    id="job-{{ job.id }}"
+    {% if job.status == 'running' %}
+    hx-get="/partials/scrape/job/{{ job.id }}"
+    hx-trigger="every 2s"
+    hx-swap="outerHTML"
+    {% endif %}
+>
+    <td>{{ job.id }}</td>
+    <td>{{ job.source }}</td>
+    <td>
+        <span class="badge status-{{ job.status }}">{{ job.status }}</span>
+    </td>
+    <td>
+        {% if job.status == 'running' %}
+            Page {{ job.current_page or 0 }} / {{ job.max_pages }}
+        {% else %}
+            {{ job.max_pages }} pages
+        {% endif %}
+    </td>
+    <td style="text-align: right;">{{ job.total_found }}</td>
+    <td style="text-align: right;">{{ job.new_listings }}</td>
+    <td style="text-align: right;">{{ job.updated_listings }}</td>
+    <td>{{ job.created_at.strftime('%Y-%m-%d %H:%M') if job.created_at else '--' }}</td>
+    <td>
+        {% if job.error_message %}
+        <span title="{{ job.error_message }}" style="color: var(--pico-color-red-550);">Error</span>
+        {% elif job.completed_at %}
+        {{ job.completed_at.strftime('%H:%M:%S') }}
+        {% elif job.status == 'running' %}
+        <span class="spinner"></span>
+        {% else %}
+        --
+        {% endif %}
+    </td>
+</tr>

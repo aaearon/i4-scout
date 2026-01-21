@@ -1,0 +1,40 @@
+<article>
+    <header>Start New Scrape</header>
+    <form
+        class="scrape-form"
+        hx-post="/api/scrape/jobs"
+        hx-target="#scrape-result"
+        hx-swap="innerHTML"
+        hx-indicator="#scrape-indicator"
+    >
+        <div class="form-group">
+            <label for="source">Source</label>
+            <select name="source" id="source" required>
+                <option value="autoscout24_de">AutoScout24 DE</option>
+                <option value="autoscout24_nl">AutoScout24 NL</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="max_pages">Max Pages</label>
+            <input
+                type="number"
+                name="max_pages"
+                id="max_pages"
+                value="10"
+                min="1"
+                max="100"
+                required
+            >
+        </div>
+
+        <div class="form-group">
+            <button type="submit">
+                Start Scrape
+                <span id="scrape-indicator" class="htmx-indicator spinner"></span>
+            </button>
+        </div>
+    </form>
+
+    <div id="scrape-result"></div>
+</article>
