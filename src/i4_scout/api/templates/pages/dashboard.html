@@ -4,5 +4,38 @@
 
 {% block content %}
 <h1>Dashboard</h1>
-<p>Dashboard content will be implemented in Phase 2.</p>
+
+<!-- Stats section - auto-refreshes every 60 seconds -->
+<section
+    id="stats-section"
+    hx-get="/partials/stats"
+    hx-trigger="load, every 60s"
+    hx-swap="innerHTML"
+>
+    <div class="stats-grid">
+        <article class="stat-card">
+            <div class="stat-value"><span class="spinner"></span></div>
+            <div class="stat-label">Loading...</div>
+        </article>
+    </div>
+</section>
+
+<!-- Recent qualified listings section -->
+<section>
+    <h2>
+        Recent Qualified Listings
+        <span id="qualified-indicator" class="htmx-indicator"><span class="spinner"></span></span>
+    </h2>
+    <div
+        id="recent-qualified"
+        hx-get="/partials/recent-qualified"
+        hx-trigger="load"
+        hx-swap="innerHTML"
+        hx-indicator="#qualified-indicator"
+    >
+        <div class="empty-state">
+            <p>Loading...</p>
+        </div>
+    </div>
+</section>
 {% endblock %}

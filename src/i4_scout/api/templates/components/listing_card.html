@@ -1,4 +1,37 @@
-<!-- Listing card placeholder - to be implemented in Phase 2 -->
 <article>
-    <p>Listing card placeholder</p>
+    <header>
+        <a href="/listings/{{ listing.id }}">{{ listing.title }}</a>
+        {% if listing.is_qualified %}
+        <span class="badge badge-qualified">Qualified</span>
+        {% endif %}
+    </header>
+    <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+        <div>
+            <strong>Price:</strong>
+            {% if listing.price %}
+                {{ "{:,.0f}".format(listing.price) }}
+            {% else %}
+                N/A
+            {% endif %}
+        </div>
+        <div>
+            <strong>Mileage:</strong>
+            {% if listing.mileage_km %}
+                {{ "{:,.0f}".format(listing.mileage_km) }} km
+            {% else %}
+                N/A
+            {% endif %}
+        </div>
+        <div>
+            <strong>Score:</strong>
+            {% if listing.match_score is not none %}
+                {{ "{:.1f}".format(listing.match_score) }}
+            {% else %}
+                --
+            {% endif %}
+        </div>
+    </div>
+    <footer>
+        <small>{{ listing.source.value if listing.source else '' }} | First seen: {{ listing.first_seen.strftime('%Y-%m-%d') if listing.first_seen else '--' }}</small>
+    </footer>
 </article>
