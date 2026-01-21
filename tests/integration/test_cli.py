@@ -202,7 +202,7 @@ class TestExportCommand:
         data = json.loads(output_file.read_text())
         assert "listings" in data
         assert data["count"] == 3
-        assert any("BMW i4" in l["title"] for l in data["listings"])
+        assert any("BMW i4" in item["title"] for item in data["listings"])
 
     def test_export_qualified_only(
         self, runner: CliRunner, populated_db: Path, tmp_path: Path

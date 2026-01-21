@@ -190,7 +190,7 @@ class BaseScraper(ABC):
         Raises:
             Exception: If all retries are exhausted.
         """
-        last_exception: Exception | None = None
+        last_exception: BaseException | None = None
 
         try:
             async for attempt in AsyncRetrying(
@@ -256,7 +256,7 @@ class BaseScraper(ABC):
         await self._browser_manager.increment_request_count()
 
         async def _navigate() -> str:
-            await page.goto(url, wait_until=wait_until, timeout=30000)
+            await page.goto(url, wait_until=wait_until, timeout=30000)  # type: ignore[arg-type]
             return await page.content()
 
         html = await self.with_retry(_navigate)

@@ -24,7 +24,7 @@ async def stats_partial(
     request: Request,
     session: DbSession,
     templates: TemplatesDep,
-):
+) -> HTMLResponse:
     """Return stats cards HTML fragment."""
     # Total listings
     total_stmt = select(func.count(Listing.id))
@@ -72,7 +72,7 @@ async def recent_qualified_partial(
     request: Request,
     service: ListingServiceDep,
     templates: TemplatesDep,
-):
+) -> HTMLResponse:
     """Return recent qualified listings HTML fragment."""
     listings, _ = service.get_listings(
         qualified_only=True,
@@ -108,7 +108,7 @@ async def listings_partial(
     sort_order: str = Query("desc"),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
-):
+) -> HTMLResponse:
     """Return listings table HTML fragment."""
     # Convert empty strings to None for numeric params (HTML forms send empty strings)
     min_score_val = float(min_score) if min_score else None
@@ -187,7 +187,7 @@ async def listing_detail_partial(
     listing_id: int,
     service: ListingServiceDep,
     templates: TemplatesDep,
-):
+) -> HTMLResponse:
     """Return listing detail HTML fragment (for modal loading)."""
     listing = service.get_listing(listing_id)
     if listing is None:
@@ -209,7 +209,7 @@ async def listing_options_summary_partial(
     service: ListingServiceDep,
     options_config: OptionsConfigDep,
     templates: TemplatesDep,
-):
+) -> HTMLResponse:
     """Return options summary HTML fragment for hover preview."""
     listing = service.get_listing(listing_id)
     if listing is None:
@@ -237,7 +237,7 @@ async def listing_price_chart_partial(
     listing_id: int,
     session: DbSession,
     templates: TemplatesDep,
-):
+) -> HTMLResponse:
     """Return price history chart HTML fragment."""
     repo = ListingRepository(session)
     history = repo.get_price_history(listing_id)
@@ -255,7 +255,7 @@ async def scrape_jobs_partial(
     session: DbSession,
     templates: TemplatesDep,
     limit: int = Query(20, ge=1, le=100),
-):
+) -> HTMLResponse:
     """Return scrape jobs list HTML fragment."""
     service = JobService(session)
     jobs = service.get_recent_jobs(limit=limit)
@@ -273,7 +273,7 @@ async def scrape_job_partial(
     job_id: int,
     session: DbSession,
     templates: TemplatesDep,
-):
+) -> HTMLResponse:
     """Return single scrape job row HTML fragment."""
     service = JobService(session)
     job = service.get_job(job_id)
@@ -298,7 +298,7 @@ async def listing_document_partial(
     listing_id: int,
     service: DocumentServiceDep,
     templates: TemplatesDep,
-):
+) -> HTMLResponse:
     """Return document section HTML fragment."""
     document = service.get_document(listing_id)
 
@@ -316,7 +316,7 @@ async def upload_document_partial(
     file: UploadFile,
     service: DocumentServiceDep,
     templates: TemplatesDep,
-):
+) -> HTMLResponse:
     """Upload document and return updated HTML fragment."""
     from i4_scout.services.document_service import InvalidFileError, ListingNotFoundError
 
@@ -361,7 +361,7 @@ async def delete_document_partial(
     listing_id: int,
     service: DocumentServiceDep,
     templates: TemplatesDep,
-):
+) -> HTMLResponse:
     """Delete document and return updated HTML fragment."""
     service.delete_document(listing_id)
     document = service.get_document(listing_id)
@@ -379,7 +379,7 @@ async def reprocess_document_partial(
     listing_id: int,
     service: DocumentServiceDep,
     templates: TemplatesDep,
-):
+) -> HTMLResponse:
     """Reprocess document and return updated HTML fragment."""
     from i4_scout.services.document_service import DocumentNotFoundError
 

@@ -1,8 +1,9 @@
 """Unit tests for BaseScraper ABC."""
 
 import asyncio
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from i4_scout.models.pydantic_models import ScrapedListing, Source
 from i4_scout.scrapers.base import BaseScraper, ScraperConfig

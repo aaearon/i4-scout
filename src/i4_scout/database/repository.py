@@ -3,14 +3,14 @@
 import functools
 import hashlib
 from collections.abc import Callable
-from datetime import date, datetime
+from datetime import datetime, timezone
 from typing import Any, TypeVar
 
 from sqlalchemy import asc, desc, or_
 from sqlalchemy import select as sa_select
-from sqlalchemy.sql import extract
 from sqlalchemy.exc import OperationalError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Query, Session
+from sqlalchemy.sql import extract
 from tenacity import (
     Retrying,
     retry_if_exception_type,
@@ -220,8 +220,9 @@ class ListingRepository:
             return False
         return listing.price == price
 
-    def get_listings(
+    def _apply_listing_filters(
         self,
+        query: Query[Listing],
         source: Source | None = None,
         qualified_only: bool = False,
         min_score: float | None = None,
@@ -235,14 +236,11 @@ class ListingRepository:
         search: str | None = None,
         has_options: list[str] | None = None,
         options_match: str = "all",
-        sort_by: str | None = None,
-        sort_order: str = "desc",
-        limit: int | None = None,
-        offset: int | None = None,
-    ) -> list[Listing]:
-        """Get listings with optional filters.
+    ) -> Query[Listing]:
+        """Apply common filters to a listing query.
 
         Args:
+            query: SQLAlchemy query to filter.
             source: Filter by source.
             qualified_only: Only return qualified listings.
             min_score: Minimum match score.
@@ -256,16 +254,10 @@ class ListingRepository:
             search: Text search in title and description.
             has_options: List of option names to filter by.
             options_match: "all" to require all options, "any" to require any.
-            sort_by: Field to sort by (price, mileage, score, first_seen, last_seen).
-            sort_order: Sort direction (asc, desc). Default: desc.
-            limit: Maximum number of results.
-            offset: Number of results to skip.
 
         Returns:
-            List of matching Listing objects.
+            Filtered query.
         """
-        query = self._session.query(Listing)
-
         if source is not None:
             query = query.filter(Listing.source == source)
 
@@ -326,6 +318,70 @@ class ListingRepository:
                     .distinct()
                 )
                 query = query.filter(Listing.id.in_(subq))
+
+        return query
+
+    def get_listings(
+        self,
+        source: Source | None = None,
+        qualified_only: bool = False,
+        min_score: float | None = None,
+        price_min: int | None = None,
+        price_max: int | None = None,
+        mileage_min: int | None = None,
+        mileage_max: int | None = None,
+        year_min: int | None = None,
+        year_max: int | None = None,
+        country: str | None = None,
+        search: str | None = None,
+        has_options: list[str] | None = None,
+        options_match: str = "all",
+        sort_by: str | None = None,
+        sort_order: str = "desc",
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> list[Listing]:
+        """Get listings with optional filters.
+
+        Args:
+            source: Filter by source.
+            qualified_only: Only return qualified listings.
+            min_score: Minimum match score.
+            price_min: Minimum price in EUR.
+            price_max: Maximum price in EUR.
+            mileage_min: Minimum mileage in km.
+            mileage_max: Maximum mileage in km.
+            year_min: Minimum model year.
+            year_max: Maximum model year.
+            country: Country code (D, NL, B, etc.).
+            search: Text search in title and description.
+            has_options: List of option names to filter by.
+            options_match: "all" to require all options, "any" to require any.
+            sort_by: Field to sort by (price, mileage, score, first_seen, last_seen).
+            sort_order: Sort direction (asc, desc). Default: desc.
+            limit: Maximum number of results.
+            offset: Number of results to skip.
+
+        Returns:
+            List of matching Listing objects.
+        """
+        query = self._session.query(Listing)
+        query = self._apply_listing_filters(
+            query,
+            source=source,
+            qualified_only=qualified_only,
+            min_score=min_score,
+            price_min=price_min,
+            price_max=price_max,
+            mileage_min=mileage_min,
+            mileage_max=mileage_max,
+            year_min=year_min,
+            year_max=year_max,
+            country=country,
+            search=search,
+            has_options=has_options,
+            options_match=options_match,
+        )
 
         # Sorting
         sort_columns = {
@@ -387,68 +443,22 @@ class ListingRepository:
             Number of matching listings.
         """
         query = self._session.query(Listing)
-
-        if source is not None:
-            query = query.filter(Listing.source == source)
-
-        if qualified_only:
-            query = query.filter(Listing.is_qualified.is_(True))
-
-        if min_score is not None:
-            query = query.filter(Listing.match_score >= min_score)
-
-        if price_min is not None:
-            query = query.filter(Listing.price >= price_min)
-
-        if price_max is not None:
-            query = query.filter(Listing.price <= price_max)
-
-        if mileage_min is not None:
-            query = query.filter(Listing.mileage_km >= mileage_min)
-
-        if mileage_max is not None:
-            query = query.filter(Listing.mileage_km <= mileage_max)
-
-        # Filter by year from first_registration date
-        if year_min is not None or year_max is not None:
-            year_expr = extract("year", Listing.first_registration)
-            if year_min is not None:
-                query = query.filter(year_expr >= year_min)
-            if year_max is not None:
-                query = query.filter(year_expr <= year_max)
-
-        if country is not None:
-            query = query.filter(Listing.location_country == country)
-
-        if search is not None:
-            search_pattern = f"%{search}%"
-            query = query.filter(
-                or_(
-                    Listing.title.ilike(search_pattern),
-                    Listing.description.ilike(search_pattern),
-                )
-            )
-
-        if has_options:
-            if options_match == "all":
-                # Require ALL options - intersect subqueries
-                for option_name in has_options:
-                    subq = (
-                        sa_select(ListingOption.listing_id)
-                        .join(Option)
-                        .where(Option.canonical_name == option_name)
-                    )
-                    query = query.filter(Listing.id.in_(subq))
-            else:
-                # Require ANY option - single subquery with IN
-                subq = (
-                    sa_select(ListingOption.listing_id)
-                    .join(Option)
-                    .where(Option.canonical_name.in_(has_options))
-                    .distinct()
-                )
-                query = query.filter(Listing.id.in_(subq))
-
+        query = self._apply_listing_filters(
+            query,
+            source=source,
+            qualified_only=qualified_only,
+            min_score=min_score,
+            price_min=price_min,
+            price_max=price_max,
+            mileage_min=mileage_min,
+            mileage_max=mileage_max,
+            year_min=year_min,
+            year_max=year_max,
+            country=country,
+            search=search,
+            has_options=has_options,
+            options_match=options_match,
+        )
         return query.count()
 
     # ========== UPDATE ==========
@@ -472,7 +482,7 @@ class ListingRepository:
             if hasattr(listing, key):
                 setattr(listing, key, value)
 
-        listing.last_seen_at = datetime.utcnow()
+        listing.last_seen_at = datetime.now(timezone.utc)
         self._session.commit()
         self._session.refresh(listing)
 
@@ -547,14 +557,14 @@ class ListingRepository:
 
         # Update dedup hash
         existing.dedup_hash = self.compute_dedup_hash(
-            source=existing.source,
+            source=existing.source,  # type: ignore[arg-type]
             title=existing.title,
             price=existing.price,
             mileage_km=existing.mileage_km,
             year=existing.year,
         )
 
-        existing.last_seen_at = datetime.utcnow()
+        existing.last_seen_at = datetime.now(timezone.utc)
 
         self._session.commit()
         self._session.refresh(existing)
@@ -636,7 +646,7 @@ class ListingRepository:
         history = PriceHistory(
             listing_id=listing_id,
             price=price,
-            recorded_at=datetime.utcnow(),
+            recorded_at=datetime.now(timezone.utc),
         )
         self._session.add(history)
         self._session.commit()
@@ -1009,7 +1019,7 @@ class ScrapeJobRepository:
 
         job.status = status
         if status == ScrapeStatus.RUNNING and job.started_at is None:
-            job.started_at = datetime.utcnow()
+            job.started_at = datetime.now(timezone.utc)
 
         self._session.commit()
         self._session.refresh(job)
@@ -1077,7 +1087,7 @@ class ScrapeJobRepository:
             return None
 
         job.status = ScrapeStatus.COMPLETED
-        job.completed_at = datetime.utcnow()
+        job.completed_at = datetime.now(timezone.utc)
         job.total_found = total_found
         job.new_listings = new_listings
         job.updated_listings = updated_listings
@@ -1102,7 +1112,7 @@ class ScrapeJobRepository:
             return None
 
         job.status = ScrapeStatus.FAILED
-        job.completed_at = datetime.utcnow()
+        job.completed_at = datetime.now(timezone.utc)
         job.error_message = error_message
 
         self._session.commit()
@@ -1121,7 +1131,7 @@ class ScrapeJobRepository:
         """
         from datetime import timedelta
 
-        cutoff = datetime.utcnow() - timedelta(days=days)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
         deleted = (
             self._session.query(ScrapeJob)
             .filter(

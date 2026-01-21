@@ -22,7 +22,7 @@ def listing_to_dict(listing: Listing) -> dict[str, Any]:
     # Convert ORM object to Pydantic model
     listing_read = ListingRead(
         id=listing.id,
-        source=listing.source,
+        source=listing.source,  # type: ignore[arg-type]
         external_id=listing.external_id,
         url=listing.url,
         title=listing.title,

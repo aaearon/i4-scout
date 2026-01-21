@@ -7,7 +7,6 @@ from typing import TextIO
 
 from i4_scout.models.db_models import Listing
 
-
 # Columns to export
 EXPORT_COLUMNS = [
     "id",
@@ -41,12 +40,12 @@ def listing_to_row(listing: Listing) -> dict[str, str]:
     """
     return {
         "id": str(listing.id),
-        "source": listing.source.value if listing.source else "",
+        "source": listing.source.value if hasattr(listing.source, "value") else str(listing.source or ""),
         "title": listing.title or "",
         "price": str(listing.price) if listing.price is not None else "",
         "mileage_km": str(listing.mileage_km) if listing.mileage_km is not None else "",
         "year": str(listing.year) if listing.year is not None else "",
-        "first_registration": listing.first_registration or "",
+        "first_registration": listing.first_registration.isoformat() if listing.first_registration else "",
         "match_score": f"{listing.match_score:.1f}" if listing.match_score is not None else "",
         "is_qualified": "yes" if listing.is_qualified else "no",
         "url": listing.url or "",

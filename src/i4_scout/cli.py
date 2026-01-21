@@ -21,7 +21,6 @@ from i4_scout.export.json_exporter import export_to_json
 from i4_scout.models.pydantic_models import ScrapeProgress, Source
 from i4_scout.services import DocumentService, ListingService, ScrapeService
 from i4_scout.services.document_service import (
-    DocumentNotFoundError,
     InvalidFileError,
     ListingNotFoundError,
 )

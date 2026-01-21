@@ -1,6 +1,5 @@
 """Unit tests for scraper performance optimizations."""
 
-import tempfile
 import time
 from pathlib import Path
 
@@ -19,8 +18,8 @@ def db_session():
     """Create an in-memory database session for testing."""
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)
-    SessionLocal = sessionmaker(bind=engine)
-    session = SessionLocal()
+    session_factory = sessionmaker(bind=engine)
+    session = session_factory()
     yield session
     session.close()
 
@@ -176,7 +175,7 @@ class TestHTMLCaching:
         # Manually expire the entry by modifying the file
         cache_path = cache._cache_path(url)
         import json
-        with open(cache_path, "r") as f:
+        with open(cache_path) as f:
             data = json.load(f)
         data["timestamp"] = time.time() - 100000  # Way past TTL
         with open(cache_path, "w") as f:

@@ -37,13 +37,13 @@ def expand_bundles(raw_options: list[str], config: OptionsConfig) -> list[str]:
     # Check both required and nice_to_have for bundles
     all_options = list(config.required) + list(config.nice_to_have)
 
-    for option in all_options:
-        if option.is_bundle and option.bundle_contents:
+    for opt_config in all_options:
+        if opt_config.is_bundle and opt_config.bundle_contents:
             # Add canonical name
-            bundle_map[normalize_text(option.name)] = list(option.bundle_contents)
+            bundle_map[normalize_text(opt_config.name)] = list(opt_config.bundle_contents)
             # Add all aliases
-            for alias in option.aliases:
-                bundle_map[normalize_text(alias)] = list(option.bundle_contents)
+            for alias in opt_config.aliases:
+                bundle_map[normalize_text(alias)] = list(opt_config.bundle_contents)
 
     # If no bundles defined, return original
     if not bundle_map:

@@ -3,7 +3,6 @@
 import re
 import unicodedata
 
-
 # Pre-compiled regex patterns for performance
 _PUNCTUATION_RE = re.compile(r"[/\-°]")
 _NON_ALNUM_RE = re.compile(r"[^a-z0-9\s]")

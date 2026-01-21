@@ -11,8 +11,7 @@ from playwright.async_api import (
     Playwright,
     async_playwright,
 )
-from playwright_stealth import Stealth
-
+from playwright_stealth import Stealth  # type: ignore[import-untyped]
 
 # Default realistic Chrome user agents
 DEFAULT_USER_AGENTS = [

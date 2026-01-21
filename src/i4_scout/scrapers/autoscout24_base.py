@@ -264,9 +264,9 @@ class AutoScout24BaseScraper(BaseScraper):
             dealer_name = json_ld_data.get("dealer_name")
             dealer_type = json_ld_data.get("dealer_type")
 
-        return ScrapedListing(
+        return ScrapedListing(  # type: ignore[call-arg]
             source=self.source,
-            url=url,
+            url=url,  # type: ignore[arg-type]
             title=title,
             price=price,
             options_list=options,
@@ -354,7 +354,7 @@ class AutoScout24BaseScraper(BaseScraper):
             "Voertuigomschrijving",
         ]
         for label in description_labels:
-            h2 = soup.find("h2", string=re.compile(label, re.IGNORECASE))
+            h2 = soup.find("h2", string=re.compile(label, re.IGNORECASE))  # type: ignore[call-overload]
             if h2:
                 # Navigate up to find parent section, then find content
                 parent = h2.find_parent("div", class_=re.compile(r"DetailsSection"))
@@ -365,15 +365,15 @@ class AutoScout24BaseScraper(BaseScraper):
                     if content_div:
                         text = content_div.get_text(separator="\n", strip=True)
                         if text:
-                            return text
+                            return str(text)
 
         # Method 3: Find by dt/dd structure with label (legacy structure)
         for label in description_labels:
-            dt = soup.find("dt", string=re.compile(label, re.IGNORECASE))
+            dt = soup.find("dt", string=re.compile(label, re.IGNORECASE))  # type: ignore[call-overload]
             if dt:
                 dd = dt.find_next_sibling("dd")
                 if dd:
-                    return dd.get_text(separator="\n", strip=True)
+                    return str(dd.get_text(separator="\n", strip=True))
 
         # Method 4: Find by class name patterns
         desc_patterns = [
@@ -471,6 +471,6 @@ class AutoScout24BaseScraper(BaseScraper):
 
     @property
     @abstractmethod
-    def source(self) -> Source:
+    def source(self) -> Source:  # type: ignore[override]
         """Return the Source enum value for this scraper."""
         ...

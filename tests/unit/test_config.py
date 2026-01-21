@@ -128,7 +128,8 @@ class TestConfigLoader:
         invalid_path = tmp_path / "invalid.yaml"
         invalid_path.write_text("invalid: yaml: content: [")
 
-        with pytest.raises(Exception):  # Could be yaml.YAMLError or ValidationError
+        import yaml
+        with pytest.raises(yaml.YAMLError):
             load_options_config(invalid_path)
 
     def test_load_config_empty_file(self, tmp_path: Path) -> None:
@@ -148,6 +149,7 @@ class TestConfigLoader:
     def test_load_config_partial_config(self, tmp_path: Path) -> None:
         """Should handle config with only some sections."""
         import yaml
+
         from i4_scout.config import load_options_config
 
         partial_path = tmp_path / "partial.yaml"
@@ -162,6 +164,7 @@ class TestConfigLoader:
     def test_config_is_frozen(self, temp_config_file: Path) -> None:
         """OptionsConfig should be immutable (attribute reassignment)."""
         from pydantic import ValidationError
+
         from i4_scout.config import load_options_config
 
         config = load_options_config(temp_config_file)
@@ -241,6 +244,7 @@ class TestSearchFiltersConfig:
     def test_load_search_filters_partial(self, tmp_path: Path) -> None:
         """Should handle partial search_filters section."""
         import yaml
+
         from i4_scout.config import load_search_filters
 
         partial_path = tmp_path / "partial_filters.yaml"

@@ -65,7 +65,7 @@ class HTMLCache:
             return None
 
         try:
-            with open(cache_path, "r", encoding="utf-8") as f:
+            with open(cache_path, encoding="utf-8") as f:
                 data = json.load(f)
 
             entry = CacheEntry(
@@ -119,9 +119,10 @@ class HTMLCache:
             return None
 
         try:
-            with open(cache_path, "r", encoding="utf-8") as f:
+            with open(cache_path, encoding="utf-8") as f:
                 data = json.load(f)
-            return data.get("etag")
+            etag = data.get("etag")
+            return str(etag) if etag is not None else None
         except (json.JSONDecodeError, KeyError):
             return None
 
@@ -148,7 +149,7 @@ class HTMLCache:
 
         for cache_file in self.cache_dir.glob("*.json"):
             try:
-                with open(cache_file, "r", encoding="utf-8") as f:
+                with open(cache_file, encoding="utf-8") as f:
                     data = json.load(f)
 
                 url = data.get("url", "")
@@ -164,7 +165,7 @@ class HTMLCache:
 
         return count
 
-    def stats(self) -> dict:
+    def stats(self) -> dict[str, int]:
         """Get cache statistics.
 
         Returns:
@@ -179,7 +180,7 @@ class HTMLCache:
         for cache_file in self.cache_dir.glob("*.json"):
             total += 1
             try:
-                with open(cache_file, "r", encoding="utf-8") as f:
+                with open(cache_file, encoding="utf-8") as f:
                     data = json.load(f)
 
                 url = data.get("url", "")

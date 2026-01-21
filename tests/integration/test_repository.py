@@ -1,14 +1,13 @@
 """Integration tests for the repository layer."""
 
-import hashlib
-from datetime import date, datetime
+from datetime import date
 
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from i4_scout.database.repository import ListingRepository
-from i4_scout.models.db_models import Base, Listing, Option, ListingOption, PriceHistory
+from i4_scout.models.db_models import Base, Option
 from i4_scout.models.pydantic_models import ListingCreate, Source
 
 
@@ -17,8 +16,8 @@ def db_session():
     """Create an in-memory database session for testing."""
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)
-    SessionLocal = sessionmaker(bind=engine)
-    session = SessionLocal()
+    session_factory = sessionmaker(bind=engine)
+    session = session_factory()
     yield session
     session.close()
 

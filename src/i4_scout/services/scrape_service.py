@@ -1,5 +1,6 @@
 """Service layer for scraping operations."""
 
+import logging
 import re
 from collections.abc import Callable
 from contextlib import asynccontextmanager
@@ -7,6 +8,23 @@ from datetime import date
 from typing import Any
 
 from sqlalchemy.orm import Session
+
+from i4_scout.database.repository import ListingRepository
+from i4_scout.matching.option_matcher import match_options
+from i4_scout.matching.scorer import calculate_score
+from i4_scout.models.pydantic_models import (
+    ListingCreate,
+    OptionsConfig,
+    ScrapeProgress,
+    ScrapeResult,
+    SearchFilters,
+    Source,
+)
+from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
+from i4_scout.scrapers.autoscout24_nl import AutoScout24NLScraper
+from i4_scout.scrapers.browser import BrowserConfig, BrowserManager
+
+logger = logging.getLogger(__name__)
 
 
 def parse_first_registration(value: str | None) -> date | None:
@@ -40,21 +58,6 @@ def parse_first_registration(value: str | None) -> date | None:
             return date(year, 1, 1)
 
     return None
-
-from i4_scout.database.repository import ListingRepository
-from i4_scout.matching.option_matcher import match_options
-from i4_scout.matching.scorer import calculate_score
-from i4_scout.models.pydantic_models import (
-    ListingCreate,
-    OptionsConfig,
-    ScrapeProgress,
-    ScrapeResult,
-    SearchFilters,
-    Source,
-)
-from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
-from i4_scout.scrapers.autoscout24_nl import AutoScout24NLScraper
-from i4_scout.scrapers.browser import BrowserConfig, BrowserManager
 
 
 class ScrapeService:
@@ -159,7 +162,7 @@ class ScrapeService:
                     await scraper.random_delay()
 
                 except Exception:
-                    # Continue to next page on error
+                    logger.exception("Error scraping page %d, continuing to next page", page_num)
                     continue
 
         return ScrapeResult(
@@ -220,7 +223,7 @@ class ScrapeService:
                 dealer_name = detail.dealer_name
                 dealer_type = detail.dealer_type
             except Exception:
-                pass
+                logger.exception("Error fetching detail page %s", url)
 
         # Combine title and description for text search
         title = listing_data.get("title", "")

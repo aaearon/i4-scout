@@ -1,6 +1,7 @@
 """Web routes for HTML pages."""
 
 from fastapi import APIRouter, Query, Request
+from fastapi.responses import HTMLResponse
 
 from i4_scout.api.dependencies import DbSession, ListingServiceDep, OptionsConfigDep, TemplatesDep
 from i4_scout.database.repository import DocumentRepository
@@ -12,7 +13,7 @@ router = APIRouter()
 async def dashboard(
     request: Request,
     templates: TemplatesDep,
-):
+) -> HTMLResponse:
     """Render the dashboard page."""
     return templates.TemplateResponse(
         request=request,
@@ -38,7 +39,7 @@ async def listings_page(
     options_match: str = Query("all"),
     sort_by: str | None = Query(None),
     sort_order: str = Query("desc"),
-):
+) -> HTMLResponse:
     """Render the listings page."""
     # Clean options filter (remove empty strings)
     has_options_val = [o for o in (has_option or []) if o]
@@ -80,7 +81,7 @@ async def listing_detail_page(
     service: ListingServiceDep,
     options_config: OptionsConfigDep,
     templates: TemplatesDep,
-):
+) -> HTMLResponse:
     """Render the listing detail page."""
     listing = service.get_listing(listing_id)
 
@@ -129,7 +130,7 @@ async def compare_page(
     service: ListingServiceDep,
     options_config: OptionsConfigDep,
     ids: str = Query("", description="Comma-separated listing IDs"),
-):
+) -> HTMLResponse:
     """Render the listing comparison page."""
     # Parse IDs from query string
     listing_ids = []
@@ -194,7 +195,7 @@ async def compare_page(
 async def scrape_page(
     request: Request,
     templates: TemplatesDep,
-):
+) -> HTMLResponse:
     """Render the scrape control page."""
     return templates.TemplateResponse(
         request=request,

@@ -29,7 +29,7 @@ def load_options_config(path: Path | None = None) -> OptionsConfig:
     if not path.exists():
         raise FileNotFoundError(f"Config file not found: {path}")
 
-    with open(path, "r") as f:
+    with open(path) as f:
         raw_config: dict[str, Any] | None = yaml.safe_load(f)
 
     # Handle empty config file
@@ -98,7 +98,7 @@ def _load_raw_config(path: Path | None = None) -> dict[str, Any]:
     if not path.exists():
         raise FileNotFoundError(f"Config file not found: {path}")
 
-    with open(path, "r") as f:
+    with open(path) as f:
         raw_config: dict[str, Any] | None = yaml.safe_load(f)
 
     return raw_config if raw_config is not None else {}

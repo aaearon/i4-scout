@@ -1,16 +1,15 @@
 """Unit tests for database models and engine."""
 
-import pytest
 from datetime import datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from i4_scout.database.engine import get_engine, get_session, init_db, reset_engine
+from i4_scout.database.engine import get_session, init_db, reset_engine
 from i4_scout.models.db_models import (
-    Base,
     Listing,
     ListingOption,
     Option,
@@ -125,7 +124,7 @@ class TestListingModel:
         db_session.commit()
 
         # Query qualified listings
-        stmt = select(Listing).where(Listing.is_qualified == True)
+        stmt = select(Listing).where(Listing.is_qualified.is_(True))
         qualified = db_session.execute(stmt).scalars().all()
         assert len(qualified) == 2
 

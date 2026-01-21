@@ -66,7 +66,7 @@ async def create_scrape_job(
         try:
             job_source = Source(source)
         except ValueError:
-            raise HTTPException(status_code=422, detail=f"Invalid source: {source}")
+            raise HTTPException(status_code=422, detail=f"Invalid source: {source}") from None
         job_max_pages = max_pages
         job_search_filters: dict[str, Any] | None = None
     else:
@@ -76,7 +76,7 @@ async def create_scrape_job(
             body = await http_request.json()
             request = ScrapeJobCreate(**body)
         except ValidationError as e:
-            raise HTTPException(status_code=422, detail=e.errors())
+            raise HTTPException(status_code=422, detail=e.errors()) from None
         job_source = request.source
         job_max_pages = request.max_pages
         job_search_filters = request.search_filters

@@ -2,7 +2,7 @@
 
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import BinaryIO
 
@@ -237,7 +237,7 @@ class DocumentService:
             document_id=document.id,
             extracted_text=pdf_text,
             options_found_json=json.dumps(result.options_found),
-            processed_at=datetime.utcnow(),
+            processed_at=datetime.now(timezone.utc),
         )
 
         # Clear existing PDF options and add new ones

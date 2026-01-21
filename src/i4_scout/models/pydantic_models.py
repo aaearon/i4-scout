@@ -1,10 +1,14 @@
 """Pydantic models for data validation."""
 
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl
+
+
+def utc_now() -> datetime:
+    """Return current UTC datetime (timezone-aware)."""
+    return datetime.now(timezone.utc)
 
 
 class Source(str, Enum):
@@ -29,7 +33,7 @@ class OptionConfig(BaseModel):
 
     name: str = Field(..., description="Canonical name of the option")
     aliases: list[str] = Field(default_factory=list, description="Alternative names/translations")
-    category: Optional[str] = Field(None, description="Option category (e.g., 'safety', 'comfort')")
+    category: str | None = Field(None, description="Option category (e.g., 'safety', 'comfort')")
     is_bundle: bool = Field(False, description="Whether this is a package/bundle")
     bundle_contents: list[str] = Field(
         default_factory=list, description="Options included in this bundle"
@@ -58,25 +62,25 @@ class ScrapedListing(BaseModel):
     """Raw listing data from scraping."""
 
     source: Source
-    external_id: Optional[str] = Field(None, description="Site-specific listing ID")
+    external_id: str | None = Field(None, description="Site-specific listing ID")
     url: HttpUrl
     title: str
-    price: Optional[int] = Field(None, ge=0, description="Price in EUR cents")
-    price_text: Optional[str] = Field(None, description="Original price text")
-    mileage_km: Optional[int] = Field(None, ge=0)
-    year: Optional[int] = Field(None, ge=2020, le=2030)
-    first_registration: Optional[str] = Field(None, description="MM/YYYY format")
-    vin: Optional[str] = Field(None, max_length=17)
-    location_city: Optional[str] = None
-    location_zip: Optional[str] = None
-    location_country: Optional[str] = None
-    dealer_name: Optional[str] = None
-    dealer_type: Optional[str] = Field(None, description="dealer or private")
-    description: Optional[str] = None
-    raw_options_text: Optional[str] = Field(None, description="Raw equipment text from listing")
+    price: int | None = Field(None, ge=0, description="Price in EUR cents")
+    price_text: str | None = Field(None, description="Original price text")
+    mileage_km: int | None = Field(None, ge=0)
+    year: int | None = Field(None, ge=2020, le=2030)
+    first_registration: str | None = Field(None, description="MM/YYYY format")
+    vin: str | None = Field(None, max_length=17)
+    location_city: str | None = None
+    location_zip: str | None = None
+    location_country: str | None = None
+    dealer_name: str | None = None
+    dealer_type: str | None = Field(None, description="dealer or private")
+    description: str | None = None
+    raw_options_text: str | None = Field(None, description="Raw equipment text from listing")
     options_list: list[str] = Field(default_factory=list, description="Parsed option names")
     photo_urls: list[str] = Field(default_factory=list)
-    scraped_at: datetime = Field(default_factory=datetime.utcnow)
+    scraped_at: datetime = Field(default_factory=utc_now)
 
     model_config = ConfigDict(frozen=True)
 
@@ -85,26 +89,26 @@ class ListingCreate(BaseModel):
     """Data required to create a listing in the database."""
 
     source: Source
-    external_id: Optional[str] = None
+    external_id: str | None = None
     url: str
     title: str
-    price: Optional[int] = None
-    price_text: Optional[str] = None
-    mileage_km: Optional[int] = None
-    year: Optional[int] = None
-    first_registration: Optional[date] = None
-    vin: Optional[str] = None
-    location_city: Optional[str] = None
-    location_zip: Optional[str] = None
-    location_country: Optional[str] = None
-    dealer_name: Optional[str] = None
-    dealer_type: Optional[str] = None
-    description: Optional[str] = None
-    raw_options_text: Optional[str] = None
+    price: int | None = None
+    price_text: str | None = None
+    mileage_km: int | None = None
+    year: int | None = None
+    first_registration: date | None = None
+    vin: str | None = None
+    location_city: str | None = None
+    location_zip: str | None = None
+    location_country: str | None = None
+    dealer_name: str | None = None
+    dealer_type: str | None = None
+    description: str | None = None
+    raw_options_text: str | None = None
     photo_urls: list[str] = Field(default_factory=list)
     match_score: float = Field(0.0, ge=0, le=100)
     is_qualified: bool = False
-    dedup_hash: Optional[str] = None
+    dedup_hash: str | None = None
 
 
 class ListingRead(ListingCreate):
@@ -121,10 +125,10 @@ class ListingRead(ListingCreate):
 class ScrapeSession(BaseModel):
     """Metadata for a scraping session."""
 
-    id: Optional[int] = None
+    id: int | None = None
     source: Source
-    started_at: datetime = Field(default_factory=datetime.utcnow)
-    completed_at: Optional[datetime] = None
+    started_at: datetime = Field(default_factory=utc_now)
+    completed_at: datetime | None = None
     status: ScrapeStatus = ScrapeStatus.PENDING
     listings_found: int = 0
     listings_new: int = 0
@@ -142,19 +146,19 @@ class MatchResult(BaseModel):
     matched_nice_to_have: list[str] = Field(default_factory=list)
     missing_required: list[str] = Field(default_factory=list)
     has_dealbreaker: bool = False
-    dealbreaker_found: Optional[str] = None
-    score: float = Field(0.0, ge=0, le=100)
+    dealbreaker_found: str | None = None
+    score: float = Field(default=0.0, ge=0, le=100)
     is_qualified: bool = False
 
 
 class SearchFilters(BaseModel):
     """Search criteria for filtering listings at source."""
 
-    price_max_eur: Optional[int] = Field(None, description="Max price in EUR")
-    mileage_max_km: Optional[int] = Field(None, description="Max mileage in km")
-    year_min: Optional[int] = Field(None, description="Min first registration year")
-    year_max: Optional[int] = Field(None, description="Max first registration year")
-    countries: Optional[list[str]] = Field(
+    price_max_eur: int | None = Field(None, description="Max price in EUR")
+    mileage_max_km: int | None = Field(None, description="Max mileage in km")
+    year_min: int | None = Field(None, description="Min first registration year")
+    year_max: int | None = Field(None, description="Max first registration year")
+    countries: list[str] | None = Field(
         None, description="Country codes to include (e.g., D, NL, B)"
     )
 
@@ -168,7 +172,7 @@ class ScrapeProgress(BaseModel):
     new_count: int = Field(..., description="New listings created")
     updated_count: int = Field(..., description="Existing listings updated")
     skipped_count: int = Field(..., description="Listings skipped (unchanged)")
-    current_listing: Optional[str] = Field(None, description="Title of listing being processed")
+    current_listing: str | None = Field(None, description="Title of listing being processed")
 
 
 class ScrapeResult(BaseModel):
@@ -188,7 +192,7 @@ class ScrapeJobRead(BaseModel):
     source: str = Field(..., description="Source being scraped")
     status: ScrapeStatus = Field(..., description="Current job status")
     max_pages: int = Field(..., description="Maximum pages to scrape")
-    search_filters: Optional[dict[str, object]] = Field(None, description="Search filter parameters")
+    search_filters: dict[str, object] | None = Field(None, description="Search filter parameters")
 
     # Progress tracking
     current_page: int = Field(0, description="Current page being processed")
@@ -198,11 +202,11 @@ class ScrapeJobRead(BaseModel):
 
     # Timestamps
     created_at: datetime
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
 
     # Error tracking
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -217,9 +221,9 @@ class DocumentRead(BaseModel):
     file_path: str = Field(..., description="Relative path from data/documents/")
     file_size_bytes: int = Field(..., ge=0, description="File size in bytes")
     mime_type: str = Field(default="application/pdf")
-    extracted_text: Optional[str] = Field(None, description="Extracted text from PDF")
+    extracted_text: str | None = Field(None, description="Extracted text from PDF")
     uploaded_at: datetime
-    processed_at: Optional[datetime] = None
+    processed_at: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

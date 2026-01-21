@@ -1,7 +1,8 @@
 """Unit tests for Pydantic models."""
 
+from datetime import datetime
+
 import pytest
-from datetime import date, datetime
 from pydantic import ValidationError
 
 from i4_scout.models.pydantic_models import (

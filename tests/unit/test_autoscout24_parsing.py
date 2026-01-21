@@ -120,7 +120,7 @@ class TestAutoScout24SearchParsing:
 
         # Find listing with 'new' registration (GUID: 5e16c831-2d85-45e9-afff-aba3f2521159)
         new_listing = next(
-            (l for l in listings if l.get("external_id") == "5e16c831-2d85-45e9-afff-aba3f2521159"),
+            (item for item in listings if item.get("external_id") == "5e16c831-2d85-45e9-afff-aba3f2521159"),
             None
         )
         assert new_listing is not None
@@ -238,8 +238,8 @@ class TestAutoScout24SearchURLWithFilters:
 
     def test_search_url_with_price_max(self) -> None:
         """Should include priceto parameter when price_max_eur is set."""
-        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
         from i4_scout.models.pydantic_models import SearchFilters
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
 
         filters = SearchFilters(price_max_eur=55000)
         url = AutoScout24DEScraper.get_search_url_static(page=1, filters=filters)
@@ -248,8 +248,8 @@ class TestAutoScout24SearchURLWithFilters:
 
     def test_search_url_with_mileage_max(self) -> None:
         """Should include kmto parameter when mileage_max_km is set."""
-        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
         from i4_scout.models.pydantic_models import SearchFilters
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
 
         filters = SearchFilters(mileage_max_km=50000)
         url = AutoScout24DEScraper.get_search_url_static(page=1, filters=filters)
@@ -258,8 +258,8 @@ class TestAutoScout24SearchURLWithFilters:
 
     def test_search_url_with_year_min(self) -> None:
         """Should include fregfrom parameter when year_min is set."""
-        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
         from i4_scout.models.pydantic_models import SearchFilters
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
 
         filters = SearchFilters(year_min=2023)
         url = AutoScout24DEScraper.get_search_url_static(page=1, filters=filters)
@@ -270,8 +270,8 @@ class TestAutoScout24SearchURLWithFilters:
 
     def test_search_url_with_year_max(self) -> None:
         """Should include fregto parameter when year_max is set."""
-        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
         from i4_scout.models.pydantic_models import SearchFilters
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
 
         filters = SearchFilters(year_max=2025)
         url = AutoScout24DEScraper.get_search_url_static(page=1, filters=filters)
@@ -280,8 +280,8 @@ class TestAutoScout24SearchURLWithFilters:
 
     def test_search_url_with_countries(self) -> None:
         """Should include cy parameter with URL-encoded countries."""
-        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
         from i4_scout.models.pydantic_models import SearchFilters
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
 
         filters = SearchFilters(countries=["D", "NL", "B"])
         url = AutoScout24DEScraper.get_search_url_static(page=1, filters=filters)
@@ -291,8 +291,8 @@ class TestAutoScout24SearchURLWithFilters:
 
     def test_search_url_with_single_country(self) -> None:
         """Should handle single country correctly."""
-        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
         from i4_scout.models.pydantic_models import SearchFilters
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
 
         filters = SearchFilters(countries=["D"])
         url = AutoScout24DEScraper.get_search_url_static(page=1, filters=filters)
@@ -301,8 +301,8 @@ class TestAutoScout24SearchURLWithFilters:
 
     def test_search_url_with_all_filters(self) -> None:
         """Should include all filter parameters when all are set."""
-        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
         from i4_scout.models.pydantic_models import SearchFilters
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
 
         filters = SearchFilters(
             price_max_eur=55000,
@@ -332,8 +332,8 @@ class TestAutoScout24SearchURLWithFilters:
 
     def test_search_url_with_empty_filters(self) -> None:
         """Should handle empty SearchFilters gracefully."""
-        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
         from i4_scout.models.pydantic_models import SearchFilters
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
 
         filters = SearchFilters()  # All None
         url = AutoScout24DEScraper.get_search_url_static(page=1, filters=filters)
@@ -344,8 +344,8 @@ class TestAutoScout24SearchURLWithFilters:
 
     def test_nl_search_url_with_filters(self) -> None:
         """Dutch scraper should also handle filters."""
-        from i4_scout.scrapers.autoscout24_nl import AutoScout24NLScraper
         from i4_scout.models.pydantic_models import SearchFilters
+        from i4_scout.scrapers.autoscout24_nl import AutoScout24NLScraper
 
         filters = SearchFilters(
             price_max_eur=45000,
@@ -508,7 +508,6 @@ class TestAutoScout24DetailParsingIntegration:
     ) -> None:
         """parse_listing_detail should include location/dealer from JSON-LD."""
         from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
-        from i4_scout.scrapers.browser import BrowserManager
 
         # Create scraper with mock browser
         scraper = AutoScout24DEScraper(None)  # type: ignore

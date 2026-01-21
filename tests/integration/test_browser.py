@@ -1,7 +1,8 @@
 """Integration tests for the browser manager."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from i4_scout.scrapers.browser import BrowserConfig, BrowserManager
 
@@ -47,7 +48,7 @@ class TestBrowserManager:
     @pytest.mark.asyncio
     async def test_context_manager_lifecycle(self):
         """BrowserManager should work as async context manager."""
-        with patch("i4_scout.scrapers.browser.async_playwright") as mock_playwright, \
+        with patch("i4_scout.scrapers.browser.async_playwright"), \
              patch("i4_scout.scrapers.browser.Stealth") as mock_stealth:
             # Setup mocks
             mock_browser = AsyncMock()
@@ -76,7 +77,7 @@ class TestBrowserManager:
     @pytest.mark.asyncio
     async def test_get_context_creates_new_context(self):
         """get_context should create a new browser context."""
-        with patch("i4_scout.scrapers.browser.async_playwright") as mock_playwright, \
+        with patch("i4_scout.scrapers.browser.async_playwright"), \
              patch("i4_scout.scrapers.browser.Stealth") as mock_stealth:
             mock_browser = AsyncMock()
             mock_context = AsyncMock()
@@ -101,7 +102,7 @@ class TestBrowserManager:
     @pytest.mark.asyncio
     async def test_context_rotation_after_threshold(self):
         """Context should rotate after reaching request threshold."""
-        with patch("i4_scout.scrapers.browser.async_playwright") as mock_playwright, \
+        with patch("i4_scout.scrapers.browser.async_playwright"), \
              patch("i4_scout.scrapers.browser.Stealth") as mock_stealth:
             mock_browser = AsyncMock()
             mock_context1 = AsyncMock()
@@ -121,13 +122,13 @@ class TestBrowserManager:
 
             async with manager:
                 # First 3 requests should use same context
-                ctx1 = await manager.get_context()
+                await manager.get_context()
                 await manager.increment_request_count()
                 await manager.increment_request_count()
                 await manager.increment_request_count()
 
                 # 4th request should trigger rotation
-                ctx2 = await manager.get_context()
+                await manager.get_context()
 
                 # Should have created 2 contexts
                 assert mock_browser.new_context.call_count == 2
@@ -137,7 +138,7 @@ class TestBrowserManager:
     @pytest.mark.asyncio
     async def test_get_page_returns_page(self):
         """get_page should return a page from the current context."""
-        with patch("i4_scout.scrapers.browser.async_playwright") as mock_playwright, \
+        with patch("i4_scout.scrapers.browser.async_playwright"), \
              patch("i4_scout.scrapers.browser.Stealth") as mock_stealth:
             mock_browser = AsyncMock()
             mock_context = AsyncMock()
@@ -163,7 +164,7 @@ class TestBrowserManager:
     @pytest.mark.asyncio
     async def test_user_agent_rotation(self):
         """User agent should be selected from configured list."""
-        with patch("i4_scout.scrapers.browser.async_playwright") as mock_playwright, \
+        with patch("i4_scout.scrapers.browser.async_playwright"), \
              patch("i4_scout.scrapers.browser.Stealth") as mock_stealth:
             mock_browser = AsyncMock()
             mock_context = AsyncMock()
@@ -189,7 +190,7 @@ class TestBrowserManager:
     @pytest.mark.asyncio
     async def test_stealth_configuration(self):
         """Stealth should be configured with correct language and platform."""
-        with patch("i4_scout.scrapers.browser.async_playwright") as mock_playwright, \
+        with patch("i4_scout.scrapers.browser.async_playwright"), \
              patch("i4_scout.scrapers.browser.Stealth") as mock_stealth:
             mock_browser = AsyncMock()
             mock_p = AsyncMock()

@@ -1,6 +1,5 @@
 """Unit tests for text normalizer - TDD approach."""
 
-import pytest
 
 
 class TestTextNormalizer:

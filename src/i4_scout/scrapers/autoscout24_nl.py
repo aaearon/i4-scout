@@ -18,6 +18,6 @@ class AutoScout24NLScraper(AutoScout24BaseScraper):
     LOCALE: ClassVar[str] = "nl-NL"
 
     @property
-    def source(self) -> Source:
+    def source(self) -> Source:  # type: ignore[override]
         """Return the Source enum value for Dutch AutoScout24."""
         return Source.AUTOSCOUT24_NL

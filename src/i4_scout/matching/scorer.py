@@ -2,7 +2,6 @@
 
 from i4_scout.models.pydantic_models import MatchResult, OptionsConfig
 
-
 # Scoring weights
 REQUIRED_WEIGHT = 100
 NICE_TO_HAVE_WEIGHT = 10
