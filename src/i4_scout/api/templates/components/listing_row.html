@@ -36,5 +36,5 @@
     <td>
         <span class="badge badge-source">{{ listing.source.value if listing.source else '' }}</span>
     </td>
-    <td>{{ listing.first_seen.strftime('%Y-%m-%d') if listing.first_seen else '--' }}</td>
+    <td>{{ listing.first_seen_at.strftime('%Y-%m-%d') if listing.first_seen_at else '--' }}</td>
 </tr>

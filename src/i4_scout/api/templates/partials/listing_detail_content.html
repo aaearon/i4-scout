@@ -1,0 +1,123 @@
+<div class="detail-header">
+    <div>
+        <h1>{{ listing.title }}</h1>
+        {% if listing.is_qualified %}
+        <span class="badge badge-qualified">Qualified</span>
+        {% else %}
+        <span class="badge badge-not-qualified">Not Qualified</span>
+        {% endif %}
+    </div>
+    <div>
+        <a href="{{ listing.url }}" target="_blank" rel="noopener noreferrer">
+            <button class="secondary">View on Source</button>
+        </a>
+    </div>
+</div>
+
+<div class="detail-grid">
+    <div class="detail-item">
+        <div class="label">Price</div>
+        <div class="value">
+            {% if listing.price %}
+                {{ "{:,.0f}".format(listing.price) }}
+            {% else %}
+                N/A
+            {% endif %}
+        </div>
+    </div>
+    <div class="detail-item">
+        <div class="label">Mileage</div>
+        <div class="value">
+            {% if listing.mileage_km %}
+                {{ "{:,.0f}".format(listing.mileage_km) }} km
+            {% else %}
+                N/A
+            {% endif %}
+        </div>
+    </div>
+    <div class="detail-item">
+        <div class="label">First Registration</div>
+        <div class="value">{{ listing.first_registration or 'N/A' }}</div>
+    </div>
+    <div class="detail-item">
+        <div class="label">Match Score</div>
+        <div class="value">
+            {% if listing.match_score is not none %}
+                {{ "{:.1f}".format(listing.match_score) }}
+            {% else %}
+                --
+            {% endif %}
+        </div>
+    </div>
+    <div class="detail-item">
+        <div class="label">Location</div>
+        <div class="value">
+            {{ listing.location_city or '--' }}{% if listing.location_country %}, {{ listing.location_country }}{% endif %}
+        </div>
+    </div>
+    <div class="detail-item">
+        <div class="label">Dealer</div>
+        <div class="value">
+            {{ listing.dealer_name or '--' }}
+            {% if listing.dealer_type %}<br><small>({{ listing.dealer_type }})</small>{% endif %}
+        </div>
+    </div>
+    <div class="detail-item">
+        <div class="label">Source</div>
+        <div class="value">
+            <span class="badge badge-source">{{ listing.source.value if listing.source else '--' }}</span>
+        </div>
+    </div>
+    <div class="detail-item">
+        <div class="label">First Seen</div>
+        <div class="value">{{ listing.first_seen_at.strftime('%Y-%m-%d %H:%M') if listing.first_seen_at else '--' }}</div>
+    </div>
+    <div class="detail-item">
+        <div class="label">Last Seen</div>
+        <div class="value">{{ listing.last_seen_at.strftime('%Y-%m-%d %H:%M') if listing.last_seen_at else '--' }}</div>
+    </div>
+</div>
+
+{% if listing.matched_options %}
+<article>
+    <header>Matched Options</header>
+    <ul class="options-list">
+        {% for option in listing.matched_options %}
+        <li>{{ option }}</li>
+        {% endfor %}
+    </ul>
+</article>
+{% endif %}
+
+<!-- Price History -->
+<article>
+    <header>
+        Price History
+        <span id="price-indicator" class="htmx-indicator"><span class="spinner"></span></span>
+    </header>
+    <div
+        id="price-history"
+        hx-get="/partials/listing/{{ listing.id }}/price-chart"
+        hx-trigger="load"
+        hx-swap="innerHTML"
+        hx-indicator="#price-indicator"
+    >
+        <div class="empty-state">
+            <p>Loading price history...</p>
+        </div>
+    </div>
+</article>
+
+<!-- Delete Button -->
+<article>
+    <header>Actions</header>
+    <button
+        class="secondary"
+        hx-delete="/api/listings/{{ listing.id }}"
+        hx-confirm="Are you sure you want to delete this listing?"
+        hx-target="body"
+        hx-on::after-request="if(event.detail.successful) window.location.href='/listings';"
+    >
+        Delete Listing
+    </button>
+</article>

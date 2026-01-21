@@ -4,6 +4,7 @@ from fastapi import APIRouter, Query, Request
 from sqlalchemy import func, select
 
 from i4_scout.api.dependencies import DbSession, ListingServiceDep, TemplatesDep
+from i4_scout.database.repository import ListingRepository
 from i4_scout.models.db_models import Listing
 from i4_scout.models.pydantic_models import Source
 
@@ -148,4 +149,38 @@ async def listings_partial(
             "offset": offset,
             "filters": filters,
         },
+    )
+
+
+@router.get("/listing/{listing_id}")
+async def listing_detail_partial(
+    request: Request,
+    listing_id: int,
+    service: ListingServiceDep,
+    templates: TemplatesDep,
+):
+    """Return listing detail HTML fragment (for modal loading)."""
+    listing = service.get_listing(listing_id)
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/listing_detail_content.html",
+        context={"listing": listing},
+    )
+
+
+@router.get("/listing/{listing_id}/price-chart")
+async def listing_price_chart_partial(
+    request: Request,
+    listing_id: int,
+    session: DbSession,
+    templates: TemplatesDep,
+):
+    """Return price history chart HTML fragment."""
+    repo = ListingRepository(session)
+    history = repo.get_price_history(listing_id)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="components/price_chart.html",
+        context={"history": history, "enumerate": enumerate},
     )

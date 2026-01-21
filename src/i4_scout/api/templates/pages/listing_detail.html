@@ -1,9 +1,17 @@
 {% extends "base.html" %}
 
-{% block title %}Listing #{{ listing_id }} - i4-scout{% endblock %}
+{% block title %}{% if listing %}{{ listing.title }} - i4-scout{% else %}Listing Not Found - i4-scout{% endif %}{% endblock %}
 
 {% block content %}
-<h1>Listing #{{ listing_id }}</h1>
-<p>Listing detail content will be implemented in Phase 4.</p>
 <p><a href="/listings">&larr; Back to listings</a></p>
+
+{% if listing %}
+{% include "partials/listing_detail_content.html" %}
+{% else %}
+<div class="empty-state">
+    <h2>Listing Not Found</h2>
+    <p>The listing you're looking for does not exist or has been deleted.</p>
+    <p><a href="/listings">Go back to listings</a></p>
+</div>
+{% endif %}
 {% endblock %}

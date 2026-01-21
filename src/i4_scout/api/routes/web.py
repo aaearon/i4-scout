@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Query, Request
 
-from i4_scout.api.dependencies import TemplatesDep
+from i4_scout.api.dependencies import ListingServiceDep, TemplatesDep
 
 router = APIRouter()
 
@@ -60,13 +60,15 @@ async def listings_page(
 async def listing_detail_page(
     request: Request,
     listing_id: int,
+    service: ListingServiceDep,
     templates: TemplatesDep,
 ):
     """Render the listing detail page."""
+    listing = service.get_listing(listing_id)
     return templates.TemplateResponse(
         request=request,
         name="pages/listing_detail.html",
-        context={"listing_id": listing_id},
+        context={"listing": listing},
     )
 
 

@@ -32,6 +32,6 @@
         </div>
     </div>
     <footer>
-        <small>{{ listing.source.value if listing.source else '' }} | First seen: {{ listing.first_seen.strftime('%Y-%m-%d') if listing.first_seen else '--' }}</small>
+        <small>{{ listing.source.value if listing.source else '' }} | First seen: {{ listing.first_seen_at.strftime('%Y-%m-%d') if listing.first_seen_at else '--' }}</small>
     </footer>
 </article>
