@@ -29,6 +29,16 @@ class ListingService:
         source: Source | None = None,
         qualified_only: bool = False,
         min_score: float | None = None,
+        price_min: int | None = None,
+        price_max: int | None = None,
+        mileage_min: int | None = None,
+        mileage_max: int | None = None,
+        year_min: int | None = None,
+        year_max: int | None = None,
+        country: str | None = None,
+        search: str | None = None,
+        sort_by: str | None = None,
+        sort_order: str = "desc",
         limit: int = 20,
         offset: int = 0,
     ) -> tuple[list[ListingRead], int]:
@@ -38,6 +48,16 @@ class ListingService:
             source: Filter by source.
             qualified_only: Only return qualified listings.
             min_score: Minimum match score.
+            price_min: Minimum price in EUR.
+            price_max: Maximum price in EUR.
+            mileage_min: Minimum mileage in km.
+            mileage_max: Maximum mileage in km.
+            year_min: Minimum model year.
+            year_max: Maximum model year.
+            country: Country code (D, NL, B, etc.).
+            search: Text search in title and description.
+            sort_by: Field to sort by (price, mileage, score, first_seen, last_seen).
+            sort_order: Sort direction (asc, desc). Default: desc.
             limit: Maximum results to return.
             offset: Number of results to skip.
 
@@ -48,12 +68,34 @@ class ListingService:
             source=source,
             qualified_only=qualified_only,
             min_score=min_score,
+            price_min=price_min,
+            price_max=price_max,
+            mileage_min=mileage_min,
+            mileage_max=mileage_max,
+            year_min=year_min,
+            year_max=year_max,
+            country=country,
+            search=search,
+            sort_by=sort_by,
+            sort_order=sort_order,
             limit=limit,
             offset=offset,
         )
 
-        # Get total count (without pagination)
-        total = self._repo.count_listings(source=source, qualified_only=qualified_only)
+        # Get total count (without pagination, but with all filters)
+        total = self._repo.count_listings(
+            source=source,
+            qualified_only=qualified_only,
+            min_score=min_score,
+            price_min=price_min,
+            price_max=price_max,
+            mileage_min=mileage_min,
+            mileage_max=mileage_max,
+            year_min=year_min,
+            year_max=year_max,
+            country=country,
+            search=search,
+        )
 
         # Convert ORM objects to Pydantic models
         listing_reads = [self._to_listing_read(listing) for listing in listings]

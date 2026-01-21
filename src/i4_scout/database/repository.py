@@ -6,7 +6,7 @@ from collections.abc import Callable
 from datetime import datetime
 from typing import Any, TypeVar
 
-from sqlalchemy import desc
+from sqlalchemy import asc, desc, or_
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 from tenacity import (
@@ -216,6 +216,16 @@ class ListingRepository:
         source: Source | None = None,
         qualified_only: bool = False,
         min_score: float | None = None,
+        price_min: int | None = None,
+        price_max: int | None = None,
+        mileage_min: int | None = None,
+        mileage_max: int | None = None,
+        year_min: int | None = None,
+        year_max: int | None = None,
+        country: str | None = None,
+        search: str | None = None,
+        sort_by: str | None = None,
+        sort_order: str = "desc",
         limit: int | None = None,
         offset: int | None = None,
     ) -> list[Listing]:
@@ -225,6 +235,16 @@ class ListingRepository:
             source: Filter by source.
             qualified_only: Only return qualified listings.
             min_score: Minimum match score.
+            price_min: Minimum price in EUR.
+            price_max: Maximum price in EUR.
+            mileage_min: Minimum mileage in km.
+            mileage_max: Maximum mileage in km.
+            year_min: Minimum model year.
+            year_max: Maximum model year.
+            country: Country code (D, NL, B, etc.).
+            search: Text search in title and description.
+            sort_by: Field to sort by (price, mileage, score, first_seen, last_seen).
+            sort_order: Sort direction (asc, desc). Default: desc.
             limit: Maximum number of results.
             offset: Number of results to skip.
 
@@ -242,8 +262,50 @@ class ListingRepository:
         if min_score is not None:
             query = query.filter(Listing.match_score >= min_score)
 
-        # Order by last seen (most recent first)
-        query = query.order_by(desc(Listing.last_seen_at))
+        if price_min is not None:
+            query = query.filter(Listing.price >= price_min)
+
+        if price_max is not None:
+            query = query.filter(Listing.price <= price_max)
+
+        if mileage_min is not None:
+            query = query.filter(Listing.mileage_km >= mileage_min)
+
+        if mileage_max is not None:
+            query = query.filter(Listing.mileage_km <= mileage_max)
+
+        if year_min is not None:
+            query = query.filter(Listing.year >= year_min)
+
+        if year_max is not None:
+            query = query.filter(Listing.year <= year_max)
+
+        if country is not None:
+            query = query.filter(Listing.location_country == country)
+
+        if search is not None:
+            search_pattern = f"%{search}%"
+            query = query.filter(
+                or_(
+                    Listing.title.ilike(search_pattern),
+                    Listing.description.ilike(search_pattern),
+                )
+            )
+
+        # Sorting
+        sort_columns = {
+            "price": Listing.price,
+            "mileage": Listing.mileage_km,
+            "score": Listing.match_score,
+            "first_seen": Listing.first_seen_at,
+            "last_seen": Listing.last_seen_at,
+        }
+        if sort_by and sort_by in sort_columns:
+            col = sort_columns[sort_by]
+            query = query.order_by(desc(col) if sort_order == "desc" else asc(col))
+        else:
+            # Default: most recently seen first
+            query = query.order_by(desc(Listing.last_seen_at))
 
         if offset is not None:
             query = query.offset(offset)
@@ -257,12 +319,30 @@ class ListingRepository:
         self,
         source: Source | None = None,
         qualified_only: bool = False,
+        min_score: float | None = None,
+        price_min: int | None = None,
+        price_max: int | None = None,
+        mileage_min: int | None = None,
+        mileage_max: int | None = None,
+        year_min: int | None = None,
+        year_max: int | None = None,
+        country: str | None = None,
+        search: str | None = None,
     ) -> int:
         """Count listings with optional filters.
 
         Args:
             source: Filter by source.
             qualified_only: Only count qualified listings.
+            min_score: Minimum match score.
+            price_min: Minimum price in EUR.
+            price_max: Maximum price in EUR.
+            mileage_min: Minimum mileage in km.
+            mileage_max: Maximum mileage in km.
+            year_min: Minimum model year.
+            year_max: Maximum model year.
+            country: Country code (D, NL, B, etc.).
+            search: Text search in title and description.
 
         Returns:
             Number of matching listings.
@@ -274,6 +354,39 @@ class ListingRepository:
 
         if qualified_only:
             query = query.filter(Listing.is_qualified.is_(True))
+
+        if min_score is not None:
+            query = query.filter(Listing.match_score >= min_score)
+
+        if price_min is not None:
+            query = query.filter(Listing.price >= price_min)
+
+        if price_max is not None:
+            query = query.filter(Listing.price <= price_max)
+
+        if mileage_min is not None:
+            query = query.filter(Listing.mileage_km >= mileage_min)
+
+        if mileage_max is not None:
+            query = query.filter(Listing.mileage_km <= mileage_max)
+
+        if year_min is not None:
+            query = query.filter(Listing.year >= year_min)
+
+        if year_max is not None:
+            query = query.filter(Listing.year <= year_max)
+
+        if country is not None:
+            query = query.filter(Listing.location_country == country)
+
+        if search is not None:
+            search_pattern = f"%{search}%"
+            query = query.filter(
+                or_(
+                    Listing.title.ilike(search_pattern),
+                    Listing.description.ilike(search_pattern),
+                )
+            )
 
         return query.count()
 

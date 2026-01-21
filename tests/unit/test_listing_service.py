@@ -134,7 +134,7 @@ class TestListingServiceGetListings:
 
         high, total = service.get_listings(min_score=70.0)
         assert len(high) == 1
-        assert total == 2  # Total should still be all listings
+        assert total == 1  # Total reflects filtered count (bug fix)
         assert high[0].title == "High Score"
 
     def test_get_listings_pagination(self, in_memory_session):

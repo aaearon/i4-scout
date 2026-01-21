@@ -269,12 +269,44 @@ i4-scout serve --reload
 
 ### Query Parameters for `/api/listings`
 
+**Basic Filters:**
 ```
 ?source=autoscout24_de     # Filter by source
 ?qualified_only=true       # Only qualified listings
 ?min_score=70              # Minimum match score (0-100)
+```
+
+**Range Filters:**
+```
+?price_min=40000           # Minimum price in EUR
+?price_max=50000           # Maximum price in EUR
+?mileage_min=10000         # Minimum mileage in km
+?mileage_max=30000         # Maximum mileage in km
+?year_min=2023             # Minimum model year
+?year_max=2024             # Maximum model year
+```
+
+**Other Filters:**
+```
+?country=D                 # Country code (D, NL, B, etc.)
+?search=M%20Sport          # Text search in title/description (URL-encoded)
+```
+
+**Sorting:**
+```
+?sort_by=price             # Sort by: price, mileage, score, first_seen, last_seen
+?sort_order=asc            # Sort direction: asc, desc (default: desc)
+```
+
+**Pagination:**
+```
 ?limit=20                  # Results per page (1-100)
 ?offset=0                  # Pagination offset
+```
+
+**Example Combined:**
+```
+/api/listings?price_max=50000&year_min=2023&qualified_only=true&sort_by=price&sort_order=asc
 ```
 
 ### Database Configuration
