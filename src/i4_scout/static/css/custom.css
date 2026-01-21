@@ -751,6 +751,19 @@ footer {
     font-size: 0.85rem;
 }
 
+/* Copy button feedback states */
+#copy-btn.copy-success {
+    border-color: #2ecc71;
+    color: #2ecc71;
+    background: rgba(46, 204, 113, 0.1);
+}
+
+#copy-btn.copy-error {
+    border-color: #e74c3c;
+    color: #e74c3c;
+    background: rgba(231, 76, 60, 0.1);
+}
+
 /* Add padding to main when compare bar is visible */
 body:has(.compare-bar:not([hidden])) main {
     padding-bottom: 5rem;

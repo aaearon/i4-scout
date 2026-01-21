@@ -479,6 +479,8 @@ i4-scout serve
 - Search with debounce (500ms delay)
 - URL state preservation (bookmarkable filters)
 - Compare bar appears when listings selected (fixed at bottom)
+  - "Copy Details" button copies selected listings to clipboard as LLM-friendly markdown
+  - "Compare Selected" button navigates to comparison page
 
 **Listing Detail (`/listings/{id}`):**
 - Full listing information
@@ -510,6 +512,7 @@ i4-scout serve
 - Best values highlighted (lowest price/mileage, highest score/year)
 - Bookmarkable URL with listing IDs
 - Selection stored in localStorage (persists across browser sessions)
+- Copy to clipboard: "Copy Details" button exports selected listings as LLM-friendly markdown
 
 ### HTMX Partial Endpoints
 

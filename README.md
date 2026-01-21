@@ -9,6 +9,9 @@ CLI tool to scrape BMW i4 eDrive40 listings from AutoScout24 DE/NL, match agains
 - Score and qualify listings based on option matches
 - Export to CSV/JSON
 - SQLite storage with price history tracking
+- **Web Interface** with dashboard, filtering, comparison, and favorites
+- **REST API** for programmatic access
+- PDF enrichment to extract options from dealer spec sheets
 - Docker support
 
 ## Installation
@@ -45,7 +48,24 @@ i4-scout show 1
 
 # Export to CSV
 i4-scout export --format csv --qualified
+
+# Start web interface
+i4-scout serve
 ```
+
+## Web Interface
+
+Start the server with `i4-scout serve` and navigate to http://localhost:8000.
+
+- **Dashboard**: Statistics overview with auto-refresh
+- **Listings**: Filterable table with sorting, pagination, and hover popovers
+- **Comparison**: Select up to 4 listings for side-by-side comparison
+- **Copy to Clipboard**: Export selected listings as LLM-friendly markdown
+- **Favorites**: Star listings (persisted in browser localStorage)
+- **Notes**: Add work log style notes to track dealer communication
+- **PDF Enrichment**: Upload dealer spec PDFs to extract additional options
+
+See [CLAUDE.md](CLAUDE.md) for full documentation.
 
 ## CLI Commands
 
@@ -56,6 +76,8 @@ i4-scout export --format csv --qualified
 | `list` | List scraped listings with filters |
 | `show <id>` | Show detailed listing information |
 | `export` | Export listings to CSV/JSON |
+| `enrich <id> <pdf>` | Enrich listing with options from dealer PDF |
+| `serve` | Start web interface and API server |
 
 ## Configuration
 
@@ -80,7 +102,7 @@ docker-compose run export     # Export to JSON
 # Install dev dependencies
 pip install -e ".[dev]"
 
-# Run tests (146 tests)
+# Run tests
 pytest tests/ -v
 
 # Run specific test file

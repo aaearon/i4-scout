@@ -104,6 +104,139 @@
         window.location.href = '/compare?ids=' + ids;
     };
 
+    // Copy selected listings to clipboard in LLM-friendly format
+    window.copyToClipboard = async function() {
+        const selections = getSelections();
+        if (selections.length === 0) {
+            return;
+        }
+
+        const copyBtn = document.getElementById('copy-btn');
+        const originalText = copyBtn.textContent;
+
+        try {
+            // Show loading state
+            copyBtn.textContent = 'Copying...';
+            copyBtn.disabled = true;
+
+            // Fetch full details for each listing and options config in parallel
+            const [listings, configRes] = await Promise.all([
+                Promise.all(selections.map(s =>
+                    fetch('/api/listings/' + s.id).then(r => r.json())
+                )),
+                fetch('/api/config/options').then(r => r.json())
+            ]);
+
+            // Format as LLM-friendly markdown
+            const text = formatListingsForLLM(listings, configRes);
+
+            // Copy to clipboard
+            await navigator.clipboard.writeText(text);
+
+            // Show success feedback
+            copyBtn.textContent = 'Copied!';
+            copyBtn.classList.add('copy-success');
+            setTimeout(() => {
+                copyBtn.textContent = originalText;
+                copyBtn.disabled = false;
+                copyBtn.classList.remove('copy-success');
+            }, 2000);
+        } catch (err) {
+            console.error('Failed to copy:', err);
+            copyBtn.textContent = 'Failed';
+            copyBtn.classList.add('copy-error');
+            setTimeout(() => {
+                copyBtn.textContent = originalText;
+                copyBtn.disabled = false;
+                copyBtn.classList.remove('copy-error');
+            }, 2000);
+        }
+    };
+
+    // Format listings as LLM-friendly markdown
+    function formatListingsForLLM(listings, config) {
+        const lines = ['# Car Listings Comparison', ''];
+
+        listings.forEach((listing, index) => {
+            // Header
+            lines.push('## Listing ' + (index + 1) + ': ' + (listing.title || 'Untitled'));
+
+            // Basic info
+            if (listing.price !== null && listing.price !== undefined) {
+                lines.push('- **Price:** €' + listing.price.toLocaleString('de-DE'));
+            }
+            if (listing.mileage_km !== null && listing.mileage_km !== undefined) {
+                lines.push('- **Mileage:** ' + listing.mileage_km.toLocaleString('de-DE') + ' km');
+            }
+            if (listing.first_registration_year) {
+                lines.push('- **Year:** ' + listing.first_registration_year);
+            }
+
+            // Location
+            const locationParts = [];
+            if (listing.location_city) locationParts.push(listing.location_city);
+            if (listing.location_country) locationParts.push(listing.location_country);
+            if (locationParts.length > 0) {
+                lines.push('- **Location:** ' + locationParts.join(', '));
+            }
+
+            // Dealer
+            if (listing.dealer_name) {
+                const dealerType = listing.dealer_type ? ' (' + listing.dealer_type + ')' : '';
+                lines.push('- **Dealer:** ' + listing.dealer_name + dealerType);
+            }
+
+            // Match score
+            if (listing.match_score !== null && listing.match_score !== undefined) {
+                const qualified = listing.is_qualified ? 'Yes' : 'No';
+                lines.push('- **Match Score:** ' + listing.match_score.toFixed(0) + '% (Qualified: ' + qualified + ')');
+            }
+
+            // Issue status
+            if (listing.has_issue) {
+                lines.push('- **Issue:** Yes (flagged)');
+            }
+
+            // URL
+            if (listing.url) {
+                lines.push('- **URL:** ' + listing.url);
+            }
+
+            lines.push('');
+
+            // Matched options
+            const matchedOptions = listing.matched_options || [];
+            if (matchedOptions.length > 0) {
+                lines.push('### Matched Options');
+                matchedOptions.forEach(opt => {
+                    lines.push('- ' + opt);
+                });
+                lines.push('');
+            }
+
+            // Missing required options (from config)
+            if (config && config.required) {
+                const requiredNames = config.required.map(opt => opt.name);
+                const missingRequired = requiredNames.filter(name => !matchedOptions.includes(name));
+                if (missingRequired.length > 0) {
+                    lines.push('### Missing Required Options');
+                    missingRequired.forEach(opt => {
+                        lines.push('- ' + opt);
+                    });
+                    lines.push('');
+                }
+            }
+
+            // Separator between listings (except last)
+            if (index < listings.length - 1) {
+                lines.push('---');
+                lines.push('');
+            }
+        });
+
+        return lines.join('\n');
+    }
+
     // Update UI to reflect current selection state
     function updateUI() {
         const selections = getSelections();
