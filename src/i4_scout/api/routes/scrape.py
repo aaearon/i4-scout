@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Form, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from i4_scout.api.dependencies import DbSession, OptionsConfigDep
@@ -35,10 +35,12 @@ def _job_to_response(job: ScrapeJobRead) -> ScrapeJobResponse:
 @router.post("", status_code=201, response_model=None)
 async def create_scrape_job(
     http_request: Request,
-    request: ScrapeJobCreate,
     session: DbSession,
     options_config: OptionsConfigDep,
     background_tasks: BackgroundTasks,
+    # Form parameters for HTMX requests
+    source: str | None = Form(None),
+    max_pages: int | None = Form(None),
 ) -> HTMLResponse | JSONResponse:
     """Create a new scrape job.
 
@@ -46,40 +48,63 @@ async def create_scrape_job(
     Returns immediately with job details - poll the status endpoint
     for progress updates.
 
+    Accepts both form data (HTMX) and JSON body (API clients).
     For HTMX requests (HX-Request header), returns HTML success message
     and triggers jobCreated event to refresh the jobs list.
 
     Args:
         http_request: HTTP request object.
-        request: Job creation request.
 
     Returns:
         Created job details (JSON) or success message (HTML for HTMX).
     """
+    # Determine if this is a form submission or JSON request
+    is_htmx = http_request.headers.get("HX-Request") == "true"
+
+    if source is not None and max_pages is not None:
+        # Form data from HTMX
+        try:
+            job_source = Source(source)
+        except ValueError:
+            raise HTTPException(status_code=422, detail=f"Invalid source: {source}")
+        job_max_pages = max_pages
+        job_search_filters: dict[str, Any] | None = None
+    else:
+        # JSON body from API client
+        from pydantic import ValidationError
+        try:
+            body = await http_request.json()
+            request = ScrapeJobCreate(**body)
+        except ValidationError as e:
+            raise HTTPException(status_code=422, detail=e.errors())
+        job_source = request.source
+        job_max_pages = request.max_pages
+        job_search_filters = request.search_filters
+
     service = JobService(session)
 
     job = service.create_job(
-        source=request.source,
-        max_pages=request.max_pages,
-        search_filters=request.search_filters,
+        source=job_source,
+        max_pages=job_max_pages,
+        search_filters=job_search_filters,
     )
 
     # Schedule background scraping
     background_tasks.add_task(
         run_scrape_job,
         job_id=job.id,
-        source=request.source,
-        max_pages=request.max_pages,
-        search_filters=request.search_filters,
+        source=job_source,
+        max_pages=job_max_pages,
+        search_filters=job_search_filters,
         options_config=options_config,
     )
 
     # Check if this is an HTMX request
-    if http_request.headers.get("HX-Request") == "true":
+    if is_htmx:
         html_content = f"""
         <div class="alert alert-success">
-            Scrape job #{job.id} started for {request.source.value}.
-            Scraping up to {request.max_pages} pages.
+            Scrape job #{job.id} started for {job_source.value}.
+            Scraping up to {job_max_pages} pages.
         </div>
         """
         return HTMLResponse(
