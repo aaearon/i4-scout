@@ -470,7 +470,10 @@ i4-scout serve
 
 **Listings (`/listings`):**
 - Full listings table with all fields
-- Issue icon (warning symbol) displayed in title cell for listings with issues
+- Status icons in title cell:
+  - Issue icon (warning symbol, red) for flagged items
+  - Document icon (purple) for listings with uploaded PDF
+  - Notes icon with count (blue badge) for listings with notes
 - Checkbox selection for comparison (max 4 listings)
 - Favorite star button per listing (persists in localStorage)
 - Hover popover showing options summary (lazy-loaded via HTMX)

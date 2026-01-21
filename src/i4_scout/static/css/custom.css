@@ -1148,6 +1148,36 @@ body:has(.compare-bar:not([hidden])) main {
     animation: throb 1.2s ease-in-out infinite;
 }
 
+/* Document icon in listing row */
+.document-icon {
+    color: #9b59b6;
+    font-size: 0.85rem;
+    margin-right: 0.25rem;
+    flex-shrink: 0;
+}
+
+/* Notes icon in listing row */
+.notes-icon {
+    color: #3498db;
+    font-size: 0.85rem;
+    margin-right: 0.25rem;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.1rem;
+}
+
+.notes-count {
+    font-size: 0.65rem;
+    font-weight: 600;
+    background: #3498db;
+    color: white;
+    padding: 0 0.3rem;
+    border-radius: 0.5rem;
+    min-width: 1rem;
+    text-align: center;
+}
+
 @keyframes throb {
     0%, 100% {
         opacity: 1;
