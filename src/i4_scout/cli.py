@@ -2,10 +2,9 @@
 
 import asyncio
 import json
-import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import typer
 from rich.console import Console
@@ -13,14 +12,14 @@ from rich.panel import Panel
 from rich.table import Table
 
 from i4_scout import __version__
-from i4_scout.config import load_options_config
+from i4_scout.config import load_options_config, load_search_filters
 from i4_scout.database.engine import get_session, init_db
 from i4_scout.database.repository import ListingRepository
 from i4_scout.export.csv_exporter import export_to_csv
 from i4_scout.export.json_exporter import export_to_json
 from i4_scout.matching.option_matcher import match_options
 from i4_scout.matching.scorer import calculate_score
-from i4_scout.models.pydantic_models import ListingCreate, Source
+from i4_scout.models.pydantic_models import ListingCreate, SearchFilters, Source
 from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
 from i4_scout.scrapers.autoscout24_nl import AutoScout24NLScraper
 from i4_scout.scrapers.browser import BrowserConfig, BrowserManager
@@ -89,7 +88,7 @@ def main(
 
 @app.command()
 def init_database(
-    db_path: Optional[Path] = typer.Option(
+    db_path: Path | None = typer.Option(
         None,
         "--db",
         "-d",
@@ -111,7 +110,7 @@ def init_database(
         console.print(f"[green]Database initialized at: {db_location}[/green]")
     except Exception as e:
         console.print(f"[red]Error initializing database: {e}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 def get_scraper_class(source: Source) -> type:
@@ -129,9 +128,11 @@ async def run_scrape(
     source: Source,
     max_pages: int,
     headless: bool,
-    config_path: Optional[Path],
+    config_path: Path | None,
     quiet: bool = False,
-) -> tuple[int, int, int]:
+    search_filters: SearchFilters | None = None,
+    use_cache: bool = True,
+) -> dict[str, int]:
     """Run the scraping process.
 
     Args:
@@ -140,9 +141,11 @@ async def run_scrape(
         headless: Run browser in headless mode.
         config_path: Path to options config YAML.
         quiet: Suppress progress output (for JSON mode).
+        search_filters: Optional search filters to apply.
+        use_cache: Whether to use HTML caching.
 
     Returns:
-        Tuple of (total_found, new_count, updated_count).
+        Dict with counts: total_found, new_listings, updated_listings, skipped_unchanged, fetched_details.
     """
     # Load options config
     options_config = load_options_config(config_path)
@@ -154,6 +157,8 @@ async def run_scrape(
     total_found = 0
     new_count = 0
     updated_count = 0
+    skipped_count = 0
+    fetched_count = 0
     pages_scraped = 0
 
     async with BrowserManager(browser_config) as browser:
@@ -166,7 +171,9 @@ async def run_scrape(
                 console.print(f"\n[bold]Page {page_num}[/bold] - Fetching search results...", end="")
 
             try:
-                listings_data = await scraper.scrape_search_page(page, page_num)
+                listings_data = await scraper.scrape_search_page(
+                    page, page_num, search_filters, use_cache=use_cache
+                )
                 page_listing_count = len(listings_data)
 
                 if not listings_data:
@@ -183,22 +190,41 @@ async def run_scrape(
                     repo = ListingRepository(session)
 
                     for idx, listing_data in enumerate(listings_data, 1):
+                        url = listing_data.get("url")
+                        title = listing_data.get("title", "")
+                        price = listing_data.get("price")
+
+                        # Check if we can skip the detail fetch
+                        if url and repo.listing_exists_with_price(url, price):
+                            skipped_count += 1
+                            total_found += 1
+                            if not quiet:
+                                console.print(
+                                    f"  [{idx}/{page_listing_count}] {title[:50]}... [dim]SKIP[/dim] (unchanged)"
+                                )
+                            # Update last_seen_at for the existing listing
+                            existing = repo.get_listing_by_url(url)
+                            if existing:
+                                repo.update_listing(existing.id)
+                            continue
+
                         if not quiet:
                             console.print(
-                                f"  [{idx}/{page_listing_count}] Processing: {listing_data.get('title', 'Unknown')[:50]}...",
+                                f"  [{idx}/{page_listing_count}] Processing: {title[:50]}...",
                                 end="",
                             )
 
                         # Get detail page for options and description
-                        url = listing_data.get("url")
-                        title = listing_data.get("title", "")
                         options_list = []
                         description = None
                         if url:
                             try:
-                                detail = await scraper.scrape_listing_detail(page, url)
+                                detail = await scraper.scrape_listing_detail(
+                                    page, url, use_cache=use_cache
+                                )
                                 options_list = detail.options_list
                                 description = detail.description
+                                fetched_count += 1
                             except Exception:
                                 pass
 
@@ -227,13 +253,23 @@ async def run_scrape(
                         )
 
                         # Upsert to database
-                        _, created = repo.upsert_listing(create_data)
+                        listing, created = repo.upsert_listing(create_data)
                         if created:
                             new_count += 1
                             status = "[green]NEW[/green]"
                         else:
                             updated_count += 1
                             status = "[blue]UPD[/blue]"
+                            # Clear existing options for re-scraped listings
+                            repo.clear_listing_options(listing.id)
+
+                        # Store matched options
+                        all_matched = (
+                            match_result.matched_required + match_result.matched_nice_to_have
+                        )
+                        for option_name in all_matched:
+                            option, _ = repo.get_or_create_option(option_name)
+                            repo.add_option_to_listing(listing.id, option.id)
 
                         total_found += 1
 
@@ -254,7 +290,13 @@ async def run_scrape(
                     console.print(f" [red]error: {e}[/red]")
                 continue
 
-    return total_found, new_count, updated_count
+    return {
+        "total_found": total_found,
+        "new_listings": new_count,
+        "updated_listings": updated_count,
+        "skipped_unchanged": skipped_count,
+        "fetched_details": fetched_count,
+    }
 
 
 @app.command()
@@ -274,30 +316,86 @@ def scrape(
         "--headless/--no-headless",
         help="Run browser in headless mode.",
     ),
-    config: Optional[Path] = typer.Option(
+    config: Path | None = typer.Option(
         None,
         "--config",
         "-c",
         help="Path to options config YAML file.",
+    ),
+    price_max: int | None = typer.Option(
+        None,
+        "--price-max",
+        "-P",
+        help="Maximum price in EUR (overrides config).",
+    ),
+    mileage_max: int | None = typer.Option(
+        None,
+        "--mileage-max",
+        "-M",
+        help="Maximum mileage in km (overrides config).",
+    ),
+    year_min: int | None = typer.Option(
+        None,
+        "--year-min",
+        "-Y",
+        help="Minimum first registration year (overrides config).",
+    ),
+    country: list[str] | None = typer.Option(
+        None,
+        "--country",
+        "-C",
+        help="Country codes to include (can specify multiple, e.g., -C D -C NL).",
     ),
     json_output: bool = typer.Option(
         False,
         "--json",
         help="Output as JSON (for LLM/programmatic consumption).",
     ),
+    no_cache: bool = typer.Option(
+        False,
+        "--no-cache",
+        help="Disable HTML caching (cache is enabled by default).",
+    ),
 ) -> None:
     """Scrape listings from the specified source."""
+    # Load search filters from config
+    config_filters = load_search_filters(config)
+
+    # Merge CLI overrides with config values (CLI takes precedence)
+    search_filters = SearchFilters(
+        price_max_eur=price_max if price_max is not None else config_filters.price_max_eur,
+        mileage_max_km=mileage_max if mileage_max is not None else config_filters.mileage_max_km,
+        year_min=year_min if year_min is not None else config_filters.year_min,
+        year_max=config_filters.year_max,  # No CLI override for year_max
+        countries=country if country else config_filters.countries,
+    )
+
+    use_cache = not no_cache
+
     if not json_output:
         console.print(f"[bold blue]Scraping {source.value}[/bold blue]")
         console.print(f"  Page limit: {max_pages} (stops early if no more results)")
         console.print(f"  Headless: {headless}")
+        console.print(f"  Cache: {'enabled' if use_cache else 'disabled'}")
+        # Show active filters
+        if search_filters.price_max_eur:
+            console.print(f"  Max price: {search_filters.price_max_eur:,} EUR")
+        if search_filters.mileage_max_km:
+            console.print(f"  Max mileage: {search_filters.mileage_max_km:,} km")
+        if search_filters.year_min:
+            console.print(f"  Min year: {search_filters.year_min}")
+        if search_filters.countries:
+            console.print(f"  Countries: {', '.join(search_filters.countries)}")
 
     # Ensure database exists
     init_db()
 
     try:
-        total, new, updated = asyncio.run(
-            run_scrape(source, max_pages, headless, config, quiet=json_output)
+        results = asyncio.run(
+            run_scrape(
+                source, max_pages, headless, config, quiet=json_output,
+                search_filters=search_filters, use_cache=use_cache
+            )
         )
 
         if json_output:
@@ -305,18 +403,17 @@ def scrape(
                 "status": "success",
                 "source": source.value,
                 "max_pages": max_pages,
-                "results": {
-                    "total_found": total,
-                    "new_listings": new,
-                    "updated_listings": updated,
-                },
+                "cache_enabled": use_cache,
+                "results": results,
             })
         else:
             console.print()
-            console.print(f"[green]Scraping complete![/green]")
-            console.print(f"  Total found: {total}")
-            console.print(f"  New listings: {new}")
-            console.print(f"  Updated: {updated}")
+            console.print("[green]Scraping complete![/green]")
+            console.print(f"  Total found: {results['total_found']}")
+            console.print(f"  New listings: {results['new_listings']}")
+            console.print(f"  Updated: {results['updated_listings']}")
+            console.print(f"  Skipped (unchanged): {results['skipped_unchanged']}")
+            console.print(f"  Detail pages fetched: {results['fetched_details']}")
     except Exception as e:
         if json_output:
             output_json({
@@ -326,7 +423,7 @@ def scrape(
             })
         else:
             console.print(f"[red]Error during scraping: {e}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @app.command(name="list")
@@ -349,7 +446,7 @@ def list_listings(
         "-l",
         help="Maximum number of listings to show.",
     ),
-    source: Optional[Source] = typer.Option(
+    source: Source | None = typer.Option(
         None,
         "--source",
         help="Filter by source.",
@@ -377,7 +474,7 @@ def list_listings(
         # JSON output for LLM consumption
         if json_output:
             output_json({
-                "listings": [listing_to_dict(l) for l in listings],
+                "listings": [listing_to_dict(listing) for listing in listings],
                 "count": len(listings),
                 "total": total,
                 "filters": {
@@ -498,7 +595,7 @@ def export(
         "-f",
         help="Export format (csv, json).",
     ),
-    output: Optional[Path] = typer.Option(
+    output: Path | None = typer.Option(
         None,
         "--output",
         "-o",
@@ -510,7 +607,7 @@ def export(
         "-q",
         help="Export only qualified listings.",
     ),
-    source: Optional[Source] = typer.Option(
+    source: Source | None = typer.Option(
         None,
         "--source",
         help="Filter by source.",

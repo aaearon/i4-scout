@@ -145,3 +145,15 @@ class MatchResult(BaseModel):
     dealbreaker_found: Optional[str] = None
     score: float = Field(0.0, ge=0, le=100)
     is_qualified: bool = False
+
+
+class SearchFilters(BaseModel):
+    """Search criteria for filtering listings at source."""
+
+    price_max_eur: Optional[int] = Field(None, description="Max price in EUR")
+    mileage_max_km: Optional[int] = Field(None, description="Max mileage in km")
+    year_min: Optional[int] = Field(None, description="Min first registration year")
+    year_max: Optional[int] = Field(None, description="Max first registration year")
+    countries: Optional[list[str]] = Field(
+        None, description="Country codes to include (e.g., D, NL, B)"
+    )

@@ -3,10 +3,11 @@
 import re
 from abc import abstractmethod
 from typing import Any, ClassVar
+from urllib.parse import quote
 
 from bs4 import BeautifulSoup
 
-from i4_scout.models.pydantic_models import ScrapedListing, Source
+from i4_scout.models.pydantic_models import ScrapedListing, SearchFilters, Source
 from i4_scout.scrapers.base import BaseScraper
 
 
@@ -38,37 +39,66 @@ class AutoScout24BaseScraper(BaseScraper):
         "Extras",
     ]
 
-    def get_search_url(self, page: int = 1) -> str:
+    def get_search_url(
+        self, page: int = 1, filters: SearchFilters | None = None
+    ) -> str:
         """Generate search URL for the given page number.
 
         Args:
             page: Page number (1-indexed).
+            filters: Optional search filters to apply.
 
         Returns:
             Full URL for the search results page.
         """
-        return self.get_search_url_static(page)
+        return self.get_search_url_static(page, filters)
 
     @classmethod
-    def get_search_url_static(cls, page: int = 1) -> str:
+    def get_search_url_static(
+        cls, page: int = 1, filters: SearchFilters | None = None
+    ) -> str:
         """Static method for search URL generation (usable without instance).
 
         Args:
             page: Page number (1-indexed).
+            filters: Optional search filters to apply.
 
         Returns:
             Full URL for the search results page.
         """
-        # AutoScout24 uses page parameter in URL
-        params = [
+        params: list[str] = [
             "atype=C",  # Car type
-            "cy=D" if "de" in cls.BASE_URL else "cy=NL",  # Country
             "desc=0",  # Sort order
-            "fregfrom=2022",  # First registration from
             f"page={page}",
             "sort=standard",
             "ustate=N%2CU",  # Used/New state
         ]
+
+        # Handle country filter
+        if filters and filters.countries:
+            # URL encode comma-separated countries (e.g., "D,NL" -> "D%2CNL")
+            countries_str = quote(",".join(filters.countries), safe="")
+            params.append(f"cy={countries_str}")
+        else:
+            # Default: use scraper's country (DE or NL based on URL)
+            params.append("cy=D" if "de" in cls.BASE_URL else "cy=NL")
+
+        # Handle year filter
+        if filters and filters.year_min is not None:
+            params.append(f"fregfrom={filters.year_min}")
+        # No default year_min - remove hardcoded 2022 so that no filter is applied by default
+
+        if filters and filters.year_max is not None:
+            params.append(f"fregto={filters.year_max}")
+
+        # Handle price filter
+        if filters and filters.price_max_eur is not None:
+            params.append(f"priceto={filters.price_max_eur}")
+
+        # Handle mileage filter
+        if filters and filters.mileage_max_km is not None:
+            params.append(f"kmto={filters.mileage_max_km}")
+
         return f"{cls.BASE_URL}{cls.SEARCH_PATH}?{'&'.join(params)}"
 
     async def parse_listing_cards(self, html: str) -> list[dict[str, Any]]:

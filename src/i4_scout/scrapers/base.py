@@ -3,8 +3,9 @@
 import asyncio
 import random
 from abc import ABC, abstractmethod
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
-from typing import Any, Callable, Coroutine, TypeVar
+from typing import Any, TypeVar
 
 from playwright.async_api import Page
 from tenacity import (
@@ -14,10 +15,9 @@ from tenacity import (
     wait_fixed,
 )
 
-from i4_scout.models.pydantic_models import ScrapedListing, Source
+from i4_scout.models.pydantic_models import ScrapedListing, SearchFilters, Source
 from i4_scout.scrapers.browser import BrowserManager
 from i4_scout.scrapers.cache import get_cache
-
 
 T = TypeVar("T")
 
@@ -85,11 +85,14 @@ class BaseScraper(ABC):
         return self._config
 
     @abstractmethod
-    def get_search_url(self, page: int = 1) -> str:
+    def get_search_url(
+        self, page: int = 1, filters: SearchFilters | None = None
+    ) -> str:
         """Generate search URL for the given page number.
 
         Args:
             page: Page number (1-indexed).
+            filters: Optional search filters to apply.
 
         Returns:
             Full URL for the search results page.
@@ -201,7 +204,7 @@ class BaseScraper(ABC):
             if e.last_attempt.failed:
                 last_exception = e.last_attempt.exception()
                 if last_exception:
-                    raise last_exception
+                    raise last_exception from e
             raise
 
         raise RuntimeError("Retry logic failed unexpectedly")
@@ -265,35 +268,46 @@ class BaseScraper(ABC):
 
         return html
 
-    async def scrape_search_page(self, page: Page, page_num: int = 1) -> list[dict[str, Any]]:
+    async def scrape_search_page(
+        self,
+        page: Page,
+        page_num: int = 1,
+        filters: SearchFilters | None = None,
+        use_cache: bool = True,
+    ) -> list[dict[str, Any]]:
         """Scrape a single search results page.
 
         Args:
             page: Playwright Page instance.
             page_num: Page number to scrape.
+            filters: Optional search filters to apply.
+            use_cache: Whether to use HTML caching (1-hour TTL for search pages).
 
         Returns:
             List of listing card data.
         """
-        url = self.get_search_url(page_num)
-        html = await self.navigate_to(page, url)
+        url = self.get_search_url(page_num, filters)
+        html = await self.navigate_to(page, url, use_cache=use_cache)
         await self.random_delay(1.0, 2.0)
         await self.handle_cookie_consent(page)
         await self.human_scroll(page)
 
         return await self.parse_listing_cards(html)
 
-    async def scrape_listing_detail(self, page: Page, url: str) -> ScrapedListing:
+    async def scrape_listing_detail(
+        self, page: Page, url: str, use_cache: bool = True
+    ) -> ScrapedListing:
         """Scrape a single listing detail page.
 
         Args:
             page: Playwright Page instance.
             url: URL of the listing.
+            use_cache: Whether to use HTML caching (24-hour TTL for detail pages).
 
         Returns:
             ScrapedListing with full details.
         """
-        html = await self.navigate_to(page, url)
+        html = await self.navigate_to(page, url, use_cache=use_cache)
         await self.random_delay(1.0, 2.0)
         await self.handle_cookie_consent(page)
         await self.human_scroll(page)

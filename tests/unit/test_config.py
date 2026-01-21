@@ -169,3 +169,103 @@ class TestConfigLoader:
         # Attempting to reassign attributes should raise error
         with pytest.raises(ValidationError):
             config.dealbreakers = ["New Dealbreaker"]  # type: ignore
+
+
+class TestSearchFiltersConfig:
+    """Tests for loading search_filters from YAML config."""
+
+    @pytest.fixture
+    def config_with_filters_dict(self) -> dict[str, Any]:
+        """Return a config dictionary with search_filters."""
+        return {
+            "required": [
+                {"name": "HUD", "aliases": ["Head-Up Display"]},
+            ],
+            "dealbreakers": [],
+            "search_filters": {
+                "price_max_eur": 55000,
+                "mileage_max_km": 50000,
+                "year_min": 2023,
+                "year_max": 2025,
+                "countries": ["D", "NL"],
+            },
+        }
+
+    @pytest.fixture
+    def config_file_with_filters(
+        self, tmp_path: Path, config_with_filters_dict: dict[str, Any]
+    ) -> Path:
+        """Create a temp config file with search_filters."""
+        import yaml
+
+        config_path = tmp_path / "options_with_filters.yaml"
+        with open(config_path, "w") as f:
+            yaml.dump(config_with_filters_dict, f)
+        return config_path
+
+    def test_load_search_filters(self, config_file_with_filters: Path) -> None:
+        """Should load search_filters from YAML config."""
+        from i4_scout.config import load_search_filters
+
+        filters = load_search_filters(config_file_with_filters)
+
+        assert filters.price_max_eur == 55000
+        assert filters.mileage_max_km == 50000
+        assert filters.year_min == 2023
+        assert filters.year_max == 2025
+        assert filters.countries == ["D", "NL"]
+
+    def test_load_search_filters_returns_search_filters_type(
+        self, config_file_with_filters: Path
+    ) -> None:
+        """Should return a SearchFilters instance."""
+        from i4_scout.config import load_search_filters
+        from i4_scout.models.pydantic_models import SearchFilters
+
+        filters = load_search_filters(config_file_with_filters)
+
+        assert isinstance(filters, SearchFilters)
+
+    def test_load_search_filters_missing_section(self, temp_config_file: Path) -> None:
+        """Should return empty SearchFilters when section is missing."""
+        from i4_scout.config import load_search_filters
+        from i4_scout.models.pydantic_models import SearchFilters
+
+        # temp_config_file doesn't have search_filters section
+        filters = load_search_filters(temp_config_file)
+
+        assert isinstance(filters, SearchFilters)
+        assert filters.price_max_eur is None
+        assert filters.countries is None
+
+    def test_load_search_filters_partial(self, tmp_path: Path) -> None:
+        """Should handle partial search_filters section."""
+        import yaml
+        from i4_scout.config import load_search_filters
+
+        partial_path = tmp_path / "partial_filters.yaml"
+        partial_path.write_text(yaml.dump({
+            "search_filters": {
+                "price_max_eur": 45000,
+                "year_min": 2024,
+            }
+        }))
+
+        filters = load_search_filters(partial_path)
+
+        assert filters.price_max_eur == 45000
+        assert filters.year_min == 2024
+        assert filters.mileage_max_km is None
+        assert filters.countries is None
+
+    def test_load_full_config(self, config_file_with_filters: Path) -> None:
+        """Should load both OptionsConfig and SearchFilters."""
+        from i4_scout.config import load_full_config
+        from i4_scout.models.pydantic_models import OptionsConfig, SearchFilters
+
+        options_config, search_filters = load_full_config(config_file_with_filters)
+
+        assert isinstance(options_config, OptionsConfig)
+        assert isinstance(search_filters, SearchFilters)
+        assert len(options_config.required) == 1
+        assert search_filters.price_max_eur == 55000

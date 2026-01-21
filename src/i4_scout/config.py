@@ -5,7 +5,7 @@ from typing import Any
 
 import yaml
 
-from i4_scout.models.pydantic_models import OptionConfig, OptionsConfig
+from i4_scout.models.pydantic_models import OptionConfig, OptionsConfig, SearchFilters
 
 
 def load_options_config(path: Path | None = None) -> OptionsConfig:
@@ -72,3 +72,66 @@ def _parse_option_list(options_data: list[dict[str, Any]]) -> list[OptionConfig]
         )
         options.append(option)
     return options
+
+
+def _get_default_config_path() -> Path:
+    """Get the default config path relative to project root."""
+    return Path(__file__).parent.parent.parent / "config" / "options.yaml"
+
+
+def _load_raw_config(path: Path | None = None) -> dict[str, Any]:
+    """Load raw YAML config from path.
+
+    Args:
+        path: Path to YAML config file. If None, uses default config/options.yaml.
+
+    Returns:
+        Raw config dictionary.
+
+    Raises:
+        FileNotFoundError: If config file doesn't exist.
+        yaml.YAMLError: If YAML parsing fails.
+    """
+    if path is None:
+        path = _get_default_config_path()
+
+    if not path.exists():
+        raise FileNotFoundError(f"Config file not found: {path}")
+
+    with open(path, "r") as f:
+        raw_config: dict[str, Any] | None = yaml.safe_load(f)
+
+    return raw_config if raw_config is not None else {}
+
+
+def load_search_filters(path: Path | None = None) -> SearchFilters:
+    """Load search filters from YAML configuration.
+
+    Args:
+        path: Path to YAML config file. If None, uses default config/options.yaml.
+
+    Returns:
+        SearchFilters instance with values from config (or defaults if not specified).
+    """
+    raw_config = _load_raw_config(path)
+    filters_dict = raw_config.get("search_filters", {})
+
+    return SearchFilters(
+        price_max_eur=filters_dict.get("price_max_eur"),
+        mileage_max_km=filters_dict.get("mileage_max_km"),
+        year_min=filters_dict.get("year_min"),
+        year_max=filters_dict.get("year_max"),
+        countries=filters_dict.get("countries"),
+    )
+
+
+def load_full_config(path: Path | None = None) -> tuple[OptionsConfig, SearchFilters]:
+    """Load both OptionsConfig and SearchFilters from YAML configuration.
+
+    Args:
+        path: Path to YAML config file. If None, uses default config/options.yaml.
+
+    Returns:
+        Tuple of (OptionsConfig, SearchFilters).
+    """
+    return load_options_config(path), load_search_filters(path)

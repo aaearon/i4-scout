@@ -13,6 +13,7 @@ from i4_scout.models.pydantic_models import (
     ScrapedListing,
     ScrapeSession,
     ScrapeStatus,
+    SearchFilters,
     Source,
 )
 
@@ -220,3 +221,54 @@ class TestMatchResult:
         )
         assert result.is_qualified is False
         assert result.dealbreaker_found == "Accident damage"
+
+
+class TestSearchFilters:
+    """Tests for SearchFilters model."""
+
+    def test_empty_filters(self):
+        """Should create filters with all None values by default."""
+        filters = SearchFilters()
+        assert filters.price_max_eur is None
+        assert filters.mileage_max_km is None
+        assert filters.year_min is None
+        assert filters.year_max is None
+        assert filters.countries is None
+
+    def test_full_filters(self):
+        """Should accept all filter values."""
+        filters = SearchFilters(
+            price_max_eur=55000,
+            mileage_max_km=50000,
+            year_min=2023,
+            year_max=2025,
+            countries=["D", "NL", "B"],
+        )
+        assert filters.price_max_eur == 55000
+        assert filters.mileage_max_km == 50000
+        assert filters.year_min == 2023
+        assert filters.year_max == 2025
+        assert filters.countries == ["D", "NL", "B"]
+
+    def test_partial_filters(self):
+        """Should allow partial filter specification."""
+        filters = SearchFilters(
+            price_max_eur=45000,
+            year_min=2024,
+        )
+        assert filters.price_max_eur == 45000
+        assert filters.year_min == 2024
+        assert filters.mileage_max_km is None
+        assert filters.countries is None
+
+    def test_single_country(self):
+        """Should accept single country in list."""
+        filters = SearchFilters(countries=["D"])
+        assert filters.countries == ["D"]
+
+    def test_filters_are_optional(self):
+        """All filter fields should be optional."""
+        # Should not raise
+        SearchFilters()
+        SearchFilters(price_max_eur=None)
+        SearchFilters(countries=None)

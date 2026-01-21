@@ -419,3 +419,212 @@ class TestBulkOperations:
 
         qualified = repository.count_listings(qualified_only=True)
         assert qualified == 3
+
+
+class TestClearListingOptions:
+    """Tests for clearing listing options."""
+
+    def test_clear_listing_options_removes_all(
+        self, repository: ListingRepository, db_session: Session, sample_listing_data: ListingCreate
+    ):
+        """Should remove all option associations for a listing."""
+        # Create listing
+        listing = repository.create_listing(sample_listing_data)
+
+        # Create and associate multiple options
+        option1, _ = repository.get_or_create_option("head_up_display")
+        option2, _ = repository.get_or_create_option("parking_assistant")
+        option3, _ = repository.get_or_create_option("driving_assistant_pro")
+
+        repository.add_option_to_listing(listing.id, option1.id, "HUD")
+        repository.add_option_to_listing(listing.id, option2.id, "Park Assist")
+        repository.add_option_to_listing(listing.id, option3.id, "DAP")
+
+        # Verify options are associated
+        options = repository.get_listing_options(listing.id)
+        assert len(options) == 3
+
+        # Clear options
+        deleted_count = repository.clear_listing_options(listing.id)
+        assert deleted_count == 3
+
+        # Verify options are cleared
+        options = repository.get_listing_options(listing.id)
+        assert len(options) == 0
+
+    def test_clear_listing_options_returns_zero_for_no_options(
+        self, repository: ListingRepository, sample_listing_data: ListingCreate
+    ):
+        """Should return 0 when listing has no options."""
+        listing = repository.create_listing(sample_listing_data)
+
+        deleted_count = repository.clear_listing_options(listing.id)
+        assert deleted_count == 0
+
+    def test_clear_listing_options_does_not_affect_other_listings(
+        self, repository: ListingRepository, db_session: Session
+    ):
+        """Should only clear options for the specified listing."""
+        # Create two listings
+        listing1 = repository.create_listing(
+            ListingCreate(
+                source=Source.AUTOSCOUT24_DE,
+                url="https://example.com/listing/1",
+                title="Listing 1",
+            )
+        )
+        listing2 = repository.create_listing(
+            ListingCreate(
+                source=Source.AUTOSCOUT24_DE,
+                url="https://example.com/listing/2",
+                title="Listing 2",
+            )
+        )
+
+        # Create option and associate with both
+        option, _ = repository.get_or_create_option("head_up_display")
+        repository.add_option_to_listing(listing1.id, option.id, "HUD")
+        repository.add_option_to_listing(listing2.id, option.id, "HUD")
+
+        # Clear options for listing1 only
+        repository.clear_listing_options(listing1.id)
+
+        # Verify listing1 has no options but listing2 still does
+        assert len(repository.get_listing_options(listing1.id)) == 0
+        assert len(repository.get_listing_options(listing2.id)) == 1
+
+
+class TestGetOrCreateOption:
+    """Tests for get_or_create_option."""
+
+    def test_get_or_create_option_creates_new(self, repository: ListingRepository):
+        """Should create new option when it doesn't exist."""
+        option, created = repository.get_or_create_option(
+            canonical_name="head_up_display",
+            display_name="Head-Up Display",
+            category="comfort",
+        )
+
+        assert created is True
+        assert option.id is not None
+        assert option.canonical_name == "head_up_display"
+        assert option.display_name == "Head-Up Display"
+        assert option.category == "comfort"
+
+    def test_get_or_create_option_returns_existing(self, repository: ListingRepository):
+        """Should return existing option without creating duplicate."""
+        # Create first
+        option1, created1 = repository.get_or_create_option("head_up_display")
+        assert created1 is True
+
+        # Try to create again
+        option2, created2 = repository.get_or_create_option("head_up_display")
+        assert created2 is False
+        assert option2.id == option1.id
+
+    def test_get_or_create_option_defaults_display_name(self, repository: ListingRepository):
+        """Should use canonical_name as display_name if not provided."""
+        option, _ = repository.get_or_create_option("head_up_display")
+
+        assert option.display_name == "head_up_display"
+
+
+class TestListingExistsWithPrice:
+    """Tests for listing_exists_with_price method."""
+
+    def test_listing_exists_with_same_price_returns_true(
+        self, repository: ListingRepository, sample_listing_data: ListingCreate
+    ):
+        """Should return True when listing exists with the same price."""
+        repository.create_listing(sample_listing_data)
+
+        result = repository.listing_exists_with_price(
+            url=sample_listing_data.url,
+            price=sample_listing_data.price,
+        )
+
+        assert result is True
+
+    def test_listing_exists_with_different_price_returns_false(
+        self, repository: ListingRepository, sample_listing_data: ListingCreate
+    ):
+        """Should return False when listing exists with different price."""
+        repository.create_listing(sample_listing_data)
+
+        result = repository.listing_exists_with_price(
+            url=sample_listing_data.url,
+            price=5000000,  # Different price
+        )
+
+        assert result is False
+
+    def test_listing_does_not_exist_returns_false(self, repository: ListingRepository):
+        """Should return False when listing URL doesn't exist."""
+        result = repository.listing_exists_with_price(
+            url="https://nonexistent.com/listing",
+            price=5500000,
+        )
+
+        assert result is False
+
+    def test_listing_exists_with_none_price_returns_true_if_stored_price_is_none(
+        self, repository: ListingRepository
+    ):
+        """Should return True when both prices are None."""
+        data = ListingCreate(
+            source=Source.AUTOSCOUT24_DE,
+            url="https://example.com/listing-no-price",
+            title="Test Listing",
+            price=None,
+        )
+        repository.create_listing(data)
+
+        result = repository.listing_exists_with_price(url=data.url, price=None)
+
+        assert result is True
+
+    def test_listing_exists_with_none_price_returns_false_if_stored_has_price(
+        self, repository: ListingRepository, sample_listing_data: ListingCreate
+    ):
+        """Should return False when stored has price but checking with None."""
+        repository.create_listing(sample_listing_data)
+
+        result = repository.listing_exists_with_price(
+            url=sample_listing_data.url,
+            price=None,
+        )
+
+        assert result is False
+
+
+class TestMatchedOptionsProperty:
+    """Tests for the matched_options property on Listing."""
+
+    def test_matched_options_returns_option_names(
+        self, repository: ListingRepository, db_session: Session, sample_listing_data: ListingCreate
+    ):
+        """matched_options property should return list of canonical names."""
+        listing = repository.create_listing(sample_listing_data)
+
+        # Create and associate options
+        option1, _ = repository.get_or_create_option("head_up_display")
+        option2, _ = repository.get_or_create_option("parking_assistant")
+
+        repository.add_option_to_listing(listing.id, option1.id)
+        repository.add_option_to_listing(listing.id, option2.id)
+
+        # Refresh to load relationships
+        db_session.refresh(listing)
+
+        # Check matched_options property
+        assert "head_up_display" in listing.matched_options
+        assert "parking_assistant" in listing.matched_options
+        assert len(listing.matched_options) == 2
+
+    def test_matched_options_empty_when_no_options(
+        self, repository: ListingRepository, sample_listing_data: ListingCreate
+    ):
+        """matched_options should return empty list when no options."""
+        listing = repository.create_listing(sample_listing_data)
+
+        assert listing.matched_options == []

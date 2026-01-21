@@ -231,3 +231,128 @@ class TestAutoScout24SearchURL:
         url = AutoScout24NLScraper.get_search_url_static(page=1)
 
         assert "autoscout24.nl" in url
+
+
+class TestAutoScout24SearchURLWithFilters:
+    """Tests for search URL generation with SearchFilters."""
+
+    def test_search_url_with_price_max(self) -> None:
+        """Should include priceto parameter when price_max_eur is set."""
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
+        from i4_scout.models.pydantic_models import SearchFilters
+
+        filters = SearchFilters(price_max_eur=55000)
+        url = AutoScout24DEScraper.get_search_url_static(page=1, filters=filters)
+
+        assert "priceto=55000" in url
+
+    def test_search_url_with_mileage_max(self) -> None:
+        """Should include kmto parameter when mileage_max_km is set."""
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
+        from i4_scout.models.pydantic_models import SearchFilters
+
+        filters = SearchFilters(mileage_max_km=50000)
+        url = AutoScout24DEScraper.get_search_url_static(page=1, filters=filters)
+
+        assert "kmto=50000" in url
+
+    def test_search_url_with_year_min(self) -> None:
+        """Should include fregfrom parameter when year_min is set."""
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
+        from i4_scout.models.pydantic_models import SearchFilters
+
+        filters = SearchFilters(year_min=2023)
+        url = AutoScout24DEScraper.get_search_url_static(page=1, filters=filters)
+
+        assert "fregfrom=2023" in url
+        # Should NOT contain old hardcoded value
+        assert "fregfrom=2022" not in url
+
+    def test_search_url_with_year_max(self) -> None:
+        """Should include fregto parameter when year_max is set."""
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
+        from i4_scout.models.pydantic_models import SearchFilters
+
+        filters = SearchFilters(year_max=2025)
+        url = AutoScout24DEScraper.get_search_url_static(page=1, filters=filters)
+
+        assert "fregto=2025" in url
+
+    def test_search_url_with_countries(self) -> None:
+        """Should include cy parameter with URL-encoded countries."""
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
+        from i4_scout.models.pydantic_models import SearchFilters
+
+        filters = SearchFilters(countries=["D", "NL", "B"])
+        url = AutoScout24DEScraper.get_search_url_static(page=1, filters=filters)
+
+        # "D,NL,B" should be URL encoded to "D%2CNL%2CB"
+        assert "cy=D%2CNL%2CB" in url or "cy=D,NL,B" in url
+
+    def test_search_url_with_single_country(self) -> None:
+        """Should handle single country correctly."""
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
+        from i4_scout.models.pydantic_models import SearchFilters
+
+        filters = SearchFilters(countries=["D"])
+        url = AutoScout24DEScraper.get_search_url_static(page=1, filters=filters)
+
+        assert "cy=D" in url
+
+    def test_search_url_with_all_filters(self) -> None:
+        """Should include all filter parameters when all are set."""
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
+        from i4_scout.models.pydantic_models import SearchFilters
+
+        filters = SearchFilters(
+            price_max_eur=55000,
+            mileage_max_km=50000,
+            year_min=2023,
+            year_max=2025,
+            countries=["D", "NL"],
+        )
+        url = AutoScout24DEScraper.get_search_url_static(page=1, filters=filters)
+
+        assert "priceto=55000" in url
+        assert "kmto=50000" in url
+        assert "fregfrom=2023" in url
+        assert "fregto=2025" in url
+        # cy parameter should contain both countries
+        assert "D" in url and "NL" in url
+
+    def test_search_url_without_filters_uses_defaults(self) -> None:
+        """Should use default values when no filters provided."""
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
+
+        url = AutoScout24DEScraper.get_search_url_static(page=1)
+
+        # Should still have the basic parameters
+        assert "autoscout24.de" in url
+        assert "page=1" in url
+
+    def test_search_url_with_empty_filters(self) -> None:
+        """Should handle empty SearchFilters gracefully."""
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
+        from i4_scout.models.pydantic_models import SearchFilters
+
+        filters = SearchFilters()  # All None
+        url = AutoScout24DEScraper.get_search_url_static(page=1, filters=filters)
+
+        # Should not include filter params when values are None
+        assert "priceto=" not in url
+        assert "kmto=" not in url
+
+    def test_nl_search_url_with_filters(self) -> None:
+        """Dutch scraper should also handle filters."""
+        from i4_scout.scrapers.autoscout24_nl import AutoScout24NLScraper
+        from i4_scout.models.pydantic_models import SearchFilters
+
+        filters = SearchFilters(
+            price_max_eur=45000,
+            countries=["NL", "B"],
+        )
+        url = AutoScout24NLScraper.get_search_url_static(page=1, filters=filters)
+
+        assert "autoscout24.nl" in url
+        assert "priceto=45000" in url
+        assert "NL" in url and "B" in url

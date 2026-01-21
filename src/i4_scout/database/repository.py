@@ -1,14 +1,58 @@
 """Repository layer for database operations."""
 
+import functools
 import hashlib
+from collections.abc import Callable
 from datetime import datetime
-from typing import Any
+from typing import Any, TypeVar
 
 from sqlalchemy import desc
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
+from tenacity import (
+    Retrying,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
+from typing_extensions import ParamSpec
 
 from i4_scout.models.db_models import Listing, ListingOption, Option, PriceHistory
 from i4_scout.models.pydantic_models import ListingCreate, Source
+
+P = ParamSpec("P")
+R = TypeVar("R")
+
+# Retry configuration for database operations
+DB_RETRY_MAX_ATTEMPTS = 5
+DB_RETRY_WAIT_MIN = 1  # seconds
+DB_RETRY_WAIT_MAX = 8  # seconds
+DB_RETRY_WAIT_MULTIPLIER = 2
+
+
+def with_db_retry(func: Callable[P, R]) -> Callable[P, R]:
+    """Decorator to retry database operations on SQLite lock errors.
+
+    Retries on sqlalchemy.exc.OperationalError using exponential backoff.
+    """
+
+    @functools.wraps(func)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        for attempt in Retrying(
+            retry=retry_if_exception_type(OperationalError),
+            stop=stop_after_attempt(DB_RETRY_MAX_ATTEMPTS),
+            wait=wait_exponential(
+                multiplier=DB_RETRY_WAIT_MULTIPLIER,
+                min=DB_RETRY_WAIT_MIN,
+                max=DB_RETRY_WAIT_MAX,
+            ),
+            reraise=True,
+        ):
+            with attempt:
+                return func(*args, **kwargs)
+        raise RuntimeError("Retry logic failed unexpectedly")
+
+    return wrapper
 
 
 class ListingRepository:
@@ -24,6 +68,7 @@ class ListingRepository:
 
     # ========== CREATE ==========
 
+    @with_db_retry
     def create_listing(self, data: ListingCreate) -> Listing:
         """Create a new listing in the database.
 
@@ -72,6 +117,7 @@ class ListingRepository:
 
         return listing
 
+    @with_db_retry
     def bulk_create_listings(self, listings_data: list[ListingCreate]) -> list[Listing]:
         """Create multiple listings efficiently.
 
@@ -148,6 +194,23 @@ class ListingRepository:
         """
         return self._session.query(Listing).filter(Listing.url == url).first()
 
+    def listing_exists_with_price(self, url: str, price: int | None) -> bool:
+        """Check if a listing exists with the given URL and price.
+
+        Used to skip fetching detail pages for unchanged listings.
+
+        Args:
+            url: Listing URL.
+            price: Expected price (or None).
+
+        Returns:
+            True if listing exists with matching price, False otherwise.
+        """
+        listing = self.get_listing_by_url(url)
+        if listing is None:
+            return False
+        return listing.price == price
+
     def get_listings(
         self,
         source: Source | None = None,
@@ -216,6 +279,7 @@ class ListingRepository:
 
     # ========== UPDATE ==========
 
+    @with_db_retry
     def update_listing(self, listing_id: int, **kwargs: Any) -> Listing | None:
         """Update a listing's attributes.
 
@@ -242,6 +306,7 @@ class ListingRepository:
 
     # ========== DELETE ==========
 
+    @with_db_retry
     def delete_listing(self, listing_id: int) -> bool:
         """Delete a listing by ID.
 
@@ -261,6 +326,7 @@ class ListingRepository:
 
     # ========== UPSERT / DEDUP ==========
 
+    @with_db_retry
     def upsert_listing(self, data: ListingCreate) -> tuple[Listing, bool]:
         """Create or update a listing based on URL.
 
@@ -382,6 +448,7 @@ class ListingRepository:
 
     # ========== PRICE HISTORY ==========
 
+    @with_db_retry
     def record_price_change(self, listing_id: int, price: int) -> PriceHistory:
         """Record a price change for a listing.
 
@@ -420,6 +487,7 @@ class ListingRepository:
 
     # ========== OPTIONS ==========
 
+    @with_db_retry
     def add_option_to_listing(
         self,
         listing_id: int,
@@ -464,6 +532,25 @@ class ListingRepository:
             .all()
         )
 
+    @with_db_retry
+    def clear_listing_options(self, listing_id: int) -> int:
+        """Remove all option associations for a listing.
+
+        Args:
+            listing_id: Listing ID.
+
+        Returns:
+            Number of associations deleted.
+        """
+        deleted = (
+            self._session.query(ListingOption)
+            .filter(ListingOption.listing_id == listing_id)
+            .delete()
+        )
+        self._session.commit()
+        return deleted
+
+    @with_db_retry
     def get_or_create_option(
         self,
         canonical_name: str,
