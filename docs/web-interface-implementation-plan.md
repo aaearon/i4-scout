@@ -40,7 +40,7 @@ When starting a new LLM session, provide this context:
 | Phase | Focus | Status |
 |-------|-------|--------|
 | 1 | Service Layer | Complete |
-| 2 | Database Improvements | Not Started |
+| 2 | Database Improvements | Complete |
 | 3 | FastAPI Foundation | Not Started |
 | 4 | Background Scraping | Not Started |
 
@@ -200,10 +200,10 @@ def merge_search_filters(
 ## Tasks
 
 ### Task 2.1: Add DATABASE_URL Support
-- [ ] Update `engine.py` to check `DATABASE_URL` env var
-- [ ] Add `get_database_url()` helper function
-- [ ] Write test for DATABASE_URL handling
-- [ ] Run `pytest tests/unit/test_engine.py -v` (create if needed)
+- [x] Update `engine.py` to check `DATABASE_URL` env var
+- [x] Add `get_database_url()` helper function
+- [x] Write test for DATABASE_URL handling
+- [x] Run `pytest tests/unit/test_engine.py -v` (create if needed)
 
 **Code:**
 ```python
@@ -216,10 +216,10 @@ def get_database_url(db_path: Path | None = None) -> str:
 ```
 
 ### Task 2.2: Add Connection Pooling and WAL Mode
-- [ ] Update `get_engine()` with pooling config
-- [ ] Add WAL mode for SQLite databases
-- [ ] Handle PostgreSQL vs SQLite connection args
-- [ ] Run tests
+- [x] Update `get_engine()` with pooling config
+- [x] Add WAL mode for SQLite databases
+- [x] Handle PostgreSQL vs SQLite connection args
+- [x] Run tests
 
 **Code:**
 ```python
@@ -250,11 +250,11 @@ def get_engine(db_path: Path | str | None = None, echo: bool = False) -> Engine:
 ```
 
 ### Task 2.3: Add ScrapeJob Model
-- [ ] Add `ScrapeJob` class to `db_models.py`
-- [ ] Add migration or update `init_db()` to create table
-- [ ] Write repository methods for job CRUD
-- [ ] Write tests for job repository
-- [ ] Run `pytest tests/ -v`
+- [x] Add `ScrapeJob` class to `db_models.py`
+- [x] Add migration or update `init_db()` to create table
+- [x] Write repository methods for job CRUD (`ScrapeJobRepository`)
+- [x] Write tests for job repository (`tests/unit/test_scrape_job.py`)
+- [x] Run `pytest tests/ -v`
 
 **Model:**
 ```python
@@ -280,11 +280,11 @@ class ScrapeJob(Base):
 ```
 
 ### Task 2.4: Phase 2 Verification
-- [ ] DATABASE_URL env var works with PostgreSQL URL
-- [ ] SQLite WAL mode enabled (check with `PRAGMA journal_mode;`)
-- [ ] ScrapeJob table created
-- [ ] All tests pass
-- [ ] Create commit: `feat(db): database improvements (Phase 2 complete)`
+- [x] DATABASE_URL env var works with PostgreSQL URL
+- [x] SQLite WAL mode enabled (check with `PRAGMA journal_mode;`)
+- [x] ScrapeJob table created
+- [x] All tests pass (207 tests)
+- [x] Create commit: `feat(db): database improvements (Phase 2 complete)`
 
 ---
 

@@ -17,8 +17,8 @@ from tenacity import (
 )
 from typing_extensions import ParamSpec
 
-from i4_scout.models.db_models import Listing, ListingOption, Option, PriceHistory
-from i4_scout.models.pydantic_models import ListingCreate, Source
+from i4_scout.models.db_models import Listing, ListingOption, Option, PriceHistory, ScrapeJob
+from i4_scout.models.pydantic_models import ListingCreate, ScrapeStatus, Source
 
 P = ParamSpec("P")
 R = TypeVar("R")
@@ -588,3 +588,212 @@ class ListingRepository:
         self._session.commit()
         self._session.refresh(option)
         return option, True
+
+
+class ScrapeJobRepository:
+    """Repository for ScrapeJob CRUD operations."""
+
+    def __init__(self, session: Session) -> None:
+        """Initialize repository with database session.
+
+        Args:
+            session: SQLAlchemy session instance.
+        """
+        self._session = session
+
+    @with_db_retry
+    def create_job(
+        self,
+        source: Source,
+        max_pages: int = 50,
+        search_filters: dict[str, Any] | None = None,
+    ) -> ScrapeJob:
+        """Create a new scrape job.
+
+        Args:
+            source: Source to scrape.
+            max_pages: Maximum number of pages to scrape.
+            search_filters: Optional search filter parameters.
+
+        Returns:
+            Created ScrapeJob.
+        """
+        import json
+
+        job = ScrapeJob(
+            source=source.value,
+            max_pages=max_pages,
+            search_filters_json=json.dumps(search_filters) if search_filters else None,
+        )
+        self._session.add(job)
+        self._session.commit()
+        self._session.refresh(job)
+        return job
+
+    def get_job(self, job_id: int) -> ScrapeJob | None:
+        """Get a job by ID.
+
+        Args:
+            job_id: Job ID.
+
+        Returns:
+            ScrapeJob if found, None otherwise.
+        """
+        return self._session.query(ScrapeJob).filter(ScrapeJob.id == job_id).first()
+
+    def get_recent_jobs(self, limit: int = 20) -> list[ScrapeJob]:
+        """Get recent jobs, newest first.
+
+        Args:
+            limit: Maximum number of jobs to return.
+
+        Returns:
+            List of ScrapeJob objects.
+        """
+        return (
+            self._session.query(ScrapeJob)
+            .order_by(desc(ScrapeJob.created_at))
+            .limit(limit)
+            .all()
+        )
+
+    @with_db_retry
+    def update_status(self, job_id: int, status: ScrapeStatus) -> ScrapeJob | None:
+        """Update job status.
+
+        Args:
+            job_id: Job ID.
+            status: New status.
+
+        Returns:
+            Updated ScrapeJob if found, None otherwise.
+        """
+        job = self.get_job(job_id)
+        if job is None:
+            return None
+
+        job.status = status
+        if status == ScrapeStatus.RUNNING and job.started_at is None:
+            job.started_at = datetime.utcnow()
+
+        self._session.commit()
+        self._session.refresh(job)
+        return job
+
+    @with_db_retry
+    def update_progress(
+        self,
+        job_id: int,
+        current_page: int | None = None,
+        total_found: int | None = None,
+        new_listings: int | None = None,
+        updated_listings: int | None = None,
+    ) -> ScrapeJob | None:
+        """Update job progress.
+
+        Args:
+            job_id: Job ID.
+            current_page: Current page being processed.
+            total_found: Total listings found so far.
+            new_listings: New listings created.
+            updated_listings: Existing listings updated.
+
+        Returns:
+            Updated ScrapeJob if found, None otherwise.
+        """
+        job = self.get_job(job_id)
+        if job is None:
+            return None
+
+        if current_page is not None:
+            job.current_page = current_page
+        if total_found is not None:
+            job.total_found = total_found
+        if new_listings is not None:
+            job.new_listings = new_listings
+        if updated_listings is not None:
+            job.updated_listings = updated_listings
+
+        self._session.commit()
+        self._session.refresh(job)
+        return job
+
+    @with_db_retry
+    def complete_job(
+        self,
+        job_id: int,
+        total_found: int = 0,
+        new_listings: int = 0,
+        updated_listings: int = 0,
+    ) -> ScrapeJob | None:
+        """Mark job as completed.
+
+        Args:
+            job_id: Job ID.
+            total_found: Total listings found.
+            new_listings: New listings created.
+            updated_listings: Existing listings updated.
+
+        Returns:
+            Updated ScrapeJob if found, None otherwise.
+        """
+        job = self.get_job(job_id)
+        if job is None:
+            return None
+
+        job.status = ScrapeStatus.COMPLETED
+        job.completed_at = datetime.utcnow()
+        job.total_found = total_found
+        job.new_listings = new_listings
+        job.updated_listings = updated_listings
+
+        self._session.commit()
+        self._session.refresh(job)
+        return job
+
+    @with_db_retry
+    def fail_job(self, job_id: int, error_message: str) -> ScrapeJob | None:
+        """Mark job as failed.
+
+        Args:
+            job_id: Job ID.
+            error_message: Error description.
+
+        Returns:
+            Updated ScrapeJob if found, None otherwise.
+        """
+        job = self.get_job(job_id)
+        if job is None:
+            return None
+
+        job.status = ScrapeStatus.FAILED
+        job.completed_at = datetime.utcnow()
+        job.error_message = error_message
+
+        self._session.commit()
+        self._session.refresh(job)
+        return job
+
+    @with_db_retry
+    def cleanup_old_jobs(self, days: int = 30) -> int:
+        """Delete completed/failed jobs older than specified days.
+
+        Args:
+            days: Delete jobs older than this many days.
+
+        Returns:
+            Number of deleted jobs.
+        """
+        from datetime import timedelta
+
+        cutoff = datetime.utcnow() - timedelta(days=days)
+        deleted = (
+            self._session.query(ScrapeJob)
+            .filter(
+                ScrapeJob.created_at < cutoff,
+                ScrapeJob.status.in_([ScrapeStatus.COMPLETED, ScrapeStatus.FAILED]),
+            )
+            .delete(synchronize_session=False)
+        )
+        self._session.commit()
+        return deleted

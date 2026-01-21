@@ -160,3 +160,36 @@ class ScrapeSessionModel(Base):
 
     def __repr__(self) -> str:
         return f"<ScrapeSession(id={self.id}, source={self.source}, status={self.status})>"
+
+
+class ScrapeJob(Base):
+    """Background scrape job tracking for API-initiated scrapes."""
+
+    __tablename__ = "scrape_jobs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    source: Mapped[str] = mapped_column(String(50), nullable=False)
+    status: Mapped[str] = mapped_column(
+        Enum(ScrapeStatus), default=ScrapeStatus.PENDING, nullable=False
+    )
+    max_pages: Mapped[int] = mapped_column(Integer, default=50)
+    search_filters_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Progress tracking
+    current_page: Mapped[int] = mapped_column(Integer, default=0)
+    total_found: Mapped[int] = mapped_column(Integer, default=0)
+    new_listings: Mapped[int] = mapped_column(Integer, default=0)
+    updated_listings: Mapped[int] = mapped_column(Integer, default=0)
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, nullable=False
+    )
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    # Error tracking
+    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    def __repr__(self) -> str:
+        return f"<ScrapeJob(id={self.id}, source={self.source}, status={self.status})>"
