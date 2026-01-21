@@ -140,17 +140,28 @@ class TestOptionMatcher:
         assert len(result.missing_required) == 0
         assert result.has_dealbreaker is False
 
-    def test_match_partial_alias_no_match(self, sample_config: OptionsConfig) -> None:
-        """Partial alias matches should not count."""
+    def test_match_substring_alias(self, sample_config: OptionsConfig) -> None:
+        """Substring alias matches should work for BMW code + name format."""
         from i4_scout.matching.option_matcher import match_options
 
-        listing_options = ["HUD Pro"]  # Contains HUD but isn't HUD
+        # BMW dealer PDFs often have format "CODE NAME" like "610 HEAD-UP DISPLAY"
+        listing_options = ["610 Head-Up Display"]
 
         result = match_options(listing_options, sample_config)
 
-        # Depending on implementation - exact match vs contains
-        # For safety, we want exact normalized match
-        assert "Head-Up Display" not in result.matched_required
+        # Substring matching allows "Head-Up Display" alias to match within the option
+        assert "Head-Up Display" in result.matched_required
+
+    def test_match_short_alias_substring(self, sample_config: OptionsConfig) -> None:
+        """Short aliases (3+ chars) should match as substrings."""
+        from i4_scout.matching.option_matcher import match_options
+
+        listing_options = ["HUD Pro"]  # Contains HUD (3 chars)
+
+        result = match_options(listing_options, sample_config)
+
+        # HUD is 3 chars, so substring matching applies
+        assert "Head-Up Display" in result.matched_required
 
     def test_match_canonical_name_directly(self, sample_config: OptionsConfig) -> None:
         """Should match canonical name (not just aliases)."""

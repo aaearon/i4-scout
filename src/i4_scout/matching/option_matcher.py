@@ -60,22 +60,39 @@ def match_options(
     normalized_dealbreakers = {normalize_text(d): d for d in config.dealbreakers}
 
     # Step 4: Match options from options list
+    # Uses both exact matching and substring matching (alias within option or option within alias)
     matched_required: set[str] = set()
     matched_nice_to_have: set[str] = set()
     dealbreaker_found: str | None = None
 
     for normalized_opt in normalized_listing_options:
-        # Check for required match
+        # Check for required match - exact or substring
         if normalized_opt in required_alias_map:
             matched_required.add(required_alias_map[normalized_opt])
+        else:
+            # Substring match: check if any alias is contained in the option
+            for alias, name in required_alias_map.items():
+                if len(alias) >= 3 and alias in normalized_opt:
+                    matched_required.add(name)
+                    break
 
-        # Check for nice-to-have match
+        # Check for nice-to-have match - exact or substring
         if normalized_opt in nice_to_have_alias_map:
             matched_nice_to_have.add(nice_to_have_alias_map[normalized_opt])
+        else:
+            for alias, name in nice_to_have_alias_map.items():
+                if len(alias) >= 3 and alias in normalized_opt:
+                    matched_nice_to_have.add(name)
+                    break
 
-        # Check for dealbreaker
+        # Check for dealbreaker - exact or substring
         if normalized_opt in normalized_dealbreakers and dealbreaker_found is None:
             dealbreaker_found = normalized_dealbreakers[normalized_opt]
+        elif dealbreaker_found is None:
+            for db_norm, db_orig in normalized_dealbreakers.items():
+                if len(db_norm) >= 3 and db_norm in normalized_opt:
+                    dealbreaker_found = db_orig
+                    break
 
     # Step 5: Search description text for option codes and aliases
     if description:
