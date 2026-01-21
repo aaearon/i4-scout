@@ -1,8 +1,14 @@
 """FastAPI application factory and configuration."""
 
-from fastapi import FastAPI
+from pathlib import Path
 
-from i4_scout.api.routes import config, listings, scrape, stats
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+
+from i4_scout.api.routes import config, listings, partials, scrape, stats, web
+
+# Static files directory
+STATIC_DIR = Path(__file__).parent.parent / "static"
 
 
 def create_app() -> FastAPI:
@@ -19,11 +25,18 @@ def create_app() -> FastAPI:
         redoc_url="/redoc",
     )
 
-    # Include routers
+    # Mount static files
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+    # Include API routers
     app.include_router(listings.router, prefix="/api/listings", tags=["listings"])
     app.include_router(config.router, prefix="/api/config", tags=["config"])
     app.include_router(stats.router, prefix="/api/stats", tags=["stats"])
     app.include_router(scrape.router, prefix="/api/scrape/jobs", tags=["scrape"])
+
+    # Include web routers (HTML pages)
+    app.include_router(web.router, tags=["web"])
+    app.include_router(partials.router, tags=["partials"])
 
     @app.get("/health", tags=["health"])
     async def health_check() -> dict[str, str]:
