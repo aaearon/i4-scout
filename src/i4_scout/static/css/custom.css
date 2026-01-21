@@ -372,9 +372,7 @@ tr[data-href]:hover {
 
 .options-popover {
     display: none;
-    position: absolute;
-    top: 100%;
-    left: 50px;
+    position: fixed;
     z-index: 1000;
     width: 450px;
     max-width: 90vw;

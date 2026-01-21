@@ -56,6 +56,48 @@
         sessionStorage.removeItem(STORAGE_KEY);
         window.location.href = '/listings';
     };
+
+    // Options popover cursor tracking
+    const POPOVER_OFFSET_X = 15;
+    const POPOVER_OFFSET_Y = 15;
+
+    function positionPopover(popover, e) {
+        if (!popover) return;
+
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const popoverWidth = 450;
+        const popoverHeight = popover.offsetHeight || 200;
+
+        let x = e.clientX + POPOVER_OFFSET_X;
+        let y = e.clientY + POPOVER_OFFSET_Y;
+
+        // Prevent popover from going off the right edge
+        if (x + popoverWidth > viewportWidth - 10) {
+            x = e.clientX - popoverWidth - POPOVER_OFFSET_X;
+        }
+
+        // Prevent popover from going off the bottom edge
+        if (y + popoverHeight > viewportHeight - 10) {
+            y = e.clientY - popoverHeight - POPOVER_OFFSET_Y;
+        }
+
+        // Ensure minimum positions
+        x = Math.max(10, x);
+        y = Math.max(10, y);
+
+        popover.style.left = x + 'px';
+        popover.style.top = y + 'px';
+    }
+
+    // Use event delegation for dynamically loaded content
+    document.addEventListener('mousemove', function(e) {
+        const row = e.target.closest('.listing-row');
+        if (row) {
+            const popover = row.querySelector('.options-popover');
+            positionPopover(popover, e);
+        }
+    });
 })();
 </script>
 {% endblock %}
