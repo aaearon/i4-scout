@@ -8,6 +8,7 @@ from i4_scout.api.dependencies import (
     DbSession,
     DocumentServiceDep,
     ListingServiceDep,
+    NoteServiceDep,
     OptionsConfigDep,
     TemplatesDep,
 )
@@ -95,6 +96,7 @@ async def listings_partial(
     templates: TemplatesDep,
     source: str | None = Query(None),
     qualified_only: bool = Query(False),
+    has_issue: bool | None = Query(None),
     min_score: str | None = Query(None),
     price_min: str | None = Query(None),
     price_max: str | None = Query(None),
@@ -136,6 +138,7 @@ async def listings_partial(
     listings, total = service.get_listings(
         source=source_enum,
         qualified_only=qualified_only,
+        has_issue=has_issue,
         min_score=min_score_val,
         price_min=price_min_val,
         price_max=price_max_val,
@@ -154,6 +157,7 @@ async def listings_partial(
     filters = {
         "source": source_val,
         "qualified_only": qualified_only,
+        "has_issue": has_issue,
         "min_score": min_score_val,
         "price_min": price_min_val,
         "price_max": price_max_val,
@@ -405,3 +409,128 @@ async def reprocess_document_partial(
             "enrichment_result": enrichment_result,
         },
     )
+
+
+@router.patch("/listing/{listing_id}/issue")
+async def toggle_issue_partial(
+    request: Request,
+    listing_id: int,
+    service: ListingServiceDep,
+) -> HTMLResponse:
+    """Toggle issue flag and return updated button HTML fragment."""
+    # Get the has_issue value from the request
+    form_data = await request.form()
+    has_issue_str = str(form_data.get("has_issue", "false"))
+    has_issue = has_issue_str.lower() == "true"
+
+    listing = service.set_issue(listing_id, has_issue=has_issue)
+    if listing is None:
+        return HTMLResponse(
+            content='<button class="issue-toggle-btn" disabled>Error</button>',
+            status_code=200,
+        )
+
+    # Return the updated button
+    if listing.has_issue:
+        return HTMLResponse(
+            content=f'''<button
+                type="button"
+                id="issue-toggle-btn"
+                class="issue-toggle-btn has-issue"
+                hx-patch="/partials/listing/{listing_id}/issue"
+                hx-swap="outerHTML"
+                hx-vals='{{"has_issue": false}}'
+                title="Clear issue flag"
+            >&#x2713; Issue Marked</button>''',
+            status_code=200,
+        )
+    else:
+        return HTMLResponse(
+            content=f'''<button
+                type="button"
+                id="issue-toggle-btn"
+                class="issue-toggle-btn"
+                hx-patch="/partials/listing/{listing_id}/issue"
+                hx-swap="outerHTML"
+                hx-vals='{{"has_issue": true}}'
+                title="Mark as having an issue"
+            >&#x26A0; Mark Issue</button>''',
+            status_code=200,
+        )
+
+
+@router.get("/listing/{listing_id}/notes")
+async def listing_notes_partial(
+    request: Request,
+    listing_id: int,
+    note_service: NoteServiceDep,
+    templates: TemplatesDep,
+) -> HTMLResponse:
+    """Return notes section HTML fragment."""
+    notes = note_service.get_notes(listing_id)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="components/notes_section.html",
+        context={"listing_id": listing_id, "notes": notes},
+    )
+
+
+@router.post("/listing/{listing_id}/notes")
+async def add_note_partial(
+    request: Request,
+    listing_id: int,
+    note_service: NoteServiceDep,
+    templates: TemplatesDep,
+) -> HTMLResponse:
+    """Add a note and return the new note HTML fragment."""
+    from i4_scout.services.note_service import ListingNotFoundError
+
+    form_data = await request.form()
+    content = str(form_data.get("content", "")).strip()
+
+    if not content:
+        return HTMLResponse(content="", status_code=200)
+
+    try:
+        note = note_service.add_note(listing_id, content)
+        # Return just the new note card to be prepended
+        return HTMLResponse(
+            content=f'''<div class="note-card" id="note-{note.id}">
+                <div class="note-header">
+                    <span class="note-timestamp">{note.created_at.strftime('%Y-%m-%d %H:%M')}</span>
+                    <button
+                        type="button"
+                        class="note-delete-btn"
+                        hx-delete="/partials/listing/{listing_id}/notes/{note.id}"
+                        hx-target="#note-{note.id}"
+                        hx-swap="outerHTML"
+                        hx-confirm="Delete this note?"
+                        title="Delete note"
+                    >&#x2715;</button>
+                </div>
+                <div class="note-content">{note.content}</div>
+            </div>''',
+            status_code=200,
+        )
+    except ListingNotFoundError:
+        return HTMLResponse(
+            content='<div class="alert alert-error">Listing not found</div>',
+            status_code=200,
+        )
+
+
+@router.delete("/listing/{listing_id}/notes/{note_id}")
+async def delete_note_partial(
+    listing_id: int,
+    note_id: int,
+    note_service: NoteServiceDep,
+) -> HTMLResponse:
+    """Delete a note and return empty content (note removed from DOM)."""
+    from i4_scout.services.note_service import NoteNotFoundError
+
+    try:
+        note_service.delete_note(note_id)
+        return HTMLResponse(content="", status_code=200)
+    except NoteNotFoundError:
+        return HTMLResponse(content="", status_code=200)

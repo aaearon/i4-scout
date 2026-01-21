@@ -109,6 +109,7 @@ class ListingCreate(BaseModel):
     match_score: float = Field(0.0, ge=0, le=100)
     is_qualified: bool = False
     dedup_hash: str | None = None
+    has_issue: bool = False
 
 
 class ListingRead(ListingCreate):
@@ -243,3 +244,20 @@ class EnrichmentResult(BaseModel):
     score_after: float = Field(..., ge=0, le=100, description="Match score after enrichment")
     is_qualified_before: bool = Field(..., description="Qualification status before enrichment")
     is_qualified_after: bool = Field(..., description="Qualification status after enrichment")
+
+
+class ListingNoteCreate(BaseModel):
+    """Data required to create a note for a listing."""
+
+    content: str = Field(..., min_length=1, description="Note content")
+
+
+class ListingNoteRead(BaseModel):
+    """Note data as read from the database."""
+
+    id: int
+    listing_id: int
+    content: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

@@ -243,6 +243,55 @@ i4-scout enrich 42 /path/to/dealer_specs.pdf --json
 
 **File storage:** `data/documents/{listing_id}.pdf`
 
+### Issue Marker
+
+Mark listings with issues (e.g., DEKRA report findings, damage, etc.):
+
+**Web Interface:**
+- Issue badge displayed in listing detail header (red when has_issue=True)
+- Issue toggle button to mark/unmark listings
+- Issue icon (warning symbol) shown in listings table for flagged items
+- "Has Issues" checkbox filter in listings page
+
+**API:**
+```bash
+# Mark listing as having an issue
+curl -X PATCH "http://localhost:8000/api/listings/42/issue" \
+  -H "Content-Type: application/json" \
+  -d '{"has_issue": true}'
+
+# Filter listings with issues
+curl "http://localhost:8000/api/listings?has_issue=true"
+```
+
+### Notes System
+
+Work log style notes with timestamps for each listing. Useful for tracking communication with dealers, scheduling viewings, recording inspection findings, etc.
+
+**Web Interface:**
+- Notes section on listing detail page (below document upload)
+- Add note form (textarea + submit button)
+- Notes displayed in reverse chronological order (newest first)
+- Delete button on each note (with confirmation)
+
+**API:**
+```bash
+# Add a note
+curl -X POST "http://localhost:8000/api/listings/42/notes" \
+  -H "Content-Type: application/json" \
+  -d '{"content": "Called dealer, car is available. Scheduling viewing for Saturday."}'
+
+# List notes
+curl "http://localhost:8000/api/listings/42/notes"
+
+# Delete a note
+curl -X DELETE "http://localhost:8000/api/listings/42/notes/5"
+```
+
+**Database:**
+- Notes stored in `listing_notes` table
+- Cascade delete: notes are automatically deleted when listing is deleted
+
 ### Scraper Performance Optimizations
 
 The scraper includes two performance optimizations to reduce unnecessary network requests:
@@ -270,7 +319,8 @@ Scrape summary includes performance stats:
 
 ## Key Pydantic Models
 
-- `ListingCreate`: Input data for creating/upserting listings
+- `ListingCreate`: Input data for creating/upserting listings (includes `has_issue` field)
+- `ListingRead`: Listing data as read from database (extends ListingCreate with timestamps)
 - `ScrapedListing`: Output from detail page scraping
 - `OptionsConfig`: Parsed YAML configuration for options matching
 - `SearchFilters`: Search criteria for source-level filtering (price, mileage, year, countries)
@@ -278,6 +328,8 @@ Scrape summary includes performance stats:
 - `ScoredResult`: Final score and qualification status
 - `DocumentRead`: Metadata for uploaded PDF documents
 - `EnrichmentResult`: Result of PDF enrichment (options found, score changes)
+- `ListingNoteCreate`: Input for creating a note (content)
+- `ListingNoteRead`: Note data with id, listing_id, content, created_at
 
 ## API Server
 
@@ -303,6 +355,12 @@ i4-scout serve --reload
 - `GET /api/listings/{id}` - Get single listing
 - `GET /api/listings/{id}/price-history` - Get price history
 - `DELETE /api/listings/{id}` - Delete a listing
+- `PATCH /api/listings/{id}/issue` - Set issue flag (body: `{"has_issue": true/false}`)
+
+**Notes:**
+- `GET /api/listings/{id}/notes` - List notes for a listing (newest first)
+- `POST /api/listings/{id}/notes` - Add a note (body: `{"content": "..."}`)
+- `DELETE /api/listings/{id}/notes/{note_id}` - Delete a note
 
 **Configuration:**
 - `GET /api/config/options` - Get options matching configuration
@@ -339,6 +397,7 @@ i4-scout serve --reload
 ```
 ?country=D                 # Country code (D, NL, B, etc.)
 ?search=M%20Sport          # Text search in title/description (URL-encoded)
+?has_issue=true            # Filter by issue status (true/false)
 ```
 
 **Sorting:**
@@ -407,10 +466,11 @@ i4-scout serve
 
 **Listings (`/listings`):**
 - Full listings table with all fields
+- Issue icon (warning symbol) displayed in title cell for listings with issues
 - Checkbox selection for comparison (max 4 listings)
 - Favorite star button per listing (persists in localStorage)
 - Hover popover showing options summary (lazy-loaded via HTMX)
-- Filter form: source, qualified only, favorites only, score, price, mileage, year, country, search
+- Filter form: source, qualified only, favorites only, has issues, score, price, mileage, year, country, search
 - Options filtering: collapsible checkbox list for required and nice-to-have options
   - Has ALL mode: require all selected options (AND logic)
   - Has ANY mode: require at least one selected option (OR logic)
@@ -423,10 +483,16 @@ i4-scout serve
 **Listing Detail (`/listings/{id}`):**
 - Full listing information
 - Location and dealer details
+- Issue badge (red warning indicator when marked as having issues)
+- Issue toggle button (mark/unmark listings with issues, e.g., from DEKRA reports)
 - Favorite button (persists in localStorage)
 - Color-coded option cards: green (has), red (missing required), cyan (has nice-to-have), gray (missing nice-to-have)
 - Dealbreakers section with expandable keyword list
 - Price history table with change indicators
+- Notes section (work log style notes with timestamps)
+  - Add note form (textarea + submit)
+  - Notes list (reverse chronological, newest first)
+  - Delete note with confirmation
 - Delete button with confirmation
 - External link to source
 
@@ -455,8 +521,13 @@ These endpoints return HTML fragments for HTMX requests:
   - Options filtering: `?has_option=Laser%20Light&has_option=Harman%20Kardon&options_match=all`
   - `has_option` (repeatable): Filter by option name
   - `options_match`: `all` (AND, default) or `any` (OR)
+  - `has_issue`: Filter by issue status (true/false)
 - `GET /partials/listing/{id}` - Listing detail content
 - `GET /partials/listing/{id}/options-summary` - Options summary for hover popover
 - `GET /partials/listing/{id}/price-chart` - Price history chart
+- `PATCH /partials/listing/{id}/issue` - Toggle issue flag (returns updated button)
+- `GET /partials/listing/{id}/notes` - Notes section
+- `POST /partials/listing/{id}/notes` - Add note (returns new note HTML)
+- `DELETE /partials/listing/{id}/notes/{note_id}` - Delete note
 - `GET /partials/scrape/jobs` - Scrape jobs list
 - `GET /partials/scrape/job/{id}` - Single job row (for polling)

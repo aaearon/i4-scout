@@ -1113,3 +1113,140 @@ body:has(.compare-bar:not([hidden])) main {
         align-items: stretch;
     }
 }
+
+/* ===== Issue Marker Styles ===== */
+
+.badge-issue {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.badge-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+}
+
+/* Issue icon in listing row */
+.issue-icon {
+    color: #e74c3c;
+    font-size: 0.9rem;
+    margin-right: 0.35rem;
+    flex-shrink: 0;
+}
+
+/* Issue toggle button */
+.issue-toggle-btn {
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    background: var(--pico-card-background-color);
+    cursor: pointer;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+.issue-toggle-btn:hover {
+    border-color: #e74c3c;
+    background: rgba(231, 76, 60, 0.1);
+}
+
+.issue-toggle-btn.has-issue {
+    border-color: #e74c3c;
+    background: rgba(231, 76, 60, 0.15);
+    color: #e74c3c;
+}
+
+/* ===== Notes Section Styles ===== */
+
+.notes-section {
+    margin-bottom: 1.5rem;
+}
+
+.note-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.note-form textarea {
+    resize: vertical;
+    min-height: 60px;
+    margin-bottom: 0;
+    font-size: 0.9rem;
+}
+
+.note-form button {
+    align-self: flex-start;
+    padding: 0.4rem 1rem;
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+/* Notes list */
+#notes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.note-card {
+    background: var(--pico-card-sectioning-background-color);
+    border-radius: var(--pico-border-radius);
+    padding: 0.75rem 1rem;
+    border-left: 3px solid var(--pico-primary);
+}
+
+.note-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.note-timestamp {
+    font-size: 0.75rem;
+    color: var(--pico-muted-color);
+    font-family: monospace;
+}
+
+.note-delete-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.75rem;
+    color: var(--pico-muted-color);
+    padding: 0.2rem 0.4rem;
+    border-radius: var(--pico-border-radius);
+    transition: background-color 0.2s, color 0.2s;
+    line-height: 1;
+    margin: 0;
+}
+
+.note-delete-btn:hover {
+    background: rgba(231, 76, 60, 0.15);
+    color: #e74c3c;
+}
+
+.note-content {
+    font-size: 0.9rem;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.notes-empty {
+    color: var(--pico-muted-color);
+    font-size: 0.875rem;
+    text-align: center;
+    padding: 1rem;
+    margin: 0;
+}
+
+/* Mobile adjustments for notes */
+@media (max-width: 768px) {
+    .note-form button {
+        width: 100%;
+    }
+}

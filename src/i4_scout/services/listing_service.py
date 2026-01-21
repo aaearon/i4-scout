@@ -39,6 +39,7 @@ class ListingService:
         search: str | None = None,
         has_options: list[str] | None = None,
         options_match: str = "all",
+        has_issue: bool | None = None,
         sort_by: str | None = None,
         sort_order: str = "desc",
         limit: int = 20,
@@ -60,6 +61,7 @@ class ListingService:
             search: Text search in title and description.
             has_options: List of option names to filter by.
             options_match: "all" to require all options, "any" to require any.
+            has_issue: Filter by issue status (True, False, or None for all).
             sort_by: Field to sort by (price, mileage, score, first_seen, last_seen).
             sort_order: Sort direction (asc, desc). Default: desc.
             limit: Maximum results to return.
@@ -82,6 +84,7 @@ class ListingService:
             search=search,
             has_options=has_options,
             options_match=options_match,
+            has_issue=has_issue,
             sort_by=sort_by,
             sort_order=sort_order,
             limit=limit,
@@ -103,6 +106,7 @@ class ListingService:
             search=search,
             has_options=has_options,
             options_match=options_match,
+            has_issue=has_issue,
         )
 
         # Convert ORM objects to Pydantic models
@@ -135,6 +139,21 @@ class ListingService:
         """
         return self._repo.delete_listing(listing_id)
 
+    def set_issue(self, listing_id: int, has_issue: bool) -> ListingRead | None:
+        """Set the issue flag for a listing.
+
+        Args:
+            listing_id: Listing ID to update.
+            has_issue: New value for has_issue flag.
+
+        Returns:
+            Updated ListingRead if found, None otherwise.
+        """
+        listing = self._repo.toggle_issue(listing_id, has_issue=has_issue)
+        if listing is None:
+            return None
+        return self._to_listing_read(listing)
+
     def _to_listing_read(self, listing: Any) -> ListingRead:
         """Convert ORM Listing to ListingRead Pydantic model.
 
@@ -166,6 +185,7 @@ class ListingService:
             photo_urls=listing.photo_urls or [],
             match_score=listing.match_score,
             is_qualified=listing.is_qualified,
+            has_issue=listing.has_issue,
             first_seen_at=listing.first_seen_at,
             last_seen_at=listing.last_seen_at,
             matched_options=listing.matched_options,

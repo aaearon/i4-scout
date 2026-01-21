@@ -1,13 +1,29 @@
 <div class="detail-header">
     <div>
         <h1>{{ listing.title }}</h1>
-        {% if listing.is_qualified %}
-        <span class="badge badge-qualified">Qualified</span>
-        {% else %}
-        <span class="badge badge-not-qualified">Not Qualified</span>
-        {% endif %}
+        <div class="badge-row">
+            {% if listing.is_qualified %}
+            <span class="badge badge-qualified">Qualified</span>
+            {% else %}
+            <span class="badge badge-not-qualified">Not Qualified</span>
+            {% endif %}
+            {% if listing.has_issue %}
+            <span class="badge badge-issue">Has Issue</span>
+            {% endif %}
+        </div>
     </div>
     <div class="detail-actions">
+        <button
+            type="button"
+            id="issue-toggle-btn"
+            class="issue-toggle-btn{% if listing.has_issue %} has-issue{% endif %}"
+            hx-patch="/partials/listing/{{ listing.id }}/issue"
+            hx-swap="outerHTML"
+            hx-vals='{"has_issue": {{ 'false' if listing.has_issue else 'true' }}}'
+            title="{{ 'Clear issue flag' if listing.has_issue else 'Mark as having an issue' }}"
+        >
+            {% if listing.has_issue %}&#x2713; Issue Marked{% else %}&#x26A0; Mark Issue{% endif %}
+        </button>
         <button type="button" class="favorite-btn favorite-btn-large" data-listing-id="{{ listing.id }}" onclick="toggleFavorite({{ listing.id }}, event)" title="Add to favorites" aria-pressed="false">&#x2606; Favorite</button>
         <a href="{{ listing.url }}" target="_blank" rel="noopener noreferrer">
             <button class="secondary">View on Source</button>
@@ -187,6 +203,24 @@
         </header>
         <div class="empty-state">
             <p>Loading document section...</p>
+        </div>
+    </article>
+</div>
+
+<!-- Notes Section -->
+<div
+    id="notes-section"
+    hx-get="/partials/listing/{{ listing.id }}/notes"
+    hx-trigger="load"
+    hx-swap="innerHTML"
+>
+    <article class="notes-section">
+        <header>
+            Notes
+            <span class="htmx-indicator"><span class="spinner"></span></span>
+        </header>
+        <div class="empty-state">
+            <p>Loading notes...</p>
         </div>
     </article>
 </div>

@@ -41,6 +41,19 @@
     </div>
 
     <div class="filter-group">
+        <label for="has_issue">
+            <input
+                type="checkbox"
+                name="has_issue"
+                id="has_issue"
+                value="true"
+                {% if filters.has_issue %}checked{% endif %}
+            >
+            Has Issues
+        </label>
+    </div>
+
+    <div class="filter-group">
         <label for="min_score">Min Score</label>
         <input
             type="number"

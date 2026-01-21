@@ -60,6 +60,9 @@ class Listing(Base):
     is_qualified: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     dedup_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
 
+    # User flags
+    has_issue: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+
     # Timestamps
     first_seen_at: Mapped[datetime] = mapped_column(
         DateTime, default=utc_now, nullable=False
@@ -77,6 +80,9 @@ class Listing(Base):
     )
     documents: Mapped[list["ListingDocument"]] = relationship(
         "ListingDocument", back_populates="listing", cascade="all, delete-orphan"
+    )
+    notes: Mapped[list["ListingNote"]] = relationship(
+        "ListingNote", back_populates="listing", cascade="all, delete-orphan"
     )
 
     @property
@@ -265,3 +271,24 @@ class ScrapeJob(Base):
 
     def __repr__(self) -> str:
         return f"<ScrapeJob(id={self.id}, source={self.source}, status={self.status})>"
+
+
+class ListingNote(Base):
+    """Work log style note for a listing."""
+
+    __tablename__ = "listing_notes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    listing_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("listings.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=utc_now, nullable=False
+    )
+
+    # Relationships
+    listing: Mapped["Listing"] = relationship("Listing", back_populates="notes")
+
+    def __repr__(self) -> str:
+        return f"<ListingNote(id={self.id}, listing_id={self.listing_id})>"

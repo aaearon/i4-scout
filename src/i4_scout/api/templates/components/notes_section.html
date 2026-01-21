@@ -1,0 +1,51 @@
+<article class="notes-section">
+    <header>
+        Notes
+        <span id="notes-indicator" class="htmx-indicator"><span class="spinner"></span></span>
+    </header>
+
+    <!-- Add Note Form -->
+    <form
+        class="note-form"
+        hx-post="/partials/listing/{{ listing_id }}/notes"
+        hx-target="#notes-list"
+        hx-swap="afterbegin"
+        hx-indicator="#notes-indicator"
+        hx-on::after-request="this.reset()"
+    >
+        <textarea
+            name="content"
+            placeholder="Add a note (e.g., called dealer, scheduled viewing, DEKRA report findings...)"
+            rows="2"
+            required
+            minlength="1"
+        ></textarea>
+        <button type="submit">Add Note</button>
+    </form>
+
+    <!-- Notes List -->
+    <div id="notes-list">
+        {% if notes %}
+            {% for note in notes %}
+            <div class="note-card" id="note-{{ note.id }}">
+                <div class="note-header">
+                    <span class="note-timestamp">{{ note.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                    <button
+                        type="button"
+                        class="note-delete-btn"
+                        hx-delete="/partials/listing/{{ listing_id }}/notes/{{ note.id }}"
+                        hx-target="#note-{{ note.id }}"
+                        hx-swap="outerHTML"
+                        hx-confirm="Delete this note?"
+                        hx-indicator="#notes-indicator"
+                        title="Delete note"
+                    >&#x2715;</button>
+                </div>
+                <div class="note-content">{{ note.content }}</div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p class="notes-empty">No notes yet. Add one above.</p>
+        {% endif %}
+    </div>
+</article>

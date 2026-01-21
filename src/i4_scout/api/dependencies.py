@@ -13,6 +13,7 @@ from i4_scout.database.engine import get_session_factory
 from i4_scout.models.pydantic_models import OptionsConfig, SearchFilters
 from i4_scout.services.document_service import DocumentService
 from i4_scout.services.listing_service import ListingService
+from i4_scout.services.note_service import NoteService
 
 # Template directory path
 TEMPLATES_DIR = Path(__file__).parent / "templates"
@@ -96,10 +97,25 @@ def get_document_service(
     return DocumentService(session, options_config)
 
 
+def get_note_service(
+    session: Annotated[Session, Depends(get_db)],
+) -> NoteService:
+    """Dependency that provides a NoteService instance.
+
+    Args:
+        session: Database session from get_db dependency.
+
+    Returns:
+        NoteService instance.
+    """
+    return NoteService(session)
+
+
 # Type aliases for cleaner dependency injection
 DbSession = Annotated[Session, Depends(get_db)]
 ListingServiceDep = Annotated[ListingService, Depends(get_listing_service)]
 DocumentServiceDep = Annotated[DocumentService, Depends(get_document_service)]
+NoteServiceDep = Annotated[NoteService, Depends(get_note_service)]
 OptionsConfigDep = Annotated[OptionsConfig, Depends(get_options_config)]
 SearchFiltersDep = Annotated[SearchFilters, Depends(get_search_filters)]
 TemplatesDep = Annotated[Jinja2Templates, Depends(get_templates)]

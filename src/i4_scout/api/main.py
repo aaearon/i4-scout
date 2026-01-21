@@ -5,7 +5,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from i4_scout.api.routes import config, documents, listings, partials, scrape, stats, web
+from i4_scout.api.routes import config, documents, listings, notes, partials, scrape, stats, web
 
 # Static files directory
 STATIC_DIR = Path(__file__).parent.parent / "static"
@@ -30,6 +30,7 @@ def create_app() -> FastAPI:
 
     # Include API routers
     app.include_router(listings.router, prefix="/api/listings", tags=["listings"])
+    app.include_router(notes.router, prefix="/api/listings", tags=["notes"])
     app.include_router(documents.router, prefix="/api/listings", tags=["documents"])
     app.include_router(config.router, prefix="/api/config", tags=["config"])
     app.include_router(stats.router, prefix="/api/stats", tags=["stats"])

@@ -8,6 +8,7 @@ from i4_scout.api.schemas import (
     PaginatedListings,
     PriceHistoryEntry,
     PriceHistoryResponse,
+    SetIssueRequest,
 )
 from i4_scout.database.repository import ListingRepository
 from i4_scout.models.pydantic_models import ListingRead, Source
@@ -31,6 +32,7 @@ async def list_listings(
     search: str | None = Query(
         None, min_length=2, max_length=100, description="Search in title and description"
     ),
+    has_issue: bool | None = Query(None, description="Filter by issue status"),
     sort_by: str | None = Query(
         None,
         pattern="^(price|mileage|score|first_seen|last_seen)$",
@@ -46,7 +48,7 @@ async def list_listings(
 
     Returns a paginated list of car listings with support for filtering
     by source, qualification status, minimum match score, price range,
-    mileage range, year range, country, and text search.
+    mileage range, year range, country, text search, and issue status.
 
     Results can be sorted by price, mileage, score, first_seen, or last_seen.
     """
@@ -62,6 +64,7 @@ async def list_listings(
         year_max=year_max,
         country=country,
         search=search,
+        has_issue=has_issue,
         sort_by=sort_by,
         sort_order=sort_order,
         limit=limit,
@@ -156,3 +159,30 @@ async def delete_listing(
         raise HTTPException(status_code=404, detail=f"Listing {listing_id} not found")
 
     return DeleteResponse(success=True, message=f"Listing {listing_id} deleted")
+
+
+@router.patch("/{listing_id}/issue", response_model=ListingRead)
+async def set_listing_issue(
+    listing_id: int,
+    request: SetIssueRequest,
+    service: ListingServiceDep,
+) -> ListingRead:
+    """Set the issue flag for a listing.
+
+    Use this to mark listings that have issues (e.g., from DEKRA reports).
+
+    Args:
+        listing_id: The listing ID to update.
+        request: Request body containing the has_issue flag.
+
+    Returns:
+        Updated listing details.
+
+    Raises:
+        HTTPException: 404 if listing not found.
+    """
+    listing = service.set_issue(listing_id, has_issue=request.has_issue)
+    if listing is None:
+        raise HTTPException(status_code=404, detail=f"Listing {listing_id} not found")
+
+    return listing

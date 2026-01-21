@@ -22,6 +22,7 @@ from typing_extensions import ParamSpec
 from i4_scout.models.db_models import (
     Listing,
     ListingDocument,
+    ListingNote,
     ListingOption,
     Option,
     PriceHistory,
@@ -118,6 +119,7 @@ class ListingRepository:
             match_score=data.match_score,
             is_qualified=data.is_qualified,
             dedup_hash=dedup_hash,
+            has_issue=data.has_issue,
         )
 
         self._session.add(listing)
@@ -168,6 +170,7 @@ class ListingRepository:
                 match_score=data.match_score,
                 is_qualified=data.is_qualified,
                 dedup_hash=dedup_hash,
+                has_issue=data.has_issue,
             )
             listings.append(listing)
 
@@ -236,6 +239,7 @@ class ListingRepository:
         search: str | None = None,
         has_options: list[str] | None = None,
         options_match: str = "all",
+        has_issue: bool | None = None,
     ) -> Query[Listing]:
         """Apply common filters to a listing query.
 
@@ -254,6 +258,7 @@ class ListingRepository:
             search: Text search in title and description.
             has_options: List of option names to filter by.
             options_match: "all" to require all options, "any" to require any.
+            has_issue: Filter by issue status (True, False, or None for all).
 
         Returns:
             Filtered query.
@@ -319,6 +324,9 @@ class ListingRepository:
                 )
                 query = query.filter(Listing.id.in_(subq))
 
+        if has_issue is not None:
+            query = query.filter(Listing.has_issue == has_issue)
+
         return query
 
     def get_listings(
@@ -336,6 +344,7 @@ class ListingRepository:
         search: str | None = None,
         has_options: list[str] | None = None,
         options_match: str = "all",
+        has_issue: bool | None = None,
         sort_by: str | None = None,
         sort_order: str = "desc",
         limit: int | None = None,
@@ -357,6 +366,7 @@ class ListingRepository:
             search: Text search in title and description.
             has_options: List of option names to filter by.
             options_match: "all" to require all options, "any" to require any.
+            has_issue: Filter by issue status (True, False, or None for all).
             sort_by: Field to sort by (price, mileage, score, first_seen, last_seen).
             sort_order: Sort direction (asc, desc). Default: desc.
             limit: Maximum number of results.
@@ -381,6 +391,7 @@ class ListingRepository:
             search=search,
             has_options=has_options,
             options_match=options_match,
+            has_issue=has_issue,
         )
 
         # Sorting
@@ -421,6 +432,7 @@ class ListingRepository:
         search: str | None = None,
         has_options: list[str] | None = None,
         options_match: str = "all",
+        has_issue: bool | None = None,
     ) -> int:
         """Count listings with optional filters.
 
@@ -438,6 +450,7 @@ class ListingRepository:
             search: Text search in title and description.
             has_options: List of option names to filter by.
             options_match: "all" to require all options, "any" to require any.
+            has_issue: Filter by issue status (True, False, or None for all).
 
         Returns:
             Number of matching listings.
@@ -458,6 +471,7 @@ class ListingRepository:
             search=search,
             has_options=has_options,
             options_match=options_match,
+            has_issue=has_issue,
         )
         return query.count()
 
@@ -483,6 +497,27 @@ class ListingRepository:
                 setattr(listing, key, value)
 
         listing.last_seen_at = datetime.now(timezone.utc)
+        self._session.commit()
+        self._session.refresh(listing)
+
+        return listing
+
+    @with_db_retry
+    def toggle_issue(self, listing_id: int, has_issue: bool) -> Listing | None:
+        """Set the issue flag for a listing.
+
+        Args:
+            listing_id: Listing ID to update.
+            has_issue: New value for has_issue flag.
+
+        Returns:
+            Updated Listing if found, None otherwise.
+        """
+        listing = self.get_listing_by_id(listing_id)
+        if listing is None:
+            return None
+
+        listing.has_issue = has_issue
         self._session.commit()
         self._session.refresh(listing)
 
@@ -1142,3 +1177,84 @@ class ScrapeJobRepository:
         )
         self._session.commit()
         return deleted
+
+
+class NoteRepository:
+    """Repository for ListingNote CRUD operations."""
+
+    def __init__(self, session: Session) -> None:
+        """Initialize repository with database session.
+
+        Args:
+            session: SQLAlchemy session instance.
+        """
+        self._session = session
+
+    @with_db_retry
+    def create_note(self, listing_id: int, content: str) -> ListingNote:
+        """Create a new note for a listing.
+
+        Args:
+            listing_id: ID of the listing.
+            content: Note content.
+
+        Returns:
+            Created ListingNote.
+        """
+        note = ListingNote(
+            listing_id=listing_id,
+            content=content,
+        )
+        self._session.add(note)
+        self._session.commit()
+        self._session.refresh(note)
+        return note
+
+    def get_notes(self, listing_id: int) -> list[ListingNote]:
+        """Get all notes for a listing in reverse chronological order.
+
+        Args:
+            listing_id: Listing ID.
+
+        Returns:
+            List of ListingNote objects, newest first.
+        """
+        return (
+            self._session.query(ListingNote)
+            .filter(ListingNote.listing_id == listing_id)
+            .order_by(desc(ListingNote.created_at))
+            .all()
+        )
+
+    def get_note(self, note_id: int) -> ListingNote | None:
+        """Get a note by ID.
+
+        Args:
+            note_id: Note ID.
+
+        Returns:
+            ListingNote if found, None otherwise.
+        """
+        return (
+            self._session.query(ListingNote)
+            .filter(ListingNote.id == note_id)
+            .first()
+        )
+
+    @with_db_retry
+    def delete_note(self, note_id: int) -> bool:
+        """Delete a note by ID.
+
+        Args:
+            note_id: Note ID.
+
+        Returns:
+            True if deleted, False if not found.
+        """
+        note = self.get_note(note_id)
+        if note is None:
+            return False
+
+        self._session.delete(note)
+        self._session.commit()
+        return True

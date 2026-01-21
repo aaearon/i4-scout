@@ -20,6 +20,7 @@
     </td>
     <td>{{ listing.id }}</td>
     <td class="title-cell" title="{{ listing.title }}">
+        {% if listing.has_issue %}<span class="issue-icon" title="Has issue">&#x26A0;</span>{% endif %}
         <span class="title-text">{{ listing.title }}</span>
         <span class="title-actions">
             <a href="/listings/{{ listing.id }}" target="_blank" rel="noopener" onclick="event.stopPropagation();" class="action-link" title="Open details in new tab">&#x29C9;</a>

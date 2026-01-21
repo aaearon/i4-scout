@@ -134,3 +134,37 @@ class ScrapeJobListResponse(BaseModel):
 
     jobs: list[ScrapeJobResponse]
     count: int = Field(description="Number of jobs in this response")
+
+
+# Issue schemas
+
+
+class SetIssueRequest(BaseModel):
+    """Request body for setting issue flag."""
+
+    has_issue: bool = Field(..., description="New value for issue flag")
+
+
+# Note schemas
+
+
+class NoteCreateRequest(BaseModel):
+    """Request body for creating a note."""
+
+    content: str = Field(..., min_length=1, description="Note content")
+
+
+class NoteResponse(BaseModel):
+    """Response for a single note."""
+
+    id: int
+    listing_id: int
+    content: str
+    created_at: datetime
+
+
+class NoteListResponse(BaseModel):
+    """Response for listing notes."""
+
+    notes: list[NoteResponse]
+    count: int = Field(description="Number of notes in this response")
