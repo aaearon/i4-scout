@@ -78,7 +78,58 @@
     </div>
 </div>
 
-{% if listing.matched_options %}
+{% if options_status %}
+<!-- Required Options -->
+<article>
+    <header>Required Options ({{ options_status.required|selectattr('has')|list|length }} / {{ options_status.required|length }})</header>
+    {% if options_status.required %}
+    <table class="options-table">
+        <tbody>
+            {% for opt in options_status.required %}
+            <tr>
+                <td style="width: 40px; text-align: center;">
+                    {% if opt.has %}
+                    <span class="option-has" title="Has this option">&#10003;</span>
+                    {% else %}
+                    <span class="option-missing" title="Missing this option">&#10007;</span>
+                    {% endif %}
+                </td>
+                <td>{{ opt.name }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty-state">No required options configured.</p>
+    {% endif %}
+</article>
+
+<!-- Nice-to-Have Options -->
+<article>
+    <header>Nice-to-Have Options ({{ options_status.nice_to_have|selectattr('has')|list|length }} / {{ options_status.nice_to_have|length }})</header>
+    {% if options_status.nice_to_have %}
+    <table class="options-table">
+        <tbody>
+            {% for opt in options_status.nice_to_have %}
+            <tr>
+                <td style="width: 40px; text-align: center;">
+                    {% if opt.has %}
+                    <span class="option-has" title="Has this option">&#10003;</span>
+                    {% else %}
+                    <span class="option-missing-nice" title="Missing this option">&#10007;</span>
+                    {% endif %}
+                </td>
+                <td>{{ opt.name }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty-state">No nice-to-have options configured.</p>
+    {% endif %}
+</article>
+{% elif listing.matched_options %}
+<!-- Fallback to simple list if options_status not provided -->
 <article>
     <header>Matched Options</header>
     <ul class="options-list">

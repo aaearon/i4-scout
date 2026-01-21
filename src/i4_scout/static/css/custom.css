@@ -115,6 +115,20 @@ tr[data-href]:hover {
     background-color: var(--pico-table-row-stripped-background-color);
 }
 
+/* Sortable headers */
+.sortable-header {
+    user-select: none;
+    transition: background-color 0.2s;
+}
+
+.sortable-header:hover {
+    background-color: var(--pico-table-row-stripped-background-color);
+}
+
+.sortable-header.sort-active {
+    color: var(--pico-primary);
+}
+
 /* Filter form layout */
 .filter-form {
     display: grid;
@@ -227,6 +241,40 @@ tr[data-href]:hover {
     padding: 0.25em 0.75em;
     border-radius: 1em;
     font-size: 0.875rem;
+}
+
+/* Options status table */
+.options-table {
+    width: 100%;
+    margin: 0;
+}
+
+.options-table td {
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--pico-muted-border-color);
+}
+
+.options-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Option has/missing indicators */
+.option-has {
+    color: var(--pico-color-green-550);
+    font-weight: bold;
+    font-size: 1.25rem;
+}
+
+.option-missing {
+    color: var(--pico-color-red-550);
+    font-weight: bold;
+    font-size: 1.25rem;
+}
+
+.option-missing-nice {
+    color: var(--pico-color-grey-500);
+    font-weight: bold;
+    font-size: 1.25rem;
 }
 
 /* Price history chart placeholder */

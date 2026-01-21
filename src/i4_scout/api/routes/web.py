@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Query, Request
 
-from i4_scout.api.dependencies import ListingServiceDep, TemplatesDep
+from i4_scout.api.dependencies import ListingServiceDep, OptionsConfigDep, TemplatesDep
 
 router = APIRouter()
 
@@ -61,14 +61,38 @@ async def listing_detail_page(
     request: Request,
     listing_id: int,
     service: ListingServiceDep,
+    options_config: OptionsConfigDep,
     templates: TemplatesDep,
 ):
     """Render the listing detail page."""
     listing = service.get_listing(listing_id)
+
+    # Build options status for display
+    options_status = None
+    if listing is not None:
+        matched_set = set(listing.matched_options)
+        required_options = []
+        for opt in options_config.required:
+            required_options.append({
+                "name": opt.name,
+                "has": opt.name in matched_set,
+            })
+        nice_to_have_options = []
+        for opt in options_config.nice_to_have:
+            nice_to_have_options.append({
+                "name": opt.name,
+                "has": opt.name in matched_set,
+            })
+        options_status = {
+            "required": required_options,
+            "nice_to_have": nice_to_have_options,
+            "dealbreakers": options_config.dealbreakers,
+        }
+
     return templates.TemplateResponse(
         request=request,
         name="pages/listing_detail.html",
-        context={"listing": listing},
+        context={"listing": listing, "options_status": options_status},
     )
 
 
