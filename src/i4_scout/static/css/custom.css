@@ -1132,8 +1132,20 @@ body:has(.compare-bar:not([hidden])) main {
 .issue-icon {
     color: #e74c3c;
     font-size: 0.9rem;
-    margin-right: 0.35rem;
+    margin-right: 0.25rem;
     flex-shrink: 0;
+    animation: throb 1.2s ease-in-out infinite;
+}
+
+@keyframes throb {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.6;
+        transform: scale(1.15);
+    }
 }
 
 /* Issue toggle button */
