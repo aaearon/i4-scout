@@ -119,6 +119,8 @@ class ListingRead(ListingCreate):
     first_seen_at: datetime
     last_seen_at: datetime
     matched_options: list[str] = Field(default_factory=list)
+    document_count: int = Field(default=0, description="Number of uploaded documents")
+    notes_count: int = Field(default=0, description="Number of notes")
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -189,4 +189,6 @@ class ListingService:
             first_seen_at=listing.first_seen_at,
             last_seen_at=listing.last_seen_at,
             matched_options=listing.matched_options,
+            document_count=len(listing.documents) if listing.documents else 0,
+            notes_count=len(listing.notes) if listing.notes else 0,
         )

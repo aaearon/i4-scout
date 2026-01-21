@@ -1156,26 +1156,13 @@ body:has(.compare-bar:not([hidden])) main {
     flex-shrink: 0;
 }
 
-/* Notes icon in listing row */
-.notes-icon {
+/* Notes indicator in listing row */
+.notes-indicator {
     color: #3498db;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+    font-weight: 600;
     margin-right: 0.25rem;
     flex-shrink: 0;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.1rem;
-}
-
-.notes-count {
-    font-size: 0.65rem;
-    font-weight: 600;
-    background: #3498db;
-    color: white;
-    padding: 0 0.3rem;
-    border-radius: 0.5rem;
-    min-width: 1rem;
-    text-align: center;
 }
 
 @keyframes throb {
