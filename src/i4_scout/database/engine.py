@@ -48,7 +48,10 @@ def get_engine(db_path: Path | str | None = None, echo: bool = False) -> Engine:
         _engine = create_engine(
             f"sqlite:///{db_path}",
             echo=echo,
-            connect_args={"check_same_thread": False},
+            connect_args={
+                "check_same_thread": False,
+                "timeout": 30,  # SQLite busy timeout in seconds
+            },
         )
 
     return _engine
