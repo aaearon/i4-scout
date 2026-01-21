@@ -9,7 +9,7 @@ from typing import Any, TypeVar
 from sqlalchemy import asc, desc, or_
 from sqlalchemy import select as sa_select
 from sqlalchemy.exc import OperationalError
-from sqlalchemy.orm import Query, Session
+from sqlalchemy.orm import Query, Session, joinedload
 from sqlalchemy.sql import extract
 from tenacity import (
     Retrying,
@@ -400,7 +400,10 @@ class ListingRepository:
         Returns:
             List of matching Listing objects.
         """
-        query = self._session.query(Listing)
+        query = self._session.query(Listing).options(
+            joinedload(Listing.documents),
+            joinedload(Listing.notes),
+        )
         query = self._apply_listing_filters(
             query,
             source=source,
