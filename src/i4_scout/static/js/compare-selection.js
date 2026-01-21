@@ -119,13 +119,21 @@
             copyBtn.textContent = 'Copying...';
             copyBtn.disabled = true;
 
-            // Fetch full details for each listing and options config in parallel
-            const [listings, configRes] = await Promise.all([
+            // Fetch full details for each listing, their notes, and options config in parallel
+            const [listings, notesArrays, configRes] = await Promise.all([
                 Promise.all(selections.map(s =>
                     fetch('/api/listings/' + s.id).then(r => r.json())
                 )),
+                Promise.all(selections.map(s =>
+                    fetch('/api/listings/' + s.id + '/notes').then(r => r.json())
+                )),
                 fetch('/api/config/options').then(r => r.json())
             ]);
+
+            // Attach notes to each listing
+            listings.forEach((listing, i) => {
+                listing.notes = notesArrays[i] || [];
+            });
 
             // Format as LLM-friendly markdown
             const text = formatListingsForLLM(listings, configRes);
@@ -225,6 +233,17 @@
                     });
                     lines.push('');
                 }
+            }
+
+            // Notes (if any)
+            const notes = listing.notes || [];
+            if (notes.length > 0) {
+                lines.push('### Notes');
+                notes.forEach(note => {
+                    const timestamp = note.created_at ? new Date(note.created_at).toLocaleString() : '';
+                    lines.push('- [' + timestamp + '] ' + note.content);
+                });
+                lines.push('');
             }
 
             // Separator between listings (except last)
