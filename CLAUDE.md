@@ -219,3 +219,15 @@ Scrape summary includes performance stats:
 - `SearchFilters`: Search criteria for source-level filtering (price, mileage, year, countries)
 - `MatchResult`: Output from option matching
 - `ScoredResult`: Final score and qualification status
+
+## Web Interface Planning
+
+Planning is underway to add a FastAPI-based web interface. See these docs for context:
+
+- `docs/architecture-review-web-interface.md` - Comprehensive architecture review and implementation plan
+- `docs/web-interface-implementation-context.md` - **LLM Context Document** - Current state details for implementation sessions
+
+Key decisions:
+- **Framework**: FastAPI (async, Pydantic integration)
+- **Architecture**: Extract service layer from CLI, add API routes
+- **Database**: SQLite for personal use, PostgreSQL-ready via DATABASE_URL
