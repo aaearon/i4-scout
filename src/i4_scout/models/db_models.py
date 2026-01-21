@@ -1,9 +1,9 @@
 """SQLAlchemy ORM models."""
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional
 
-from sqlalchemy import JSON, Boolean, DateTime, Enum, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, Boolean, Date, DateTime, Enum, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from i4_scout.models.pydantic_models import ScrapeStatus, Source
@@ -33,7 +33,7 @@ class Listing(Base):
     # Vehicle details
     mileage_km: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     year: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    first_registration: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
+    first_registration: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     vin: Mapped[Optional[str]] = mapped_column(String(17), nullable=True)
 
     # Location
@@ -160,3 +160,36 @@ class ScrapeSessionModel(Base):
 
     def __repr__(self) -> str:
         return f"<ScrapeSession(id={self.id}, source={self.source}, status={self.status})>"
+
+
+class ScrapeJob(Base):
+    """Background scrape job tracking for API-initiated scrapes."""
+
+    __tablename__ = "scrape_jobs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    source: Mapped[str] = mapped_column(String(50), nullable=False)
+    status: Mapped[str] = mapped_column(
+        Enum(ScrapeStatus), default=ScrapeStatus.PENDING, nullable=False
+    )
+    max_pages: Mapped[int] = mapped_column(Integer, default=50)
+    search_filters_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Progress tracking
+    current_page: Mapped[int] = mapped_column(Integer, default=0)
+    total_found: Mapped[int] = mapped_column(Integer, default=0)
+    new_listings: Mapped[int] = mapped_column(Integer, default=0)
+    updated_listings: Mapped[int] = mapped_column(Integer, default=0)
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, nullable=False
+    )
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    # Error tracking
+    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    def __repr__(self) -> str:
+        return f"<ScrapeJob(id={self.id}, source={self.source}, status={self.status})>"

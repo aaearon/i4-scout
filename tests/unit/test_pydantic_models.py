@@ -1,7 +1,7 @@
 """Unit tests for Pydantic models."""
 
 import pytest
-from datetime import datetime
+from datetime import date, datetime
 from pydantic import ValidationError
 
 from i4_scout.models.pydantic_models import (
@@ -11,6 +11,8 @@ from i4_scout.models.pydantic_models import (
     OptionConfig,
     OptionsConfig,
     ScrapedListing,
+    ScrapeProgress,
+    ScrapeResult,
     ScrapeSession,
     ScrapeStatus,
     SearchFilters,
@@ -272,3 +274,68 @@ class TestSearchFilters:
         SearchFilters()
         SearchFilters(price_max_eur=None)
         SearchFilters(countries=None)
+
+
+class TestScrapeProgress:
+    """Tests for ScrapeProgress model."""
+
+    def test_scrape_progress_minimal(self):
+        """Should create progress with required fields."""
+        progress = ScrapeProgress(
+            page=1,
+            total_pages=10,
+            listings_found=20,
+            new_count=5,
+            updated_count=10,
+            skipped_count=5,
+        )
+        assert progress.page == 1
+        assert progress.total_pages == 10
+        assert progress.listings_found == 20
+        assert progress.new_count == 5
+        assert progress.updated_count == 10
+        assert progress.skipped_count == 5
+        assert progress.current_listing is None
+
+    def test_scrape_progress_with_current_listing(self):
+        """Should accept current_listing optional field."""
+        progress = ScrapeProgress(
+            page=3,
+            total_pages=10,
+            listings_found=45,
+            new_count=10,
+            updated_count=20,
+            skipped_count=15,
+            current_listing="BMW i4 eDrive40 M Sport",
+        )
+        assert progress.current_listing == "BMW i4 eDrive40 M Sport"
+
+
+class TestScrapeResult:
+    """Tests for ScrapeResult model."""
+
+    def test_scrape_result(self):
+        """Should create result with all counts."""
+        result = ScrapeResult(
+            total_found=100,
+            new_listings=25,
+            updated_listings=50,
+            skipped_unchanged=25,
+            fetched_details=75,
+        )
+        assert result.total_found == 100
+        assert result.new_listings == 25
+        assert result.updated_listings == 50
+        assert result.skipped_unchanged == 25
+        assert result.fetched_details == 75
+
+    def test_scrape_result_empty(self):
+        """Should handle zero counts."""
+        result = ScrapeResult(
+            total_found=0,
+            new_listings=0,
+            updated_listings=0,
+            skipped_unchanged=0,
+            fetched_details=0,
+        )
+        assert result.total_found == 0

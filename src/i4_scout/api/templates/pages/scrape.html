@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Scrape Control - i4-scout{% endblock %}
+
+{% block content %}
+<h1>Scrape Control</h1>
+
+<!-- Scrape form -->
+{% include "components/scrape_form.html" %}
+
+<!-- Recent jobs -->
+<section>
+    <h2>
+        Recent Jobs
+        <span id="jobs-indicator" class="htmx-indicator"><span class="spinner"></span></span>
+    </h2>
+    <div
+        id="scrape-jobs"
+        hx-get="/partials/scrape/jobs"
+        hx-trigger="load, jobCreated from:body"
+        hx-swap="innerHTML"
+        hx-indicator="#jobs-indicator"
+    >
+        <div class="empty-state">
+            <p>Loading jobs...</p>
+        </div>
+    </div>
+</section>
+{% endblock %}

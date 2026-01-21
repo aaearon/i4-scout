@@ -1,0 +1,48 @@
+<tr
+    class="listing-row"
+    data-href="/listings/{{ listing.id }}"
+    onclick="window.location.href='/listings/{{ listing.id }}'"
+    style="cursor: pointer;"
+    hx-get="/partials/listing/{{ listing.id }}/options-summary"
+    hx-trigger="mouseenter once"
+    hx-target="find .options-popover"
+    hx-swap="innerHTML"
+>
+    <td>{{ listing.id }}</td>
+    <td class="truncate" title="{{ listing.title }}">
+        {{ listing.title }}
+        <div class="options-popover">
+            <span class="spinner"></span> Loading...
+        </div>
+    </td>
+    <td style="text-align: right;">
+        {% if listing.price %}
+            {{ "{:,.0f}".format(listing.price) }}
+        {% else %}
+            --
+        {% endif %}
+    </td>
+    <td style="text-align: right;">
+        {% if listing.mileage_km %}
+            {{ "{:,.0f}".format(listing.mileage_km) }}
+        {% else %}
+            --
+        {% endif %}
+    </td>
+    <td style="text-align: right;">
+        {% if listing.match_score is not none %}
+            {{ "{:.1f}".format(listing.match_score) }}
+        {% else %}
+            --
+        {% endif %}
+    </td>
+    <td>
+        {% if listing.is_qualified %}
+        <span class="badge badge-qualified">Yes</span>
+        {% else %}
+        <span class="badge badge-not-qualified">No</span>
+        {% endif %}
+    </td>
+    <td>{{ listing.first_registration.strftime('%m/%Y') if listing.first_registration else '--' }}</td>
+    <td>{{ listing.first_seen_at.strftime('%Y-%m-%d') if listing.first_seen_at else '--' }}</td>
+</tr>

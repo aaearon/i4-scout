@@ -135,7 +135,17 @@ Scraper → Parser → OptionMatcher → Scorer → Repository → SQLite
    - **Tables**: `listings`, `options`, `listing_options` (many-to-many), `price_history`, `scrape_sessions`
    - **Retry Logic**: Write operations use `@with_db_retry` decorator (5 attempts, exponential backoff 1-8s) to handle SQLite "database is locked" errors during concurrent scraping
 
-4. **CLI** (`src/i4_scout/cli.py`) - Typer-based CLI with commands: `init-database`, `scrape`, `list`, `show`, `export`
+4. **CLI** (`src/i4_scout/cli.py`) - Typer-based CLI with commands: `init-database`, `scrape`, `list`, `show`, `export`, `serve`
+
+5. **Services** (`src/i4_scout/services/`)
+   - `listing_service.py`: Business logic for listing operations (get, list, delete)
+   - `scrape_service.py`: Orchestrates scraping with progress callbacks
+
+6. **API** (`src/i4_scout/api/`)
+   - `main.py`: FastAPI app factory
+   - `dependencies.py`: Dependency injection for DB sessions and services
+   - `schemas.py`: API response models
+   - `routes/`: Endpoint implementations (listings, config, stats)
 
 ### Options Configuration
 
@@ -220,14 +230,170 @@ Scrape summary includes performance stats:
 - `MatchResult`: Output from option matching
 - `ScoredResult`: Final score and qualification status
 
-## Web Interface Planning
+## API Server
 
-Planning is underway to add a FastAPI-based web interface. See these docs for context:
+The project includes a FastAPI-based REST API for programmatic access.
 
-- `docs/architecture-review-web-interface.md` - Comprehensive architecture review and implementation plan
-- `docs/web-interface-implementation-context.md` - **LLM Context Document** - Current state details for implementation sessions
+### Starting the Server
 
-Key decisions:
-- **Framework**: FastAPI (async, Pydantic integration)
-- **Architecture**: Extract service layer from CLI, add API routes
-- **Database**: SQLite for personal use, PostgreSQL-ready via DATABASE_URL
+```bash
+# Start API server (default: http://127.0.0.1:8000)
+i4-scout serve
+
+# Custom host/port
+i4-scout serve --host 0.0.0.0 --port 8080
+
+# Development mode with auto-reload
+i4-scout serve --reload
+```
+
+### API Endpoints
+
+**Listings:**
+- `GET /api/listings` - List listings with pagination and filters
+- `GET /api/listings/{id}` - Get single listing
+- `GET /api/listings/{id}/price-history` - Get price history
+- `DELETE /api/listings/{id}` - Delete a listing
+
+**Configuration:**
+- `GET /api/config/options` - Get options matching configuration
+- `GET /api/config/filters` - Get search filters configuration
+
+**Statistics:**
+- `GET /api/stats` - Get aggregated statistics
+
+**Other:**
+- `GET /health` - Health check
+- `GET /docs` - OpenAPI documentation (Swagger UI)
+- `GET /redoc` - ReDoc documentation
+
+### Query Parameters for `/api/listings`
+
+**Basic Filters:**
+```
+?source=autoscout24_de     # Filter by source
+?qualified_only=true       # Only qualified listings
+?min_score=70              # Minimum match score (0-100)
+```
+
+**Range Filters:**
+```
+?price_min=40000           # Minimum price in EUR
+?price_max=50000           # Maximum price in EUR
+?mileage_min=10000         # Minimum mileage in km
+?mileage_max=30000         # Maximum mileage in km
+?year_min=2023             # Minimum model year
+?year_max=2024             # Maximum model year
+```
+
+**Other Filters:**
+```
+?country=D                 # Country code (D, NL, B, etc.)
+?search=M%20Sport          # Text search in title/description (URL-encoded)
+```
+
+**Sorting:**
+```
+?sort_by=price             # Sort by: price, mileage, score, first_seen, last_seen
+?sort_order=asc            # Sort direction: asc, desc (default: desc)
+```
+
+**Pagination:**
+```
+?limit=20                  # Results per page (1-100)
+?offset=0                  # Pagination offset
+```
+
+**Example Combined:**
+```
+/api/listings?price_max=50000&year_min=2023&qualified_only=true&sort_by=price&sort_order=asc
+```
+
+### Database Configuration
+
+The API supports PostgreSQL via `DATABASE_URL` environment variable:
+
+```bash
+# SQLite (default)
+i4-scout serve
+
+# PostgreSQL
+DATABASE_URL=postgresql://user:pass@localhost/i4scout i4-scout serve
+```
+
+SQLite features:
+- WAL mode enabled for better concurrent access
+- 30-second busy timeout for lock contention
+
+### Implementation Details
+
+See `docs/web-interface-implementation-plan.md` for the full implementation plan.
+
+## Web Interface
+
+The project includes a full-featured web dashboard built with HTMX + Jinja2, embedded in FastAPI.
+
+### Technology Stack
+
+- **CSS Framework:** Pico CSS (~10KB) - classless, dark mode, mobile responsive
+- **Interactivity:** HTMX (~14KB) - partial page updates, polling
+- **Templates:** Jinja2 - integrates with FastAPI
+- **Hosting:** Embedded in FastAPI via StaticFiles and Jinja2Templates
+
+### Accessing the Web Interface
+
+Start the server and navigate to `http://localhost:8000/` in your browser:
+
+```bash
+i4-scout serve
+```
+
+### Pages
+
+**Dashboard (`/`):**
+- Statistics overview (total listings, qualified count, averages)
+- Listings by source breakdown
+- Recent qualified listings
+- Auto-refresh every 60 seconds
+
+**Listings (`/listings`):**
+- Full listings table with all fields
+- Hover popover showing options summary (lazy-loaded via HTMX)
+- Filter form: source, qualified only, score, price, mileage, year, country, search
+- Options filtering: collapsible checkbox list for required and nice-to-have options
+  - Has ALL mode: require all selected options (AND logic)
+  - Has ANY mode: require at least one selected option (OR logic)
+- Sorting by price, mileage, score, date
+- Pagination with Previous/Next navigation
+- Search with debounce (500ms delay)
+- URL state preservation (bookmarkable filters)
+
+**Listing Detail (`/listings/{id}`):**
+- Full listing information
+- Location and dealer details
+- Color-coded option cards: green (has), red (missing required), cyan (has nice-to-have), gray (missing nice-to-have)
+- Dealbreakers section with expandable keyword list
+- Price history table with change indicators
+- Delete button with confirmation
+- External link to source
+
+**Scrape Control (`/scrape`):**
+- Start new scrapes (source, max pages)
+- Live job progress (auto-polling every 2s for running jobs)
+- Job history with status, counts, timestamps
+
+### HTMX Partial Endpoints
+
+These endpoints return HTML fragments for HTMX requests:
+
+- `GET /partials/stats` - Stats cards
+- `GET /partials/recent-qualified` - Recent qualified listings
+- `GET /partials/listings` - Listings table with pagination
+  - Options filtering: `?has_option=Laser%20Light&has_option=Harman%20Kardon&options_match=all`
+  - `has_option` (repeatable): Filter by option name
+  - `options_match`: `all` (AND, default) or `any` (OR)
+- `GET /partials/listing/{id}` - Listing detail content
+- `GET /partials/listing/{id}/options-summary` - Options summary for hover popover
+- `GET /partials/listing/{id}/price-chart` - Price history chart
+- `GET /partials/scrape/jobs` - Scrape jobs list
+- `GET /partials/scrape/job/{id}` - Single job row (for polling)

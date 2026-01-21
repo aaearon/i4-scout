@@ -1,0 +1,660 @@
+/* Custom styles for i4-scout web frontend */
+
+/* HTMX Loading Indicator */
+.htmx-indicator {
+    display: none;
+}
+
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
+    display: inline-block;
+}
+
+/* Loading spinner */
+.spinner {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.75s linear infinite;
+    margin-left: 0.5em;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Badge styles */
+.badge {
+    display: inline-block;
+    padding: 0.25em 0.5em;
+    font-size: 0.75em;
+    font-weight: 600;
+    border-radius: 0.25em;
+    text-transform: uppercase;
+}
+
+.badge-qualified {
+    background-color: #2ecc71;
+    color: white;
+}
+
+.badge-not-qualified {
+    background-color: #6c757d;
+    color: white;
+}
+
+.badge-source {
+    background-color: #3498db;
+    color: white;
+}
+
+/* Stats grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    text-align: center;
+    padding: 1.5rem;
+}
+
+.stat-card .stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--pico-primary);
+}
+
+.stat-card .stat-label {
+    font-size: 0.875rem;
+    color: var(--pico-muted-color);
+    margin-top: 0.5rem;
+}
+
+/* Table responsive styles */
+.table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+table {
+    width: 100%;
+}
+
+table th,
+table td {
+    white-space: nowrap;
+}
+
+table td.wrap {
+    white-space: normal;
+    word-break: break-word;
+}
+
+/* Truncated text */
+.truncate {
+    max-width: 250px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Clickable rows */
+tr[data-href] {
+    cursor: pointer;
+}
+
+tr[data-href]:hover {
+    background-color: var(--pico-table-row-stripped-background-color);
+}
+
+/* Sortable headers */
+.sortable-header {
+    user-select: none;
+    transition: background-color 0.2s;
+}
+
+.sortable-header:hover {
+    background-color: var(--pico-table-row-stripped-background-color);
+}
+
+.sortable-header.sort-active {
+    color: var(--pico-primary);
+}
+
+/* Filter form layout */
+.filter-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    align-items: end;
+    margin-bottom: 1.5rem;
+}
+
+.filter-form .filter-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-form label {
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+}
+
+.filter-form input,
+.filter-form select {
+    margin-bottom: 0;
+}
+
+/* Search debounce indicator */
+.filter-form input[type="search"] {
+    transition: border-color 0.2s;
+}
+
+.filter-form input[type="search"]:focus {
+    border-color: var(--pico-primary);
+}
+
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.5rem;
+    padding: 1rem 0;
+}
+
+.pagination-info {
+    color: var(--pico-muted-color);
+    font-size: 0.875rem;
+}
+
+.pagination-links {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.pagination-links button[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Detail page styles */
+.detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.detail-header h1 {
+    margin: 0;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.detail-item {
+    padding: 1rem;
+    background: var(--pico-card-background-color);
+    border-radius: var(--pico-border-radius);
+}
+
+.detail-item .label {
+    font-size: 0.75rem;
+    color: var(--pico-muted-color);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+}
+
+.detail-item .value {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+/* Options list */
+.options-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.options-list li {
+    background: var(--pico-secondary-background);
+    padding: 0.25em 0.75em;
+    border-radius: 1em;
+    font-size: 0.875rem;
+}
+
+/* Options status table */
+.options-table {
+    width: 100%;
+    margin: 0;
+}
+
+.options-table td {
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--pico-muted-border-color);
+}
+
+.options-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Option has/missing indicators (legacy) */
+.option-has {
+    color: #2ecc71;
+    font-weight: bold;
+    font-size: 1.25rem;
+}
+
+.option-missing {
+    color: #e74c3c;
+    font-weight: bold;
+    font-size: 1.25rem;
+}
+
+.option-missing-nice {
+    color: #6c757d;
+    font-weight: bold;
+    font-size: 1.25rem;
+}
+
+/* Option card grid (detail page) */
+.options-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 0.5rem;
+}
+
+.option-card {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-radius: var(--pico-border-radius);
+    font-size: 0.875rem;
+}
+
+.option-card-has {
+    background: rgba(46, 204, 113, 0.15);
+    border-left: 3px solid #2ecc71;
+}
+
+.option-card-has .option-icon {
+    color: #2ecc71;
+    font-weight: bold;
+}
+
+.option-card-missing {
+    background: rgba(231, 76, 60, 0.1);
+    border-left: 3px solid #e74c3c;
+    opacity: 0.85;
+}
+
+.option-card-missing .option-icon {
+    color: #e74c3c;
+    font-weight: bold;
+}
+
+.option-card-nice-has {
+    background: rgba(52, 152, 219, 0.15);
+    border-left: 3px solid #3498db;
+}
+
+.option-card-nice-has .option-icon {
+    color: #3498db;
+    font-weight: bold;
+}
+
+.option-card-nice-missing {
+    background: transparent;
+    border-left: 3px solid var(--pico-muted-border-color);
+    opacity: 0.6;
+}
+
+.option-card-nice-missing .option-icon {
+    color: var(--pico-muted-color);
+}
+
+/* Dealbreakers section */
+.dealbreakers-section .no-dealbreakers {
+    color: #2ecc71;
+    margin: 0;
+}
+
+.dealbreaker-list {
+    margin-top: 0.5rem;
+    padding-left: 1.5rem;
+}
+
+.dealbreaker-list li {
+    color: var(--pico-muted-color);
+    font-size: 0.875rem;
+}
+
+/* Options hover popover (listings table) */
+.listing-row {
+    position: relative;
+}
+
+.options-popover {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 50px;
+    z-index: 1000;
+    width: 450px;
+    max-width: 90vw;
+    padding: 1rem;
+    background: var(--pico-card-background-color);
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+}
+
+.listing-row:hover .options-popover {
+    display: block;
+}
+
+/* Options summary (popover content) */
+.options-summary-header {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.options-summary-header .required-count {
+    color: var(--pico-primary);
+}
+
+.options-summary-header .nice-count {
+    color: #3498db;
+}
+
+.options-summary-grid,
+.options-summary-nice {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-bottom: 0.5rem;
+}
+
+.opt-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+.opt-has {
+    background: rgba(46, 204, 113, 0.2);
+    color: #2ecc71;
+}
+
+.opt-missing {
+    background: rgba(231, 76, 60, 0.15);
+    color: #e74c3c;
+    opacity: 0.8;
+}
+
+.opt-nice-has {
+    background: rgba(52, 152, 219, 0.2);
+    color: #3498db;
+}
+
+.options-summary-empty {
+    color: var(--pico-muted-color);
+    font-size: 0.875rem;
+    padding: 0.5rem;
+}
+
+/* Price history chart placeholder */
+.price-chart-container {
+    padding: 1rem;
+    background: var(--pico-card-background-color);
+    border-radius: var(--pico-border-radius);
+}
+
+/* Price change indicators */
+.price-up {
+    color: #e74c3c;
+}
+
+.price-down {
+    color: #2ecc71;
+}
+
+/* Scrape form */
+.scrape-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: end;
+}
+
+.scrape-form .form-group {
+    display: flex;
+    flex-direction: column;
+    min-width: 150px;
+}
+
+.scrape-form label {
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+}
+
+.scrape-form input,
+.scrape-form select {
+    margin-bottom: 0;
+}
+
+/* Job status badges */
+.status-pending {
+    background-color: #6c757d;
+}
+
+.status-running {
+    background-color: #3498db;
+}
+
+.status-completed {
+    background-color: #2ecc71;
+}
+
+.status-failed {
+    background-color: #e74c3c;
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--pico-muted-color);
+}
+
+.empty-state p {
+    margin: 0;
+}
+
+/* Navigation active state */
+nav a[aria-current="page"] {
+    color: var(--pico-primary);
+    font-weight: 600;
+}
+
+/* Modal styling adjustments */
+dialog {
+    max-width: 800px;
+    width: 90%;
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    padding: 1rem;
+    color: var(--pico-muted-color);
+    font-size: 0.875rem;
+}
+
+/* Toast/alert messages */
+.alert {
+    padding: 1rem;
+    border-radius: var(--pico-border-radius);
+    margin-bottom: 1rem;
+}
+
+.alert-success {
+    background-color: rgba(46, 204, 113, 0.15);
+    border: 1px solid #2ecc71;
+    color: #2ecc71;
+}
+
+.alert-error {
+    background-color: rgba(231, 76, 60, 0.15);
+    border: 1px solid #e74c3c;
+    color: #e74c3c;
+}
+
+/* Options filter section */
+.filter-group-wide {
+    grid-column: 1 / -1;
+}
+
+.options-filter-details {
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    padding: 0.5rem;
+}
+
+.options-filter-details summary {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    list-style: none;
+}
+
+.options-filter-details summary::-webkit-details-marker {
+    display: none;
+}
+
+.options-filter-details summary::before {
+    content: "▶";
+    font-size: 0.7em;
+    transition: transform 0.2s;
+}
+
+.options-filter-details[open] summary::before {
+    transform: rotate(90deg);
+}
+
+.filter-count {
+    font-size: 0.75rem;
+    color: var(--pico-primary);
+    font-weight: 600;
+}
+
+.options-filter-content {
+    margin-top: 0.75rem;
+}
+
+.options-match-mode {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.875rem;
+}
+
+.options-match-mode label {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    cursor: pointer;
+    margin-bottom: 0;
+}
+
+.options-match-mode input[type="radio"] {
+    margin: 0;
+    width: auto;
+}
+
+.options-section {
+    margin-bottom: 0.75rem;
+}
+
+.options-section strong {
+    display: block;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: var(--pico-muted-color);
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.05em;
+}
+
+.options-checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.25rem;
+}
+
+.option-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+    margin-bottom: 0;
+}
+
+.option-checkbox input[type="checkbox"] {
+    margin: 0;
+    width: auto;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .filter-form {
+        grid-template-columns: 1fr;
+    }
+
+    .detail-header {
+        flex-direction: column;
+    }
+
+    .pagination {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .options-checkbox-grid {
+        grid-template-columns: 1fr;
+    }
+}

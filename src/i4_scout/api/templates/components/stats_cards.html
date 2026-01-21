@@ -1,0 +1,62 @@
+<div class="stats-grid">
+    <article class="stat-card">
+        <div class="stat-value">{{ stats.total_listings }}</div>
+        <div class="stat-label">Total Listings</div>
+    </article>
+    <article class="stat-card">
+        <div class="stat-value">{{ stats.qualified_listings }}</div>
+        <div class="stat-label">Qualified</div>
+    </article>
+    <article class="stat-card">
+        <div class="stat-value">
+            {% if stats.average_price %}
+                {{ "{:,.0f}".format(stats.average_price) }}
+            {% else %}
+                --
+            {% endif %}
+        </div>
+        <div class="stat-label">Avg Price</div>
+    </article>
+    <article class="stat-card">
+        <div class="stat-value">
+            {% if stats.average_mileage %}
+                {{ "{:,.0f}".format(stats.average_mileage) }}
+            {% else %}
+                --
+            {% endif %}
+        </div>
+        <div class="stat-label">Avg Mileage (km)</div>
+    </article>
+    <article class="stat-card">
+        <div class="stat-value">
+            {% if stats.average_score %}
+                {{ "{:.1f}".format(stats.average_score) }}
+            {% else %}
+                --
+            {% endif %}
+        </div>
+        <div class="stat-label">Avg Score</div>
+    </article>
+</div>
+
+{% if stats.listings_by_source %}
+<article>
+    <header>Listings by Source</header>
+    <table>
+        <thead>
+            <tr>
+                <th>Source</th>
+                <th style="text-align: right;">Count</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for source, count in stats.listings_by_source.items() %}
+            <tr>
+                <td>{{ source }}</td>
+                <td style="text-align: right;">{{ count }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</article>
+{% endif %}

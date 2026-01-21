@@ -1,0 +1,28 @@
+{% if jobs %}
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Source</th>
+                <th>Status</th>
+                <th>Progress</th>
+                <th style="text-align: right;">Found</th>
+                <th style="text-align: right;">New</th>
+                <th style="text-align: right;">Updated</th>
+                <th>Started</th>
+                <th>Completed</th>
+            </tr>
+        </thead>
+        <tbody id="jobs-tbody">
+            {% for job in jobs %}
+            {% include "components/scrape_job_row.html" %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <p>No scrape jobs found. Start a new scrape above.</p>
+</div>
+{% endif %}

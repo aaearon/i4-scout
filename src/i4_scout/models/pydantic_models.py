@@ -1,6 +1,6 @@
 """Pydantic models for data validation."""
 
-from datetime import datetime
+from datetime import date, datetime
 from enum import Enum
 from typing import Optional
 
@@ -92,7 +92,7 @@ class ListingCreate(BaseModel):
     price_text: Optional[str] = None
     mileage_km: Optional[int] = None
     year: Optional[int] = None
-    first_registration: Optional[str] = None
+    first_registration: Optional[date] = None
     vin: Optional[str] = None
     location_city: Optional[str] = None
     location_zip: Optional[str] = None
@@ -157,3 +157,51 @@ class SearchFilters(BaseModel):
     countries: Optional[list[str]] = Field(
         None, description="Country codes to include (e.g., D, NL, B)"
     )
+
+
+class ScrapeProgress(BaseModel):
+    """Progress update during scraping."""
+
+    page: int = Field(..., description="Current page being scraped")
+    total_pages: int = Field(..., description="Total pages to scrape")
+    listings_found: int = Field(..., description="Total listings found so far")
+    new_count: int = Field(..., description="New listings created")
+    updated_count: int = Field(..., description="Existing listings updated")
+    skipped_count: int = Field(..., description="Listings skipped (unchanged)")
+    current_listing: Optional[str] = Field(None, description="Title of listing being processed")
+
+
+class ScrapeResult(BaseModel):
+    """Final result of a scrape operation."""
+
+    total_found: int = Field(..., description="Total listings found")
+    new_listings: int = Field(..., description="New listings created")
+    updated_listings: int = Field(..., description="Existing listings updated")
+    skipped_unchanged: int = Field(..., description="Listings skipped (price unchanged)")
+    fetched_details: int = Field(..., description="Detail pages actually fetched")
+
+
+class ScrapeJobRead(BaseModel):
+    """Scrape job data as read from the database."""
+
+    id: int
+    source: str = Field(..., description="Source being scraped")
+    status: ScrapeStatus = Field(..., description="Current job status")
+    max_pages: int = Field(..., description="Maximum pages to scrape")
+    search_filters: Optional[dict[str, object]] = Field(None, description="Search filter parameters")
+
+    # Progress tracking
+    current_page: int = Field(0, description="Current page being processed")
+    total_found: int = Field(0, description="Total listings found")
+    new_listings: int = Field(0, description="New listings created")
+    updated_listings: int = Field(0, description="Existing listings updated")
+
+    # Timestamps
+    created_at: datetime
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+
+    # Error tracking
+    error_message: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)

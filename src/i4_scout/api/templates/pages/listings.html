@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Listings - i4-scout{% endblock %}
+
+{% block content %}
+<h1>Listings</h1>
+
+<!-- Filter form -->
+{% include "components/filter_form.html" %}
+
+<!-- Listings table -->
+<div
+    id="listings-table"
+    hx-get="/partials/listings{% if query_string %}?{{ query_string }}{% endif %}"
+    hx-trigger="load"
+    hx-swap="innerHTML"
+>
+    <div class="empty-state">
+        <p>Loading listings...</p>
+    </div>
+</div>
+{% endblock %}

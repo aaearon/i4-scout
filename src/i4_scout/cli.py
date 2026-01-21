@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -12,17 +13,13 @@ from rich.panel import Panel
 from rich.table import Table
 
 from i4_scout import __version__
-from i4_scout.config import load_options_config, load_search_filters
+from i4_scout.config import load_options_config, load_search_filters, merge_search_filters
 from i4_scout.database.engine import get_session, init_db
 from i4_scout.database.repository import ListingRepository
 from i4_scout.export.csv_exporter import export_to_csv
 from i4_scout.export.json_exporter import export_to_json
-from i4_scout.matching.option_matcher import match_options
-from i4_scout.matching.scorer import calculate_score
-from i4_scout.models.pydantic_models import ListingCreate, SearchFilters, Source
-from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
-from i4_scout.scrapers.autoscout24_nl import AutoScout24NLScraper
-from i4_scout.scrapers.browser import BrowserConfig, BrowserManager
+from i4_scout.models.pydantic_models import ScrapeProgress, Source
+from i4_scout.services import ListingService, ScrapeService
 
 app = typer.Typer(
     name="i4-scout",
@@ -32,31 +29,22 @@ app = typer.Typer(
 console = Console()
 
 
-def listing_to_dict(listing: Any) -> dict[str, Any]:
-    """Convert a Listing ORM object to a JSON-serializable dict."""
-    return {
-        "id": listing.id,
-        "source": listing.source.value if listing.source else None,
-        "external_id": listing.external_id,
-        "url": listing.url,
-        "title": listing.title,
-        "price": listing.price,
-        "mileage_km": listing.mileage_km,
-        "year": listing.year,
-        "first_registration": listing.first_registration,
-        "vin": listing.vin,
-        "location_city": listing.location_city,
-        "location_zip": listing.location_zip,
-        "location_country": listing.location_country,
-        "dealer_name": listing.dealer_name,
-        "dealer_type": listing.dealer_type,
-        "description": listing.description,
-        "match_score": listing.match_score,
-        "is_qualified": listing.is_qualified,
-        "matched_options": listing.matched_options,
-        "first_seen_at": listing.first_seen_at.isoformat() if listing.first_seen_at else None,
-        "last_seen_at": listing.last_seen_at.isoformat() if listing.last_seen_at else None,
-    }
+def _listing_read_to_dict(listing: Any) -> dict[str, Any]:
+    """Convert a ListingRead to a JSON-serializable dict."""
+    data: dict[str, Any] = listing.model_dump()
+    # Convert source enum to string value
+    if data.get("source"):
+        data["source"] = data["source"].value
+    # Convert datetime objects to ISO format strings
+    if data.get("first_seen_at"):
+        data["first_seen_at"] = data["first_seen_at"].isoformat()
+    if data.get("last_seen_at"):
+        data["last_seen_at"] = data["last_seen_at"].isoformat()
+    # Convert date objects to MM/YYYY format
+    if data.get("first_registration"):
+        fr = data["first_registration"]
+        data["first_registration"] = fr.strftime("%m/%Y") if hasattr(fr, "strftime") else str(fr)
+    return data
 
 
 def output_json(data: Any) -> None:
@@ -113,190 +101,40 @@ def init_database(
         raise typer.Exit(1) from e
 
 
-def get_scraper_class(source: Source) -> type:
-    """Get the scraper class for a source."""
-    scrapers = {
-        Source.AUTOSCOUT24_DE: AutoScout24DEScraper,
-        Source.AUTOSCOUT24_NL: AutoScout24NLScraper,
-    }
-    if source not in scrapers:
-        raise ValueError(f"No scraper available for {source.value}")
-    return scrapers[source]
-
-
-async def run_scrape(
-    source: Source,
-    max_pages: int,
-    headless: bool,
-    config_path: Path | None,
-    quiet: bool = False,
-    search_filters: SearchFilters | None = None,
-    use_cache: bool = True,
-) -> dict[str, int]:
-    """Run the scraping process.
+def _create_progress_callback(quiet: bool) -> Callable[[ScrapeProgress], None] | None:
+    """Create a progress callback for CLI output.
 
     Args:
-        source: The source to scrape.
-        max_pages: Maximum pages to scrape.
-        headless: Run browser in headless mode.
-        config_path: Path to options config YAML.
-        quiet: Suppress progress output (for JSON mode).
-        search_filters: Optional search filters to apply.
-        use_cache: Whether to use HTML caching.
+        quiet: If True, return None (no output).
 
     Returns:
-        Dict with counts: total_found, new_listings, updated_listings, skipped_unchanged, fetched_details.
+        Progress callback function or None.
     """
-    # Load options config
-    options_config = load_options_config(config_path)
+    if quiet:
+        return None
 
-    # Setup browser
-    browser_config = BrowserConfig(headless=headless)
-    scraper_class = get_scraper_class(source)
+    last_page = [0]  # Use list for mutability in closure
+    listing_idx = [0]  # Track current listing within page
 
-    total_found = 0
-    new_count = 0
-    updated_count = 0
-    skipped_count = 0
-    fetched_count = 0
-    pages_scraped = 0
-
-    async with BrowserManager(browser_config) as browser:
-        scraper = scraper_class(browser)
-        page = await browser.get_page()
-
-        # Scrape search pages
-        for page_num in range(1, max_pages + 1):
-            if not quiet:
-                console.print(f"\n[bold]Page {page_num}[/bold] - Fetching search results...", end="")
-
-            try:
-                listings_data = await scraper.scrape_search_page(
-                    page, page_num, search_filters, use_cache=use_cache
+    def callback(progress: ScrapeProgress) -> None:
+        # New page started
+        if progress.page != last_page[0]:
+            if last_page[0] > 0:
+                console.print(
+                    f"  [dim]Running total: {progress.listings_found} found, "
+                    f"{progress.new_count} new, {progress.updated_count} updated[/dim]"
                 )
-                page_listing_count = len(listings_data)
+            last_page[0] = progress.page
+            listing_idx[0] = 0
+            console.print(f"\n[bold]Page {progress.page}[/bold] - Fetching search results...")
 
-                if not listings_data:
-                    if not quiet:
-                        console.print(" [yellow]no listings found, stopping.[/yellow]")
-                    break
+        # Individual listing update
+        if progress.current_listing:
+            listing_idx[0] += 1
+            title = progress.current_listing[:50]
+            console.print(f"  Processing: {title}...")
 
-                pages_scraped += 1
-                if not quiet:
-                    console.print(f" [green]{page_listing_count} listings[/green]")
-
-                # Process each listing
-                with get_session() as session:
-                    repo = ListingRepository(session)
-
-                    for idx, listing_data in enumerate(listings_data, 1):
-                        url = listing_data.get("url")
-                        title = listing_data.get("title", "")
-                        price = listing_data.get("price")
-
-                        # Check if we can skip the detail fetch
-                        if url and repo.listing_exists_with_price(url, price):
-                            skipped_count += 1
-                            total_found += 1
-                            if not quiet:
-                                console.print(
-                                    f"  [{idx}/{page_listing_count}] {title[:50]}... [dim]SKIP[/dim] (unchanged)"
-                                )
-                            # Update last_seen_at for the existing listing
-                            existing = repo.get_listing_by_url(url)
-                            if existing:
-                                repo.update_listing(existing.id)
-                            continue
-
-                        if not quiet:
-                            console.print(
-                                f"  [{idx}/{page_listing_count}] Processing: {title[:50]}...",
-                                end="",
-                            )
-
-                        # Get detail page for options and description
-                        options_list = []
-                        description = None
-                        if url:
-                            try:
-                                detail = await scraper.scrape_listing_detail(
-                                    page, url, use_cache=use_cache
-                                )
-                                options_list = detail.options_list
-                                description = detail.description
-                                fetched_count += 1
-                            except Exception:
-                                pass
-
-                        # Combine title and description for text search
-                        # Title often contains abbreviated option codes (ACC, KZU, HUD, etc.)
-                        searchable_text = title
-                        if description:
-                            searchable_text = f"{title}\n{description}"
-
-                        # Match options (searches options list + title/description)
-                        match_result = match_options(options_list, options_config, searchable_text)
-                        scored_result = calculate_score(match_result, options_config)
-
-                        # Create listing data
-                        create_data = ListingCreate(
-                            source=source,
-                            external_id=listing_data.get("external_id"),
-                            url=url or "",
-                            title=listing_data.get("title", ""),
-                            price=listing_data.get("price"),
-                            mileage_km=listing_data.get("mileage_km"),
-                            first_registration=listing_data.get("first_registration"),
-                            description=description,
-                            match_score=scored_result.score,
-                            is_qualified=scored_result.is_qualified,
-                        )
-
-                        # Upsert to database
-                        listing, created = repo.upsert_listing(create_data)
-                        if created:
-                            new_count += 1
-                            status = "[green]NEW[/green]"
-                        else:
-                            updated_count += 1
-                            status = "[blue]UPD[/blue]"
-                            # Clear existing options for re-scraped listings
-                            repo.clear_listing_options(listing.id)
-
-                        # Store matched options
-                        all_matched = (
-                            match_result.matched_required + match_result.matched_nice_to_have
-                        )
-                        for option_name in all_matched:
-                            option, _ = repo.get_or_create_option(option_name)
-                            repo.add_option_to_listing(listing.id, option.id)
-
-                        total_found += 1
-
-                        if not quiet:
-                            score_display = f"{scored_result.score:.0f}%"
-                            qual = "[green]Q[/green]" if scored_result.is_qualified else "[dim]·[/dim]"
-                            console.print(f" {status} {qual} {score_display}")
-
-                if not quiet:
-                    console.print(
-                        f"  [dim]Running total: {total_found} found, {new_count} new, {updated_count} updated[/dim]"
-                    )
-
-                await scraper.random_delay()
-
-            except Exception as e:
-                if not quiet:
-                    console.print(f" [red]error: {e}[/red]")
-                continue
-
-    return {
-        "total_found": total_found,
-        "new_listings": new_count,
-        "updated_listings": updated_count,
-        "skipped_unchanged": skipped_count,
-        "fetched_details": fetched_count,
-    }
+    return callback
 
 
 @app.command()
@@ -358,18 +196,23 @@ def scrape(
     ),
 ) -> None:
     """Scrape listings from the specified source."""
-    # Load search filters from config
+    # Load config
+    options_config = load_options_config(config)
     config_filters = load_search_filters(config)
 
-    # Merge CLI overrides with config values (CLI takes precedence)
-    search_filters = SearchFilters(
-        price_max_eur=price_max if price_max is not None else config_filters.price_max_eur,
-        mileage_max_km=mileage_max if mileage_max is not None else config_filters.mileage_max_km,
-        year_min=year_min if year_min is not None else config_filters.year_min,
-        year_max=config_filters.year_max,  # No CLI override for year_max
-        countries=country if country else config_filters.countries,
-    )
+    # Build overrides dict
+    overrides: dict[str, Any] = {}
+    if price_max is not None:
+        overrides["price_max"] = price_max
+    if mileage_max is not None:
+        overrides["mileage_max"] = mileage_max
+    if year_min is not None:
+        overrides["year_min"] = year_min
+    if country:
+        overrides["countries"] = country
 
+    # Merge CLI overrides with config values
+    search_filters = merge_search_filters(config_filters, overrides)
     use_cache = not no_cache
 
     if not json_output:
@@ -391,12 +234,21 @@ def scrape(
     init_db()
 
     try:
-        results = asyncio.run(
-            run_scrape(
-                source, max_pages, headless, config, quiet=json_output,
-                search_filters=search_filters, use_cache=use_cache
+        # Use ScrapeService
+        with get_session() as session:
+            service = ScrapeService(session, options_config)
+            progress_callback = _create_progress_callback(quiet=json_output)
+
+            result = asyncio.run(
+                service.run_scrape(
+                    source=source,
+                    max_pages=max_pages,
+                    search_filters=search_filters,
+                    headless=headless,
+                    use_cache=use_cache,
+                    progress_callback=progress_callback,
+                )
             )
-        )
 
         if json_output:
             output_json({
@@ -404,16 +256,16 @@ def scrape(
                 "source": source.value,
                 "max_pages": max_pages,
                 "cache_enabled": use_cache,
-                "results": results,
+                "results": result.model_dump(),
             })
         else:
             console.print()
             console.print("[green]Scraping complete![/green]")
-            console.print(f"  Total found: {results['total_found']}")
-            console.print(f"  New listings: {results['new_listings']}")
-            console.print(f"  Updated: {results['updated_listings']}")
-            console.print(f"  Skipped (unchanged): {results['skipped_unchanged']}")
-            console.print(f"  Detail pages fetched: {results['fetched_details']}")
+            console.print(f"  Total found: {result.total_found}")
+            console.print(f"  New listings: {result.new_listings}")
+            console.print(f"  Updated: {result.updated_listings}")
+            console.print(f"  Skipped (unchanged): {result.skipped_unchanged}")
+            console.print(f"  Detail pages fetched: {result.fetched_details}")
     except Exception as e:
         if json_output:
             output_json({
@@ -462,19 +314,18 @@ def list_listings(
     init_db()
 
     with get_session() as session:
-        repo = ListingRepository(session)
-        listings = repo.get_listings(
+        service = ListingService(session)
+        listings, total = service.get_listings(
             source=source,
             qualified_only=qualified,
             min_score=min_score if min_score > 0 else None,
             limit=limit,
         )
-        total = repo.count_listings(source=source, qualified_only=qualified)
 
         # JSON output for LLM consumption
         if json_output:
             output_json({
-                "listings": [listing_to_dict(listing) for listing in listings],
+                "listings": [_listing_read_to_dict(listing) for listing in listings],
                 "count": len(listings),
                 "total": total,
                 "filters": {
@@ -536,8 +387,8 @@ def show(
     init_db()
 
     with get_session() as session:
-        repo = ListingRepository(session)
-        listing = repo.get_listing_by_id(listing_id)
+        service = ListingService(session)
+        listing = service.get_listing(listing_id)
 
         if not listing:
             if json_output:
@@ -548,7 +399,7 @@ def show(
 
         # JSON output for LLM consumption
         if json_output:
-            output_json(listing_to_dict(listing))
+            output_json(_listing_read_to_dict(listing))
             return
 
         # Build detail panel
@@ -652,6 +503,48 @@ def export(
             export_to_json(listings, output)
 
         console.print(f"[green]Export complete: {output}[/green]")
+
+
+@app.command()
+def serve(
+    host: str = typer.Option(
+        "127.0.0.1",
+        "--host",
+        "-h",
+        help="Host to bind to.",
+    ),
+    port: int = typer.Option(
+        8000,
+        "--port",
+        "-p",
+        help="Port to bind to.",
+    ),
+    reload: bool = typer.Option(
+        False,
+        "--reload",
+        "-r",
+        help="Enable auto-reload (for development).",
+    ),
+) -> None:
+    """Start the API server."""
+    import uvicorn
+
+    # Ensure database exists
+    init_db()
+
+    console.print("[bold blue]Starting API server...[/bold blue]")
+    console.print(f"  Host: {host}")
+    console.print(f"  Port: {port}")
+    console.print(f"  Reload: {reload}")
+    console.print(f"  Docs: http://{host}:{port}/docs")
+    console.print()
+
+    uvicorn.run(
+        "i4_scout.api.main:app",
+        host=host,
+        port=port,
+        reload=reload,
+    )
 
 
 if __name__ == "__main__":

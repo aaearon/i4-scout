@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}i4-scout{% endblock %}</title>
+
+    <!-- Pico CSS -->
+    <link rel="stylesheet" href="/static/css/pico.min.css">
+    <!-- Custom styles -->
+    <link rel="stylesheet" href="/static/css/custom.css">
+
+    <!-- HTMX -->
+    <script src="/static/js/htmx.min.js"></script>
+
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <header class="container">
+        <nav>
+            <ul>
+                <li><strong>i4-scout</strong></li>
+            </ul>
+            <ul>
+                <li><a href="/" {% if request.url.path == "/" %}aria-current="page"{% endif %}>Dashboard</a></li>
+                <li><a href="/listings" {% if request.url.path.startswith("/listings") %}aria-current="page"{% endif %}>Listings</a></li>
+                <li><a href="/scrape" {% if request.url.path == "/scrape" %}aria-current="page"{% endif %}>Scrape</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="container">
+        <p>i4-scout v0.1.0 | BMW i4 eDrive40 Listing Scraper</p>
+    </footer>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -3,10 +3,12 @@
 import functools
 import hashlib
 from collections.abc import Callable
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, TypeVar
 
-from sqlalchemy import desc
+from sqlalchemy import asc, desc, or_
+from sqlalchemy import select as sa_select
+from sqlalchemy.sql import extract
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 from tenacity import (
@@ -17,8 +19,8 @@ from tenacity import (
 )
 from typing_extensions import ParamSpec
 
-from i4_scout.models.db_models import Listing, ListingOption, Option, PriceHistory
-from i4_scout.models.pydantic_models import ListingCreate, Source
+from i4_scout.models.db_models import Listing, ListingOption, Option, PriceHistory, ScrapeJob
+from i4_scout.models.pydantic_models import ListingCreate, ScrapeStatus, Source
 
 P = ParamSpec("P")
 R = TypeVar("R")
@@ -216,6 +218,18 @@ class ListingRepository:
         source: Source | None = None,
         qualified_only: bool = False,
         min_score: float | None = None,
+        price_min: int | None = None,
+        price_max: int | None = None,
+        mileage_min: int | None = None,
+        mileage_max: int | None = None,
+        year_min: int | None = None,
+        year_max: int | None = None,
+        country: str | None = None,
+        search: str | None = None,
+        has_options: list[str] | None = None,
+        options_match: str = "all",
+        sort_by: str | None = None,
+        sort_order: str = "desc",
         limit: int | None = None,
         offset: int | None = None,
     ) -> list[Listing]:
@@ -225,6 +239,18 @@ class ListingRepository:
             source: Filter by source.
             qualified_only: Only return qualified listings.
             min_score: Minimum match score.
+            price_min: Minimum price in EUR.
+            price_max: Maximum price in EUR.
+            mileage_min: Minimum mileage in km.
+            mileage_max: Maximum mileage in km.
+            year_min: Minimum model year.
+            year_max: Maximum model year.
+            country: Country code (D, NL, B, etc.).
+            search: Text search in title and description.
+            has_options: List of option names to filter by.
+            options_match: "all" to require all options, "any" to require any.
+            sort_by: Field to sort by (price, mileage, score, first_seen, last_seen).
+            sort_order: Sort direction (asc, desc). Default: desc.
             limit: Maximum number of results.
             offset: Number of results to skip.
 
@@ -242,8 +268,72 @@ class ListingRepository:
         if min_score is not None:
             query = query.filter(Listing.match_score >= min_score)
 
-        # Order by last seen (most recent first)
-        query = query.order_by(desc(Listing.last_seen_at))
+        if price_min is not None:
+            query = query.filter(Listing.price >= price_min)
+
+        if price_max is not None:
+            query = query.filter(Listing.price <= price_max)
+
+        if mileage_min is not None:
+            query = query.filter(Listing.mileage_km >= mileage_min)
+
+        if mileage_max is not None:
+            query = query.filter(Listing.mileage_km <= mileage_max)
+
+        # Filter by year from first_registration date
+        if year_min is not None or year_max is not None:
+            year_expr = extract("year", Listing.first_registration)
+            if year_min is not None:
+                query = query.filter(year_expr >= year_min)
+            if year_max is not None:
+                query = query.filter(year_expr <= year_max)
+
+        if country is not None:
+            query = query.filter(Listing.location_country == country)
+
+        if search is not None:
+            search_pattern = f"%{search}%"
+            query = query.filter(
+                or_(
+                    Listing.title.ilike(search_pattern),
+                    Listing.description.ilike(search_pattern),
+                )
+            )
+
+        if has_options:
+            if options_match == "all":
+                # Require ALL options - intersect subqueries
+                for option_name in has_options:
+                    subq = (
+                        sa_select(ListingOption.listing_id)
+                        .join(Option)
+                        .where(Option.canonical_name == option_name)
+                    )
+                    query = query.filter(Listing.id.in_(subq))
+            else:
+                # Require ANY option - single subquery with IN
+                subq = (
+                    sa_select(ListingOption.listing_id)
+                    .join(Option)
+                    .where(Option.canonical_name.in_(has_options))
+                    .distinct()
+                )
+                query = query.filter(Listing.id.in_(subq))
+
+        # Sorting
+        sort_columns = {
+            "price": Listing.price,
+            "mileage": Listing.mileage_km,
+            "score": Listing.match_score,
+            "first_seen": Listing.first_seen_at,
+            "last_seen": Listing.last_seen_at,
+        }
+        if sort_by and sort_by in sort_columns:
+            col = sort_columns[sort_by]
+            query = query.order_by(desc(col) if sort_order == "desc" else asc(col))
+        else:
+            # Default: most recently seen first
+            query = query.order_by(desc(Listing.last_seen_at))
 
         if offset is not None:
             query = query.offset(offset)
@@ -257,12 +347,34 @@ class ListingRepository:
         self,
         source: Source | None = None,
         qualified_only: bool = False,
+        min_score: float | None = None,
+        price_min: int | None = None,
+        price_max: int | None = None,
+        mileage_min: int | None = None,
+        mileage_max: int | None = None,
+        year_min: int | None = None,
+        year_max: int | None = None,
+        country: str | None = None,
+        search: str | None = None,
+        has_options: list[str] | None = None,
+        options_match: str = "all",
     ) -> int:
         """Count listings with optional filters.
 
         Args:
             source: Filter by source.
             qualified_only: Only count qualified listings.
+            min_score: Minimum match score.
+            price_min: Minimum price in EUR.
+            price_max: Maximum price in EUR.
+            mileage_min: Minimum mileage in km.
+            mileage_max: Maximum mileage in km.
+            year_min: Minimum model year.
+            year_max: Maximum model year.
+            country: Country code (D, NL, B, etc.).
+            search: Text search in title and description.
+            has_options: List of option names to filter by.
+            options_match: "all" to require all options, "any" to require any.
 
         Returns:
             Number of matching listings.
@@ -274,6 +386,61 @@ class ListingRepository:
 
         if qualified_only:
             query = query.filter(Listing.is_qualified.is_(True))
+
+        if min_score is not None:
+            query = query.filter(Listing.match_score >= min_score)
+
+        if price_min is not None:
+            query = query.filter(Listing.price >= price_min)
+
+        if price_max is not None:
+            query = query.filter(Listing.price <= price_max)
+
+        if mileage_min is not None:
+            query = query.filter(Listing.mileage_km >= mileage_min)
+
+        if mileage_max is not None:
+            query = query.filter(Listing.mileage_km <= mileage_max)
+
+        # Filter by year from first_registration date
+        if year_min is not None or year_max is not None:
+            year_expr = extract("year", Listing.first_registration)
+            if year_min is not None:
+                query = query.filter(year_expr >= year_min)
+            if year_max is not None:
+                query = query.filter(year_expr <= year_max)
+
+        if country is not None:
+            query = query.filter(Listing.location_country == country)
+
+        if search is not None:
+            search_pattern = f"%{search}%"
+            query = query.filter(
+                or_(
+                    Listing.title.ilike(search_pattern),
+                    Listing.description.ilike(search_pattern),
+                )
+            )
+
+        if has_options:
+            if options_match == "all":
+                # Require ALL options - intersect subqueries
+                for option_name in has_options:
+                    subq = (
+                        sa_select(ListingOption.listing_id)
+                        .join(Option)
+                        .where(Option.canonical_name == option_name)
+                    )
+                    query = query.filter(Listing.id.in_(subq))
+            else:
+                # Require ANY option - single subquery with IN
+                subq = (
+                    sa_select(ListingOption.listing_id)
+                    .join(Option)
+                    .where(Option.canonical_name.in_(has_options))
+                    .distinct()
+                )
+                query = query.filter(Listing.id.in_(subq))
 
         return query.count()
 
@@ -588,3 +755,212 @@ class ListingRepository:
         self._session.commit()
         self._session.refresh(option)
         return option, True
+
+
+class ScrapeJobRepository:
+    """Repository for ScrapeJob CRUD operations."""
+
+    def __init__(self, session: Session) -> None:
+        """Initialize repository with database session.
+
+        Args:
+            session: SQLAlchemy session instance.
+        """
+        self._session = session
+
+    @with_db_retry
+    def create_job(
+        self,
+        source: Source,
+        max_pages: int = 50,
+        search_filters: dict[str, Any] | None = None,
+    ) -> ScrapeJob:
+        """Create a new scrape job.
+
+        Args:
+            source: Source to scrape.
+            max_pages: Maximum number of pages to scrape.
+            search_filters: Optional search filter parameters.
+
+        Returns:
+            Created ScrapeJob.
+        """
+        import json
+
+        job = ScrapeJob(
+            source=source.value,
+            max_pages=max_pages,
+            search_filters_json=json.dumps(search_filters) if search_filters else None,
+        )
+        self._session.add(job)
+        self._session.commit()
+        self._session.refresh(job)
+        return job
+
+    def get_job(self, job_id: int) -> ScrapeJob | None:
+        """Get a job by ID.
+
+        Args:
+            job_id: Job ID.
+
+        Returns:
+            ScrapeJob if found, None otherwise.
+        """
+        return self._session.query(ScrapeJob).filter(ScrapeJob.id == job_id).first()
+
+    def get_recent_jobs(self, limit: int = 20) -> list[ScrapeJob]:
+        """Get recent jobs, newest first.
+
+        Args:
+            limit: Maximum number of jobs to return.
+
+        Returns:
+            List of ScrapeJob objects.
+        """
+        return (
+            self._session.query(ScrapeJob)
+            .order_by(desc(ScrapeJob.created_at))
+            .limit(limit)
+            .all()
+        )
+
+    @with_db_retry
+    def update_status(self, job_id: int, status: ScrapeStatus) -> ScrapeJob | None:
+        """Update job status.
+
+        Args:
+            job_id: Job ID.
+            status: New status.
+
+        Returns:
+            Updated ScrapeJob if found, None otherwise.
+        """
+        job = self.get_job(job_id)
+        if job is None:
+            return None
+
+        job.status = status
+        if status == ScrapeStatus.RUNNING and job.started_at is None:
+            job.started_at = datetime.utcnow()
+
+        self._session.commit()
+        self._session.refresh(job)
+        return job
+
+    @with_db_retry
+    def update_progress(
+        self,
+        job_id: int,
+        current_page: int | None = None,
+        total_found: int | None = None,
+        new_listings: int | None = None,
+        updated_listings: int | None = None,
+    ) -> ScrapeJob | None:
+        """Update job progress.
+
+        Args:
+            job_id: Job ID.
+            current_page: Current page being processed.
+            total_found: Total listings found so far.
+            new_listings: New listings created.
+            updated_listings: Existing listings updated.
+
+        Returns:
+            Updated ScrapeJob if found, None otherwise.
+        """
+        job = self.get_job(job_id)
+        if job is None:
+            return None
+
+        if current_page is not None:
+            job.current_page = current_page
+        if total_found is not None:
+            job.total_found = total_found
+        if new_listings is not None:
+            job.new_listings = new_listings
+        if updated_listings is not None:
+            job.updated_listings = updated_listings
+
+        self._session.commit()
+        self._session.refresh(job)
+        return job
+
+    @with_db_retry
+    def complete_job(
+        self,
+        job_id: int,
+        total_found: int = 0,
+        new_listings: int = 0,
+        updated_listings: int = 0,
+    ) -> ScrapeJob | None:
+        """Mark job as completed.
+
+        Args:
+            job_id: Job ID.
+            total_found: Total listings found.
+            new_listings: New listings created.
+            updated_listings: Existing listings updated.
+
+        Returns:
+            Updated ScrapeJob if found, None otherwise.
+        """
+        job = self.get_job(job_id)
+        if job is None:
+            return None
+
+        job.status = ScrapeStatus.COMPLETED
+        job.completed_at = datetime.utcnow()
+        job.total_found = total_found
+        job.new_listings = new_listings
+        job.updated_listings = updated_listings
+
+        self._session.commit()
+        self._session.refresh(job)
+        return job
+
+    @with_db_retry
+    def fail_job(self, job_id: int, error_message: str) -> ScrapeJob | None:
+        """Mark job as failed.
+
+        Args:
+            job_id: Job ID.
+            error_message: Error description.
+
+        Returns:
+            Updated ScrapeJob if found, None otherwise.
+        """
+        job = self.get_job(job_id)
+        if job is None:
+            return None
+
+        job.status = ScrapeStatus.FAILED
+        job.completed_at = datetime.utcnow()
+        job.error_message = error_message
+
+        self._session.commit()
+        self._session.refresh(job)
+        return job
+
+    @with_db_retry
+    def cleanup_old_jobs(self, days: int = 30) -> int:
+        """Delete completed/failed jobs older than specified days.
+
+        Args:
+            days: Delete jobs older than this many days.
+
+        Returns:
+            Number of deleted jobs.
+        """
+        from datetime import timedelta
+
+        cutoff = datetime.utcnow() - timedelta(days=days)
+        deleted = (
+            self._session.query(ScrapeJob)
+            .filter(
+                ScrapeJob.created_at < cutoff,
+                ScrapeJob.status.in_([ScrapeStatus.COMPLETED, ScrapeStatus.FAILED]),
+            )
+            .delete(synchronize_session=False)
+        )
+        self._session.commit()
+        return deleted

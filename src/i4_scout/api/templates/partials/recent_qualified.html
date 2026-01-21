@@ -1,0 +1,9 @@
+{% if listings %}
+    {% for listing in listings %}
+    {% include "components/listing_card.html" %}
+    {% endfor %}
+{% else %}
+<div class="empty-state">
+    <p>No qualified listings found.</p>
+</div>
+{% endif %}

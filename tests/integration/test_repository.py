@@ -1,7 +1,7 @@
 """Integration tests for the repository layer."""
 
 import hashlib
-from datetime import datetime
+from datetime import date, datetime
 
 import pytest
 from sqlalchemy import create_engine
@@ -41,7 +41,7 @@ def sample_listing_data() -> ListingCreate:
         price_text="55.000 €",
         mileage_km=15000,
         year=2023,
-        first_registration="03/2023",
+        first_registration=date(2023, 3, 1),
         location_city="Berlin",
         location_zip="10115",
         location_country="DE",
