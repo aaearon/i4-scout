@@ -501,5 +501,47 @@ def export(
         console.print(f"[green]Export complete: {output}[/green]")
 
 
+@app.command()
+def serve(
+    host: str = typer.Option(
+        "127.0.0.1",
+        "--host",
+        "-h",
+        help="Host to bind to.",
+    ),
+    port: int = typer.Option(
+        8000,
+        "--port",
+        "-p",
+        help="Port to bind to.",
+    ),
+    reload: bool = typer.Option(
+        False,
+        "--reload",
+        "-r",
+        help="Enable auto-reload (for development).",
+    ),
+) -> None:
+    """Start the API server."""
+    import uvicorn
+
+    # Ensure database exists
+    init_db()
+
+    console.print("[bold blue]Starting API server...[/bold blue]")
+    console.print(f"  Host: {host}")
+    console.print(f"  Port: {port}")
+    console.print(f"  Reload: {reload}")
+    console.print(f"  Docs: http://{host}:{port}/docs")
+    console.print()
+
+    uvicorn.run(
+        "i4_scout.api.main:app",
+        host=host,
+        port=port,
+        reload=reload,
+    )
+
+
 if __name__ == "__main__":
     app()

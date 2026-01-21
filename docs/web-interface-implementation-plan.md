@@ -41,7 +41,7 @@ When starting a new LLM session, provide this context:
 |-------|-------|--------|
 | 1 | Service Layer | Complete |
 | 2 | Database Improvements | Complete |
-| 3 | FastAPI Foundation | Not Started |
+| 3 | FastAPI Foundation | Complete |
 | 4 | Background Scraping | Not Started |
 
 ---
@@ -295,44 +295,44 @@ class ScrapeJob(Base):
 ## Tasks
 
 ### Task 3.1: Add Dependencies
-- [ ] Add `fastapi>=0.109.0` to `pyproject.toml` dependencies
-- [ ] Add `uvicorn[standard]>=0.27.0` to dependencies
-- [ ] Add `httpx>=0.26.0` to dev dependencies
-- [ ] Run `pip install -e ".[dev]"`
+- [x] Add `fastapi>=0.109.0` to `pyproject.toml` dependencies
+- [x] Add `uvicorn[standard]>=0.27.0` to dependencies
+- [x] Add `httpx>=0.26.0` to dev dependencies
+- [x] Run `pip install -e ".[dev]"`
 
 ### Task 3.2: Create API Package Structure
-- [ ] Create `src/i4_scout/api/__init__.py`
-- [ ] Create `src/i4_scout/api/main.py` with app factory
-- [ ] Create `src/i4_scout/api/dependencies.py` with `get_db()` and service deps
-- [ ] Create `src/i4_scout/api/schemas.py` with response models
-- [ ] Create `src/i4_scout/api/routes/__init__.py`
+- [x] Create `src/i4_scout/api/__init__.py`
+- [x] Create `src/i4_scout/api/main.py` with app factory
+- [x] Create `src/i4_scout/api/dependencies.py` with `get_db()` and service deps
+- [x] Create `src/i4_scout/api/schemas.py` with response models
+- [x] Create `src/i4_scout/api/routes/__init__.py`
 
 ### Task 3.3: Implement Listings Endpoints
-- [ ] Create `src/i4_scout/api/routes/listings.py`
-- [ ] Implement `GET /api/listings` with pagination and filters
-- [ ] Implement `GET /api/listings/{id}` for single listing
-- [ ] Implement `GET /api/listings/{id}/price-history`
-- [ ] Implement `DELETE /api/listings/{id}`
-- [ ] Write tests: `tests/integration/test_api_listings.py`
-- [ ] Run tests
+- [x] Create `src/i4_scout/api/routes/listings.py`
+- [x] Implement `GET /api/listings` with pagination and filters
+- [x] Implement `GET /api/listings/{id}` for single listing
+- [x] Implement `GET /api/listings/{id}/price-history`
+- [x] Implement `DELETE /api/listings/{id}`
+- [x] Write tests: `tests/integration/test_api_listings.py`
+- [x] Run tests
 
 ### Task 3.4: Implement Config Endpoints
-- [ ] Create `src/i4_scout/api/routes/config.py`
-- [ ] Implement `GET /api/config/options`
-- [ ] Implement `GET /api/config/filters`
-- [ ] Write tests
-- [ ] Run tests
+- [x] Create `src/i4_scout/api/routes/config.py`
+- [x] Implement `GET /api/config/options`
+- [x] Implement `GET /api/config/filters`
+- [x] Write tests: `tests/integration/test_api_config.py`
+- [x] Run tests
 
 ### Task 3.5: Implement Stats Endpoint
-- [ ] Create `src/i4_scout/api/routes/stats.py`
-- [ ] Implement `GET /api/stats` with aggregated data
-- [ ] Write tests
-- [ ] Run tests
+- [x] Create `src/i4_scout/api/routes/stats.py`
+- [x] Implement `GET /api/stats` with aggregated data
+- [x] Write tests: `tests/integration/test_api_stats.py`
+- [x] Run tests
 
 ### Task 3.6: Add Serve Command
-- [ ] Add `serve` command to `cli.py`
-- [ ] Test server startup
-- [ ] Verify OpenAPI docs at `/docs`
+- [x] Add `serve` command to `cli.py`
+- [x] Test server startup
+- [x] Verify OpenAPI docs at `/docs`
 
 **Command:**
 ```python
@@ -348,13 +348,13 @@ def serve(
 ```
 
 ### Task 3.7: Phase 3 Verification
-- [ ] `i4-scout serve` starts server on port 8000
-- [ ] `GET /api/listings` returns paginated listings
-- [ ] `GET /api/listings/{id}` returns single listing
-- [ ] `GET /api/stats` returns statistics
-- [ ] OpenAPI docs available at `http://localhost:8000/docs`
-- [ ] All tests pass
-- [ ] Create commit: `feat(api): FastAPI foundation (Phase 3 complete)`
+- [x] `i4-scout serve` starts server on port 8000
+- [x] `GET /api/listings` returns paginated listings
+- [x] `GET /api/listings/{id}` returns single listing
+- [x] `GET /api/stats` returns statistics
+- [x] OpenAPI docs available at `http://localhost:8000/docs`
+- [x] All tests pass (290 tests)
+- [x] Create commit: `feat(api): FastAPI foundation (Phase 3 complete)`
 
 ---
 

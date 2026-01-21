@@ -135,7 +135,17 @@ Scraper → Parser → OptionMatcher → Scorer → Repository → SQLite
    - **Tables**: `listings`, `options`, `listing_options` (many-to-many), `price_history`, `scrape_sessions`
    - **Retry Logic**: Write operations use `@with_db_retry` decorator (5 attempts, exponential backoff 1-8s) to handle SQLite "database is locked" errors during concurrent scraping
 
-4. **CLI** (`src/i4_scout/cli.py`) - Typer-based CLI with commands: `init-database`, `scrape`, `list`, `show`, `export`
+4. **CLI** (`src/i4_scout/cli.py`) - Typer-based CLI with commands: `init-database`, `scrape`, `list`, `show`, `export`, `serve`
+
+5. **Services** (`src/i4_scout/services/`)
+   - `listing_service.py`: Business logic for listing operations (get, list, delete)
+   - `scrape_service.py`: Orchestrates scraping with progress callbacks
+
+6. **API** (`src/i4_scout/api/`)
+   - `main.py`: FastAPI app factory
+   - `dependencies.py`: Dependency injection for DB sessions and services
+   - `schemas.py`: API response models
+   - `routes/`: Endpoint implementations (listings, config, stats)
 
 ### Options Configuration
 
@@ -220,14 +230,69 @@ Scrape summary includes performance stats:
 - `MatchResult`: Output from option matching
 - `ScoredResult`: Final score and qualification status
 
-## Web Interface Planning
+## API Server
 
-Planning is underway to add a FastAPI-based web interface. See these docs for context:
+The project includes a FastAPI-based REST API for programmatic access.
 
-- `docs/architecture-review-web-interface.md` - Comprehensive architecture review and implementation plan
-- `docs/web-interface-implementation-context.md` - **LLM Context Document** - Current state details for implementation sessions
+### Starting the Server
 
-Key decisions:
-- **Framework**: FastAPI (async, Pydantic integration)
-- **Architecture**: Extract service layer from CLI, add API routes
-- **Database**: SQLite for personal use, PostgreSQL-ready via DATABASE_URL
+```bash
+# Start API server (default: http://127.0.0.1:8000)
+i4-scout serve
+
+# Custom host/port
+i4-scout serve --host 0.0.0.0 --port 8080
+
+# Development mode with auto-reload
+i4-scout serve --reload
+```
+
+### API Endpoints
+
+**Listings:**
+- `GET /api/listings` - List listings with pagination and filters
+- `GET /api/listings/{id}` - Get single listing
+- `GET /api/listings/{id}/price-history` - Get price history
+- `DELETE /api/listings/{id}` - Delete a listing
+
+**Configuration:**
+- `GET /api/config/options` - Get options matching configuration
+- `GET /api/config/filters` - Get search filters configuration
+
+**Statistics:**
+- `GET /api/stats` - Get aggregated statistics
+
+**Other:**
+- `GET /health` - Health check
+- `GET /docs` - OpenAPI documentation (Swagger UI)
+- `GET /redoc` - ReDoc documentation
+
+### Query Parameters for `/api/listings`
+
+```
+?source=autoscout24_de     # Filter by source
+?qualified_only=true       # Only qualified listings
+?min_score=70              # Minimum match score (0-100)
+?limit=20                  # Results per page (1-100)
+?offset=0                  # Pagination offset
+```
+
+### Database Configuration
+
+The API supports PostgreSQL via `DATABASE_URL` environment variable:
+
+```bash
+# SQLite (default)
+i4-scout serve
+
+# PostgreSQL
+DATABASE_URL=postgresql://user:pass@localhost/i4scout i4-scout serve
+```
+
+SQLite features:
+- WAL mode enabled for better concurrent access
+- 30-second busy timeout for lock contention
+
+### Implementation Details
+
+See `docs/web-interface-implementation-plan.md` for the full implementation plan.
