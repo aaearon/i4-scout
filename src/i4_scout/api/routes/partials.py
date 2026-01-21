@@ -1,6 +1,7 @@
 """HTMX partial routes for dynamic content updates."""
 
 from fastapi import APIRouter, Query, Request
+from fastapi.responses import HTMLResponse
 from sqlalchemy import func, select
 
 from i4_scout.api.dependencies import DbSession, ListingServiceDep, TemplatesDep
@@ -162,6 +163,11 @@ async def listing_detail_partial(
 ):
     """Return listing detail HTML fragment (for modal loading)."""
     listing = service.get_listing(listing_id)
+    if listing is None:
+        return HTMLResponse(
+            content='<div class="empty-state"><p>Listing not found.</p></div>',
+            status_code=200,
+        )
     return templates.TemplateResponse(
         request=request,
         name="partials/listing_detail_content.html",

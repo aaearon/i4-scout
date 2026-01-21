@@ -17,7 +17,7 @@ Build a full-featured web dashboard using HTMX + Jinja2, embedded in FastAPI. Se
 
 ## Phase 1: Foundation Setup
 
-**Status:** `[ ]` Not Started
+**Status:** `[x]` Complete
 
 **Goal:** Template infrastructure and static file serving
 
@@ -84,7 +84,7 @@ feat(web): add template and static file infrastructure (Phase 1)
 
 ## Phase 2: Dashboard Page
 
-**Status:** `[ ]` Not Started
+**Status:** `[x]` Complete
 
 **Goal:** Stats overview with auto-refresh
 
@@ -134,7 +134,7 @@ feat(web): add dashboard page with stats (Phase 2)
 
 ## Phase 3: Listings Page with Filters
 
-**Status:** `[ ]` Not Started
+**Status:** `[x]` Complete
 
 **Goal:** Full listings table with filtering, sorting, pagination
 
@@ -202,7 +202,7 @@ feat(web): add listings page with filters and pagination (Phase 3)
 
 ## Phase 4: Listing Detail View
 
-**Status:** `[ ]` Not Started
+**Status:** `[x]` Complete
 
 **Goal:** Single listing detail with price history
 
@@ -257,7 +257,7 @@ feat(web): add listing detail view with price history (Phase 4)
 
 ## Phase 5: Scrape Control Page
 
-**Status:** `[ ]` Not Started
+**Status:** `[x]` Complete
 
 **Goal:** Start scrapes and monitor progress in real-time
 
@@ -316,7 +316,7 @@ feat(web): add scrape control page with live progress (Phase 5)
 
 ## Phase 6: Polish and Testing
 
-**Status:** `[ ]` Not Started
+**Status:** `[x]` Complete
 
 **Goal:** Final touches, tests, documentation
 

@@ -328,3 +328,63 @@ SQLite features:
 ### Implementation Details
 
 See `docs/web-interface-implementation-plan.md` for the full implementation plan.
+
+## Web Interface
+
+The project includes a full-featured web dashboard built with HTMX + Jinja2, embedded in FastAPI.
+
+### Technology Stack
+
+- **CSS Framework:** Pico CSS (~10KB) - classless, dark mode, mobile responsive
+- **Interactivity:** HTMX (~14KB) - partial page updates, polling
+- **Templates:** Jinja2 - integrates with FastAPI
+- **Hosting:** Embedded in FastAPI via StaticFiles and Jinja2Templates
+
+### Accessing the Web Interface
+
+Start the server and navigate to `http://localhost:8000/` in your browser:
+
+```bash
+i4-scout serve
+```
+
+### Pages
+
+**Dashboard (`/`):**
+- Statistics overview (total listings, qualified count, averages)
+- Listings by source breakdown
+- Recent qualified listings
+- Auto-refresh every 60 seconds
+
+**Listings (`/listings`):**
+- Full listings table with all fields
+- Filter form: source, qualified only, score, price, mileage, year, country, search
+- Sorting by price, mileage, score, date
+- Pagination with Previous/Next navigation
+- Search with debounce (500ms delay)
+- URL state preservation (bookmarkable filters)
+
+**Listing Detail (`/listings/{id}`):**
+- Full listing information
+- Location and dealer details
+- Matched options list
+- Price history table with change indicators
+- Delete button with confirmation
+- External link to source
+
+**Scrape Control (`/scrape`):**
+- Start new scrapes (source, max pages)
+- Live job progress (auto-polling every 2s for running jobs)
+- Job history with status, counts, timestamps
+
+### HTMX Partial Endpoints
+
+These endpoints return HTML fragments for HTMX requests:
+
+- `GET /partials/stats` - Stats cards
+- `GET /partials/recent-qualified` - Recent qualified listings
+- `GET /partials/listings` - Listings table with pagination
+- `GET /partials/listing/{id}` - Listing detail content
+- `GET /partials/listing/{id}/price-chart` - Price history chart
+- `GET /partials/scrape/jobs` - Scrape jobs list
+- `GET /partials/scrape/job/{id}` - Single job row (for polling)
