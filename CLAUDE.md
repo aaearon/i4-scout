@@ -358,7 +358,11 @@ i4-scout serve
 
 **Listings (`/listings`):**
 - Full listings table with all fields
+- Hover popover showing options summary (lazy-loaded via HTMX)
 - Filter form: source, qualified only, score, price, mileage, year, country, search
+- Options filtering: collapsible checkbox list for required and nice-to-have options
+  - Has ALL mode: require all selected options (AND logic)
+  - Has ANY mode: require at least one selected option (OR logic)
 - Sorting by price, mileage, score, date
 - Pagination with Previous/Next navigation
 - Search with debounce (500ms delay)
@@ -367,7 +371,8 @@ i4-scout serve
 **Listing Detail (`/listings/{id}`):**
 - Full listing information
 - Location and dealer details
-- Matched options list
+- Color-coded option cards: green (has), red (missing required), cyan (has nice-to-have), gray (missing nice-to-have)
+- Dealbreakers section with expandable keyword list
 - Price history table with change indicators
 - Delete button with confirmation
 - External link to source
@@ -384,7 +389,11 @@ These endpoints return HTML fragments for HTMX requests:
 - `GET /partials/stats` - Stats cards
 - `GET /partials/recent-qualified` - Recent qualified listings
 - `GET /partials/listings` - Listings table with pagination
+  - Options filtering: `?has_option=Laser%20Light&has_option=Harman%20Kardon&options_match=all`
+  - `has_option` (repeatable): Filter by option name
+  - `options_match`: `all` (AND, default) or `any` (OR)
 - `GET /partials/listing/{id}` - Listing detail content
+- `GET /partials/listing/{id}/options-summary` - Options summary for hover popover
 - `GET /partials/listing/{id}/price-chart` - Price history chart
 - `GET /partials/scrape/jobs` - Scrape jobs list
 - `GET /partials/scrape/job/{id}` - Single job row (for polling)

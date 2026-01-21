@@ -1,6 +1,7 @@
 """Integration tests for CLI commands."""
 
 import json
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -53,7 +54,7 @@ def populated_db(test_db: Path) -> Path:
                 price=45000,
                 mileage_km=15000,
                 year=2023,
-                first_registration="03/2023",
+                first_registration=date(2023, 3, 1),
                 match_score=85.0,
                 is_qualified=True,
             ),
@@ -64,7 +65,7 @@ def populated_db(test_db: Path) -> Path:
                 price=65000,
                 mileage_km=5000,
                 year=2024,
-                first_registration="01/2024",
+                first_registration=date(2024, 1, 1),
                 match_score=45.0,
                 is_qualified=False,
             ),
@@ -75,7 +76,7 @@ def populated_db(test_db: Path) -> Path:
                 price=38000,
                 mileage_km=25000,
                 year=2022,
-                first_registration="06/2022",
+                first_registration=date(2022, 6, 1),
                 match_score=70.0,
                 is_qualified=False,
             ),

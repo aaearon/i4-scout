@@ -4,7 +4,7 @@ from fastapi import APIRouter, Query, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy import func, select
 
-from i4_scout.api.dependencies import DbSession, ListingServiceDep, TemplatesDep
+from i4_scout.api.dependencies import DbSession, ListingServiceDep, OptionsConfigDep, TemplatesDep
 from i4_scout.database.repository import ListingRepository
 from i4_scout.models.db_models import Listing
 from i4_scout.models.pydantic_models import Source
@@ -89,54 +89,75 @@ async def listings_partial(
     templates: TemplatesDep,
     source: str | None = Query(None),
     qualified_only: bool = Query(False),
-    min_score: float | None = Query(None),
-    price_min: int | None = Query(None),
-    price_max: int | None = Query(None),
-    mileage_max: int | None = Query(None),
-    year_min: int | None = Query(None),
+    min_score: str | None = Query(None),
+    price_min: str | None = Query(None),
+    price_max: str | None = Query(None),
+    mileage_max: str | None = Query(None),
+    year_min: str | None = Query(None),
     country: str | None = Query(None),
     search: str | None = Query(None),
+    has_option: list[str] | None = Query(None),
+    options_match: str = Query("all"),
     sort_by: str | None = Query(None),
     sort_order: str = Query("desc"),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
 ):
     """Return listings table HTML fragment."""
+    # Convert empty strings to None for numeric params (HTML forms send empty strings)
+    min_score_val = float(min_score) if min_score else None
+    price_min_val = int(price_min) if price_min else None
+    price_max_val = int(price_max) if price_max else None
+    mileage_max_val = int(mileage_max) if mileage_max else None
+    year_min_val = int(year_min) if year_min else None
+    source_val = source if source else None
+    country_val = country if country else None
+    search_val = search if search else None
+    sort_by_val = sort_by if sort_by else None
+
+    # Clean options filter (remove empty strings from form submission)
+    has_options_val = [o for o in (has_option or []) if o]
+    options_match_val = options_match if options_match in ("all", "any") else "all"
+
     # Convert source string to Source enum if provided
     source_enum = None
-    if source:
+    if source_val:
         try:
-            source_enum = Source(source)
+            source_enum = Source(source_val)
         except ValueError:
             pass
 
     listings, total = service.get_listings(
         source=source_enum,
         qualified_only=qualified_only,
-        min_score=min_score,
-        price_min=price_min,
-        price_max=price_max,
-        mileage_max=mileage_max,
-        year_min=year_min,
-        country=country,
-        search=search,
-        sort_by=sort_by,
+        min_score=min_score_val,
+        price_min=price_min_val,
+        price_max=price_max_val,
+        mileage_max=mileage_max_val,
+        year_min=year_min_val,
+        country=country_val,
+        search=search_val,
+        has_options=has_options_val if has_options_val else None,
+        options_match=options_match_val,
+        sort_by=sort_by_val,
         sort_order=sort_order,
         limit=limit,
         offset=offset,
     )
 
     filters = {
-        "source": source,
+        "source": source_val,
         "qualified_only": qualified_only,
-        "min_score": min_score,
-        "price_min": price_min,
-        "price_max": price_max,
-        "mileage_max": mileage_max,
-        "year_min": year_min,
-        "country": country,
-        "search": search,
-        "sort_by": sort_by,
+        "min_score": min_score_val,
+        "price_min": price_min_val,
+        "price_max": price_max_val,
+        "mileage_max": mileage_max_val,
+        "year_min": year_min_val,
+        "country": country_val,
+        "search": search_val,
+        "has_options": has_options_val,
+        "options_match": options_match_val,
+        "sort_by": sort_by_val,
         "sort_order": sort_order,
     }
 
@@ -172,6 +193,35 @@ async def listing_detail_partial(
         request=request,
         name="partials/listing_detail_content.html",
         context={"listing": listing},
+    )
+
+
+@router.get("/listing/{listing_id}/options-summary")
+async def listing_options_summary_partial(
+    request: Request,
+    listing_id: int,
+    service: ListingServiceDep,
+    options_config: OptionsConfigDep,
+    templates: TemplatesDep,
+):
+    """Return options summary HTML fragment for hover preview."""
+    listing = service.get_listing(listing_id)
+    if listing is None:
+        return HTMLResponse(
+            content='<div class="options-summary-empty">Not found</div>',
+            status_code=200,
+        )
+
+    matched_set = set(listing.matched_options)
+    options_status = {
+        "required": [{"name": o.name, "has": o.name in matched_set} for o in options_config.required],
+        "nice_to_have": [{"name": o.name, "has": o.name in matched_set} for o in options_config.nice_to_have],
+    }
+
+    return templates.TemplateResponse(
+        request=request,
+        name="components/options_summary.html",
+        context={"options_status": options_status},
     )
 
 

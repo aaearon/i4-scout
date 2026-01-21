@@ -2,6 +2,8 @@
     class="filter-form"
     hx-get="/partials/listings"
     hx-target="#listings-table"
+    hx-trigger="submit"
+    hx-swap="innerHTML"
     hx-push-url="true"
     hx-indicator="#filter-indicator"
 >
@@ -81,7 +83,7 @@
     </div>
 
     <div class="filter-group">
-        <label for="year_min">Year Min</label>
+        <label for="year_min">Reg Year Min</label>
         <input
             type="number"
             name="year_min"
@@ -119,6 +121,60 @@
             hx-push-url="true"
             hx-include="closest form"
         >
+    </div>
+
+    <div class="filter-group filter-group-wide">
+        <details class="options-filter-details" {% if filters.has_options %}open{% endif %}>
+            <summary>
+                <span class="options-filter-label">Filter by Options</span>
+                {% if filters.has_options %}
+                <span class="filter-count">({{ filters.has_options|length }})</span>
+                {% endif %}
+            </summary>
+
+            <div class="options-filter-content">
+                <div class="options-match-mode">
+                    <label>
+                        <input type="radio" name="options_match" value="all"
+                            {% if filters.options_match != 'any' %}checked{% endif %}>
+                        Has ALL
+                    </label>
+                    <label>
+                        <input type="radio" name="options_match" value="any"
+                            {% if filters.options_match == 'any' %}checked{% endif %}>
+                        Has ANY
+                    </label>
+                </div>
+
+                {% if options_config %}
+                <div class="options-section">
+                    <strong>Required</strong>
+                    <div class="options-checkbox-grid">
+                        {% for opt in options_config.required %}
+                        <label class="option-checkbox">
+                            <input type="checkbox" name="has_option" value="{{ opt.name }}"
+                                {% if filters.has_options and opt.name in filters.has_options %}checked{% endif %}>
+                            {{ opt.name }}
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="options-section">
+                    <strong>Nice-to-have</strong>
+                    <div class="options-checkbox-grid">
+                        {% for opt in options_config.nice_to_have %}
+                        <label class="option-checkbox">
+                            <input type="checkbox" name="has_option" value="{{ opt.name }}"
+                                {% if filters.has_options and opt.name in filters.has_options %}checked{% endif %}>
+                            {{ opt.name }}
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </details>
     </div>
 
     <div class="filter-group">

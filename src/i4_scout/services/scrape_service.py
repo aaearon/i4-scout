@@ -1,10 +1,45 @@
 """Service layer for scraping operations."""
 
+import re
 from collections.abc import Callable
 from contextlib import asynccontextmanager
+from datetime import date
 from typing import Any
 
 from sqlalchemy.orm import Session
+
+
+def parse_first_registration(value: str | None) -> date | None:
+    """Parse first registration string to date.
+
+    Handles formats like:
+    - "MM/YYYY" (e.g., "12/2024")
+    - "MM-YYYY" (e.g., "12-2024")
+    - "YYYY" (e.g., "2024")
+    - "new" or other strings → None
+
+    Returns:
+        date with day=1 for the given month/year, or None if unparseable.
+    """
+    if not value or value.lower() == "new":
+        return None
+
+    # Try MM/YYYY or MM-YYYY format
+    match = re.match(r"^(\d{1,2})[/-](\d{4})$", value)
+    if match:
+        month = int(match.group(1))
+        year = int(match.group(2))
+        if 1 <= month <= 12 and 2000 <= year <= 2100:
+            return date(year, month, 1)
+
+    # Try YYYY format
+    match = re.match(r"^(\d{4})$", value)
+    if match:
+        year = int(match.group(1))
+        if 2000 <= year <= 2100:
+            return date(year, 1, 1)
+
+    return None
 
 from i4_scout.database.repository import ListingRepository
 from i4_scout.matching.option_matcher import match_options
@@ -188,6 +223,9 @@ class ScrapeService:
         scored_result = calculate_score(match_result, self._options_config)
 
         # Create listing data
+        first_reg_str = listing_data.get("first_registration")
+        first_reg_date = parse_first_registration(first_reg_str)
+
         create_data = ListingCreate(
             source=source,
             external_id=listing_data.get("external_id"),
@@ -195,7 +233,7 @@ class ScrapeService:
             title=title,
             price=listing_data.get("price"),
             mileage_km=listing_data.get("mileage_km"),
-            first_registration=listing_data.get("first_registration"),
+            first_registration=first_reg_date,
             description=description,
             match_score=scored_result.score,
             is_qualified=scored_result.is_qualified,

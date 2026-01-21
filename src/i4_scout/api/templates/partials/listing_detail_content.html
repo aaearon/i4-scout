@@ -37,7 +37,7 @@
     </div>
     <div class="detail-item">
         <div class="label">First Registration</div>
-        <div class="value">{{ listing.first_registration or 'N/A' }}</div>
+        <div class="value">{{ listing.first_registration.strftime('%m/%Y') if listing.first_registration else 'N/A' }}</div>
     </div>
     <div class="detail-item">
         <div class="label">Match Score</div>
@@ -83,22 +83,14 @@
 <article>
     <header>Required Options ({{ options_status.required|selectattr('has')|list|length }} / {{ options_status.required|length }})</header>
     {% if options_status.required %}
-    <table class="options-table">
-        <tbody>
-            {% for opt in options_status.required %}
-            <tr>
-                <td style="width: 40px; text-align: center;">
-                    {% if opt.has %}
-                    <span class="option-has" title="Has this option">&#10003;</span>
-                    {% else %}
-                    <span class="option-missing" title="Missing this option">&#10007;</span>
-                    {% endif %}
-                </td>
-                <td>{{ opt.name }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="options-card-grid">
+        {% for opt in options_status.required %}
+        <div class="option-card {% if opt.has %}option-card-has{% else %}option-card-missing{% endif %}">
+            <span class="option-icon">{% if opt.has %}&#10003;{% else %}&#10007;{% endif %}</span>
+            <span class="option-name">{{ opt.name }}</span>
+        </div>
+        {% endfor %}
+    </div>
     {% else %}
     <p class="empty-state">No required options configured.</p>
     {% endif %}
@@ -108,26 +100,41 @@
 <article>
     <header>Nice-to-Have Options ({{ options_status.nice_to_have|selectattr('has')|list|length }} / {{ options_status.nice_to_have|length }})</header>
     {% if options_status.nice_to_have %}
-    <table class="options-table">
-        <tbody>
-            {% for opt in options_status.nice_to_have %}
-            <tr>
-                <td style="width: 40px; text-align: center;">
-                    {% if opt.has %}
-                    <span class="option-has" title="Has this option">&#10003;</span>
-                    {% else %}
-                    <span class="option-missing-nice" title="Missing this option">&#10007;</span>
-                    {% endif %}
-                </td>
-                <td>{{ opt.name }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="options-card-grid">
+        {% for opt in options_status.nice_to_have %}
+        <div class="option-card {% if opt.has %}option-card-nice-has{% else %}option-card-nice-missing{% endif %}">
+            <span class="option-icon">{% if opt.has %}&#10003;{% else %}&#10007;{% endif %}</span>
+            <span class="option-name">{{ opt.name }}</span>
+        </div>
+        {% endfor %}
+    </div>
     {% else %}
     <p class="empty-state">No nice-to-have options configured.</p>
     {% endif %}
 </article>
+
+<!-- Dealbreakers -->
+{% if options_status.dealbreakers %}
+<article class="dealbreakers-section">
+    <header>Dealbreakers</header>
+    {% set has_dealbreaker = listing.dealbreaker_found is defined and listing.dealbreaker_found %}
+    {% if has_dealbreaker %}
+    <div class="alert alert-error">
+        Dealbreaker detected: {{ listing.dealbreaker_found }}
+    </div>
+    {% else %}
+    <p class="no-dealbreakers">No dealbreakers found</p>
+    {% endif %}
+    <details>
+        <summary>View dealbreaker keywords ({{ options_status.dealbreakers|length }})</summary>
+        <ul class="dealbreaker-list">
+            {% for db in options_status.dealbreakers %}
+            <li>{{ db }}</li>
+            {% endfor %}
+        </ul>
+    </details>
+</article>
+{% endif %}
 {% elif listing.matched_options %}
 <!-- Fallback to simple list if options_status not provided -->
 <article>

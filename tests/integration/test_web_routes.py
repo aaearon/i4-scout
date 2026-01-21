@@ -88,6 +88,16 @@ class TestListings:
         assert response.status_code == 200
         assert "text/html" in response.headers["content-type"]
 
+    def test_listings_with_empty_string_params(self, client):
+        """Test listings partial handles empty string params from HTML forms."""
+        # HTML forms send empty strings for unfilled fields, not missing params
+        response = client.get(
+            "/partials/listings?source=&min_score=&price_min=&price_max="
+            "&mileage_max=&year_min=&country=&search=&sort_by=first_seen&sort_order=desc"
+        )
+        assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
+
 
 class TestListingDetail:
     """Tests for listing detail page."""
@@ -155,3 +165,68 @@ class TestNavigation:
         response = client.get("/listings/99999")
         assert 'href="/listings"' in response.text
         assert "Back to listings" in response.text
+
+
+class TestOptionsSummary:
+    """Tests for options summary partial (hover popover)."""
+
+    def test_options_summary_not_found(self, client):
+        """Test options summary for non-existent listing returns empty state."""
+        response = client.get("/partials/listing/99999/options-summary")
+        assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
+        assert "Not found" in response.text or "not found" in response.text.lower()
+
+    def test_options_summary_endpoint_exists(self, client):
+        """Test that options summary endpoint exists."""
+        response = client.get("/partials/listing/1/options-summary")
+        # Should return 200 even for non-existent listing (empty state)
+        assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
+
+
+class TestOptionsFiltering:
+    """Tests for filtering listings by options."""
+
+    def test_listings_partial_with_single_option_filter(self, client):
+        """Test filtering by a single option."""
+        response = client.get("/partials/listings?has_option=Laser%20Light")
+        assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
+
+    def test_listings_partial_with_multiple_options_all_mode(self, client):
+        """Test filtering by multiple options with AND (all) mode."""
+        response = client.get(
+            "/partials/listings?has_option=Laser%20Light&has_option=Harman%20Kardon&options_match=all"
+        )
+        assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
+
+    def test_listings_partial_with_options_any_mode(self, client):
+        """Test filtering by options with OR (any) mode."""
+        response = client.get(
+            "/partials/listings?has_option=Panorama%20Roof&has_option=Sunroof&options_match=any"
+        )
+        assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
+
+    def test_listings_partial_with_invalid_options_match_defaults_to_all(self, client):
+        """Test that invalid options_match value defaults to 'all'."""
+        response = client.get(
+            "/partials/listings?has_option=Laser%20Light&options_match=invalid"
+        )
+        assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
+
+    def test_listings_partial_with_empty_option_list(self, client):
+        """Test that empty option filter is handled gracefully."""
+        response = client.get("/partials/listings?has_option=")
+        assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
+
+    def test_listings_page_includes_options_config(self, client):
+        """Test that listings page has options config for filter form."""
+        response = client.get("/listings")
+        assert response.status_code == 200
+        # Should contain option filter UI elements
+        assert b"Filter by Options" in response.content or b"has_option" in response.content

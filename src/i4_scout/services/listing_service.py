@@ -37,6 +37,8 @@ class ListingService:
         year_max: int | None = None,
         country: str | None = None,
         search: str | None = None,
+        has_options: list[str] | None = None,
+        options_match: str = "all",
         sort_by: str | None = None,
         sort_order: str = "desc",
         limit: int = 20,
@@ -56,6 +58,8 @@ class ListingService:
             year_max: Maximum model year.
             country: Country code (D, NL, B, etc.).
             search: Text search in title and description.
+            has_options: List of option names to filter by.
+            options_match: "all" to require all options, "any" to require any.
             sort_by: Field to sort by (price, mileage, score, first_seen, last_seen).
             sort_order: Sort direction (asc, desc). Default: desc.
             limit: Maximum results to return.
@@ -76,6 +80,8 @@ class ListingService:
             year_max=year_max,
             country=country,
             search=search,
+            has_options=has_options,
+            options_match=options_match,
             sort_by=sort_by,
             sort_order=sort_order,
             limit=limit,
@@ -95,6 +101,8 @@ class ListingService:
             year_max=year_max,
             country=country,
             search=search,
+            has_options=has_options,
+            options_match=options_match,
         )
 
         # Convert ORM objects to Pydantic models

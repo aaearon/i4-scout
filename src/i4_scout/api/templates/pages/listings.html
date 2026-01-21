@@ -11,7 +11,7 @@
 <!-- Listings table -->
 <div
     id="listings-table"
-    hx-get="/partials/listings"
+    hx-get="/partials/listings{% if query_string %}?{{ query_string }}{% endif %}"
     hx-trigger="load"
     hx-swap="innerHTML"
 >

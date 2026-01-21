@@ -60,6 +60,12 @@ def listing_to_dict(listing: Listing) -> dict[str, Any]:
     if data.get("last_seen_at"):
         data["last_seen_at"] = data["last_seen_at"].isoformat()
 
+    # Convert date objects to ISO format strings (MM/YYYY for display)
+    if data.get("first_registration"):
+        fr = data["first_registration"]
+        # Format as MM/YYYY for consistency with original format
+        data["first_registration"] = fr.strftime("%m/%Y") if hasattr(fr, "strftime") else str(fr)
+
     return data
 
 

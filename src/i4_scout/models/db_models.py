@@ -1,9 +1,9 @@
 """SQLAlchemy ORM models."""
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional
 
-from sqlalchemy import JSON, Boolean, DateTime, Enum, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, Boolean, Date, DateTime, Enum, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from i4_scout.models.pydantic_models import ScrapeStatus, Source
@@ -33,7 +33,7 @@ class Listing(Base):
     # Vehicle details
     mileage_km: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     year: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    first_registration: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
+    first_registration: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     vin: Mapped[Optional[str]] = mapped_column(String(17), nullable=True)
 
     # Location

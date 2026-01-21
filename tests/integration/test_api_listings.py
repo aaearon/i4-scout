@@ -1,6 +1,6 @@
 """Integration tests for listings API endpoints."""
 
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 import pytest
@@ -68,6 +68,7 @@ def sample_listings(session_factory) -> list[int]:
             price=45000,
             mileage_km=15000,
             year=2023,
+            first_registration=date(2023, 6, 1),
             location_country="D",
             description="Beautiful M Sport package with premium features.",
             match_score=85.0,
@@ -80,6 +81,7 @@ def sample_listings(session_factory) -> list[int]:
             price=48000,
             mileage_km=20000,
             year=2024,
+            first_registration=date(2024, 3, 1),
             location_country="D",
             description="Full leather interior, excellent condition.",
             match_score=70.0,
@@ -92,6 +94,7 @@ def sample_listings(session_factory) -> list[int]:
             price=52000,
             mileage_km=10000,
             year=2023,
+            first_registration=date(2023, 11, 1),
             location_country="NL",
             description="Premium package with all options.",
             match_score=90.0,
@@ -104,6 +107,7 @@ def sample_listings(session_factory) -> list[int]:
             price=42000,
             mileage_km=30000,
             year=2024,
+            first_registration=date(2024, 8, 1),
             location_country="B",
             description="Equipped with HUD and driving assistant.",
             match_score=60.0,
@@ -116,6 +120,7 @@ def sample_listings(session_factory) -> list[int]:
             price=38000,
             mileage_km=45000,
             year=2022,
+            first_registration=date(2022, 2, 1),
             location_country="NL",
             description="Base model, well maintained.",
             match_score=50.0,

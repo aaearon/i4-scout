@@ -1,6 +1,6 @@
 """Pydantic models for data validation."""
 
-from datetime import datetime
+from datetime import date, datetime
 from enum import Enum
 from typing import Optional
 
@@ -92,7 +92,7 @@ class ListingCreate(BaseModel):
     price_text: Optional[str] = None
     mileage_km: Optional[int] = None
     year: Optional[int] = None
-    first_registration: Optional[str] = None
+    first_registration: Optional[date] = None
     vin: Optional[str] = None
     location_city: Optional[str] = None
     location_zip: Optional[str] = None

@@ -23,6 +23,7 @@ async def dashboard(
 async def listings_page(
     request: Request,
     templates: TemplatesDep,
+    options_config: OptionsConfigDep,
     source: str | None = Query(None),
     qualified_only: bool = Query(False),
     min_score: float | None = Query(None),
@@ -32,10 +33,16 @@ async def listings_page(
     year_min: int | None = Query(None),
     country: str | None = Query(None),
     search: str | None = Query(None),
+    has_option: list[str] | None = Query(None),
+    options_match: str = Query("all"),
     sort_by: str | None = Query(None),
     sort_order: str = Query("desc"),
 ):
     """Render the listings page."""
+    # Clean options filter (remove empty strings)
+    has_options_val = [o for o in (has_option or []) if o]
+    options_match_val = options_match if options_match in ("all", "any") else "all"
+
     filters = {
         "source": source,
         "qualified_only": qualified_only,
@@ -46,13 +53,21 @@ async def listings_page(
         "year_min": year_min,
         "country": country,
         "search": search,
+        "has_options": has_options_val,
+        "options_match": options_match_val,
         "sort_by": sort_by,
         "sort_order": sort_order,
     }
+    # Build query string for initial HTMX load
+    query_string = str(request.url.query) if request.url.query else ""
     return templates.TemplateResponse(
         request=request,
         name="pages/listings.html",
-        context={"filters": filters},
+        context={
+            "filters": filters,
+            "query_string": query_string,
+            "options_config": options_config,
+        },
     )
 
 

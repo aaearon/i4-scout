@@ -3,10 +3,12 @@
 import functools
 import hashlib
 from collections.abc import Callable
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, TypeVar
 
 from sqlalchemy import asc, desc, or_
+from sqlalchemy import select as sa_select
+from sqlalchemy.sql import extract
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 from tenacity import (
@@ -224,6 +226,8 @@ class ListingRepository:
         year_max: int | None = None,
         country: str | None = None,
         search: str | None = None,
+        has_options: list[str] | None = None,
+        options_match: str = "all",
         sort_by: str | None = None,
         sort_order: str = "desc",
         limit: int | None = None,
@@ -243,6 +247,8 @@ class ListingRepository:
             year_max: Maximum model year.
             country: Country code (D, NL, B, etc.).
             search: Text search in title and description.
+            has_options: List of option names to filter by.
+            options_match: "all" to require all options, "any" to require any.
             sort_by: Field to sort by (price, mileage, score, first_seen, last_seen).
             sort_order: Sort direction (asc, desc). Default: desc.
             limit: Maximum number of results.
@@ -274,11 +280,13 @@ class ListingRepository:
         if mileage_max is not None:
             query = query.filter(Listing.mileage_km <= mileage_max)
 
-        if year_min is not None:
-            query = query.filter(Listing.year >= year_min)
-
-        if year_max is not None:
-            query = query.filter(Listing.year <= year_max)
+        # Filter by year from first_registration date
+        if year_min is not None or year_max is not None:
+            year_expr = extract("year", Listing.first_registration)
+            if year_min is not None:
+                query = query.filter(year_expr >= year_min)
+            if year_max is not None:
+                query = query.filter(year_expr <= year_max)
 
         if country is not None:
             query = query.filter(Listing.location_country == country)
@@ -291,6 +299,26 @@ class ListingRepository:
                     Listing.description.ilike(search_pattern),
                 )
             )
+
+        if has_options:
+            if options_match == "all":
+                # Require ALL options - intersect subqueries
+                for option_name in has_options:
+                    subq = (
+                        sa_select(ListingOption.listing_id)
+                        .join(Option)
+                        .where(Option.canonical_name == option_name)
+                    )
+                    query = query.filter(Listing.id.in_(subq))
+            else:
+                # Require ANY option - single subquery with IN
+                subq = (
+                    sa_select(ListingOption.listing_id)
+                    .join(Option)
+                    .where(Option.canonical_name.in_(has_options))
+                    .distinct()
+                )
+                query = query.filter(Listing.id.in_(subq))
 
         # Sorting
         sort_columns = {
@@ -328,6 +356,8 @@ class ListingRepository:
         year_max: int | None = None,
         country: str | None = None,
         search: str | None = None,
+        has_options: list[str] | None = None,
+        options_match: str = "all",
     ) -> int:
         """Count listings with optional filters.
 
@@ -343,6 +373,8 @@ class ListingRepository:
             year_max: Maximum model year.
             country: Country code (D, NL, B, etc.).
             search: Text search in title and description.
+            has_options: List of option names to filter by.
+            options_match: "all" to require all options, "any" to require any.
 
         Returns:
             Number of matching listings.
@@ -370,11 +402,13 @@ class ListingRepository:
         if mileage_max is not None:
             query = query.filter(Listing.mileage_km <= mileage_max)
 
-        if year_min is not None:
-            query = query.filter(Listing.year >= year_min)
-
-        if year_max is not None:
-            query = query.filter(Listing.year <= year_max)
+        # Filter by year from first_registration date
+        if year_min is not None or year_max is not None:
+            year_expr = extract("year", Listing.first_registration)
+            if year_min is not None:
+                query = query.filter(year_expr >= year_min)
+            if year_max is not None:
+                query = query.filter(year_expr <= year_max)
 
         if country is not None:
             query = query.filter(Listing.location_country == country)
@@ -387,6 +421,26 @@ class ListingRepository:
                     Listing.description.ilike(search_pattern),
                 )
             )
+
+        if has_options:
+            if options_match == "all":
+                # Require ALL options - intersect subqueries
+                for option_name in has_options:
+                    subq = (
+                        sa_select(ListingOption.listing_id)
+                        .join(Option)
+                        .where(Option.canonical_name == option_name)
+                    )
+                    query = query.filter(Listing.id.in_(subq))
+            else:
+                # Require ANY option - single subquery with IN
+                subq = (
+                    sa_select(ListingOption.listing_id)
+                    .join(Option)
+                    .where(Option.canonical_name.in_(has_options))
+                    .distinct()
+                )
+                query = query.filter(Listing.id.in_(subq))
 
         return query.count()
 
