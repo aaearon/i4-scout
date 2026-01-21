@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block title %}Compare Listings - i4-scout{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ul>
+        <li><a href="/listings">Listings</a></li>
+        <li>Compare</li>
+    </ul>
+</nav>
+
+{% if listings %}
+<h1>Compare Listings ({{ listings|length }})</h1>
+
+{% set columns = listings|length %}
+
+<!-- Basic Information Section -->
+<section class="compare-section">
+    <h3>Basic Information</h3>
+    <div class="compare-grid" style="--columns: {{ columns }};">
+        <!-- Title row -->
+        <div class="compare-row">
+            <div class="compare-label">Listing</div>
+            {% for listing in listings %}
+            <div class="compare-value">
+                <a href="/listings/{{ listing.id }}" title="{{ listing.title }}">
+                    {{ listing.title[:40] }}{% if listing.title|length > 40 %}...{% endif %}
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Price row -->
+        <div class="compare-row">
+            <div class="compare-label">Price</div>
+            {% for listing in listings %}
+            <div class="compare-value{% if listing.price == min_price %} highlight-best{% endif %}">
+                {% if listing.price %}
+                    {{ "{:,.0f}".format(listing.price) }} EUR
+                {% else %}
+                    --
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Mileage row -->
+        <div class="compare-row">
+            <div class="compare-label">Mileage</div>
+            {% for listing in listings %}
+            <div class="compare-value{% if listing.mileage_km == min_mileage %} highlight-best{% endif %}">
+                {% if listing.mileage_km %}
+                    {{ "{:,.0f}".format(listing.mileage_km) }} km
+                {% else %}
+                    --
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- First Registration row -->
+        <div class="compare-row">
+            <div class="compare-label">First Reg.</div>
+            {% for listing in listings %}
+            <div class="compare-value{% if listing.first_registration == max_year %} highlight-best{% endif %}">
+                {{ listing.first_registration.strftime('%m/%Y') if listing.first_registration else '--' }}
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Location row -->
+        <div class="compare-row">
+            <div class="compare-label">Location</div>
+            {% for listing in listings %}
+            <div class="compare-value">
+                {% if listing.location_city %}
+                    {{ listing.location_city }}{% if listing.location_country %}, {{ listing.location_country }}{% endif %}
+                {% else %}
+                    --
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Dealer row -->
+        <div class="compare-row">
+            <div class="compare-label">Dealer</div>
+            {% for listing in listings %}
+            <div class="compare-value">
+                {% if listing.dealer_name %}
+                    {{ listing.dealer_name[:25] }}{% if listing.dealer_name|length > 25 %}...{% endif %}
+                    {% if listing.dealer_type %}<br><small>({{ listing.dealer_type }})</small>{% endif %}
+                {% else %}
+                    --
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Source row -->
+        <div class="compare-row">
+            <div class="compare-label">Source</div>
+            {% for listing in listings %}
+            <div class="compare-value">
+                <a href="{{ listing.url }}" target="_blank" rel="noopener noreferrer">
+                    {{ listing.source or '--' }}
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Match Score Section -->
+<section class="compare-section">
+    <h3>Match Score</h3>
+    <div class="compare-grid" style="--columns: {{ columns }};">
+        <div class="compare-row">
+            <div class="compare-label">Score</div>
+            {% for listing in listings %}
+            <div class="compare-value{% if listing.match_score == max_score %} highlight-best{% endif %}">
+                {% if listing.match_score is not none %}
+                    {{ "{:.1f}".format(listing.match_score) }}%
+                {% else %}
+                    --
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="compare-row">
+            <div class="compare-label">Qualified</div>
+            {% for listing in listings %}
+            <div class="compare-value">
+                {% if listing.is_qualified %}
+                <span class="badge badge-qualified">Yes</span>
+                {% else %}
+                <span class="badge badge-not-qualified">No</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Required Options Section -->
+<section class="compare-section">
+    <h3>Required Options</h3>
+    <div class="compare-grid" style="--columns: {{ columns }};">
+        {% for opt in options_config.required %}
+        <div class="compare-row">
+            <div class="compare-label">{{ opt.name }}</div>
+            {% for listing in listings %}
+            {% set has_option = opt.name in options_by_listing[listing.id] %}
+            <div class="compare-value">
+                {% if has_option %}
+                <span class="option-badge option-has">Yes</span>
+                {% else %}
+                <span class="option-badge option-missing-required">No</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Nice-to-Have Options Section -->
+{% if options_config.nice_to_have %}
+<section class="compare-section">
+    <h3>Nice-to-Have Options</h3>
+    <div class="compare-grid" style="--columns: {{ columns }};">
+        {% for opt in options_config.nice_to_have %}
+        <div class="compare-row">
+            <div class="compare-label">{{ opt.name }}</div>
+            {% for listing in listings %}
+            {% set has_option = opt.name in options_by_listing[listing.id] %}
+            <div class="compare-value">
+                {% if has_option %}
+                <span class="option-badge option-nice-has">Yes</span>
+                {% else %}
+                <span class="option-badge option-nice-missing">--</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<footer class="compare-footer">
+    <a href="/listings" role="button" class="secondary">Back to Listings</a>
+    <button class="outline" onclick="clearCompareSelections()">Clear Selection</button>
+</footer>
+
+{% else %}
+<div class="empty-state">
+    <h2>No Listings to Compare</h2>
+    <p>Please select at least 2 listings from the listings page to compare.</p>
+    <p><a href="/listings">Go to listings</a></p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function clearCompareSelections() {
+    localStorage.removeItem('i4scout_compare_selections');
+    window.location.href = '/listings';
+}
+</script>
+{% endblock %}

@@ -1,0 +1,105 @@
+<!-- Document Section Component -->
+<article class="document-section" id="document-section">
+    <header>
+        Dealer Document
+        <span id="document-indicator" class="htmx-indicator"><span class="spinner"></span></span>
+    </header>
+
+    {% if error_message %}
+    <div class="alert alert-error">{{ error_message }}</div>
+    {% endif %}
+
+    {% if enrichment_result %}
+    <div class="alert alert-success">
+        <strong>Enrichment complete!</strong><br>
+        Options found: {{ enrichment_result.options_found|length }}
+        {% if enrichment_result.new_options_added %}
+        | New: {{ enrichment_result.new_options_added|join(', ') }}
+        {% endif %}
+        <br>
+        Score: {{ "%.1f"|format(enrichment_result.score_before) }}% &rarr; {{ "%.1f"|format(enrichment_result.score_after) }}%
+        {% if enrichment_result.is_qualified_after and not enrichment_result.is_qualified_before %}
+        <br><strong>Listing is now QUALIFIED!</strong>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if document %}
+    <!-- Existing Document -->
+    <div class="document-current">
+        <div class="document-info">
+            <span class="document-icon">&#128196;</span>
+            <div class="document-details">
+                <span class="document-filename">{{ document.original_filename }}</span>
+                <span class="document-meta">{{ (document.file_size_bytes / 1024)|round(1) }} KB - Uploaded {{ document.uploaded_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                {% if document.processed_at %}
+                <span class="document-meta">Processed {{ document.processed_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="document-actions">
+            <a href="/api/listings/{{ listing_id }}/document/download" class="button secondary" download>
+                Download
+            </a>
+            <button
+                class="secondary outline"
+                hx-post="/partials/listing/{{ listing_id }}/document/reprocess"
+                hx-target="#document-section"
+                hx-swap="outerHTML"
+                hx-indicator="#document-indicator"
+                title="Re-extract options from this document"
+            >
+                Reprocess
+            </button>
+            <button
+                class="secondary outline"
+                style="color: var(--pico-del-color);"
+                hx-delete="/partials/listing/{{ listing_id }}/document"
+                hx-confirm="Delete this document? PDF-sourced options will be removed."
+                hx-target="#document-section"
+                hx-swap="outerHTML"
+                hx-indicator="#document-indicator"
+            >
+                Delete
+            </button>
+        </div>
+    </div>
+
+    <hr>
+
+    <!-- Upload New (Replaces) -->
+    <details>
+        <summary>Replace with new PDF</summary>
+        <form
+            hx-post="/partials/listing/{{ listing_id }}/document"
+            hx-encoding="multipart/form-data"
+            hx-target="#document-section"
+            hx-swap="outerHTML"
+            hx-indicator="#document-indicator"
+            class="document-upload-form"
+        >
+            <input type="file" name="file" accept=".pdf,application/pdf" required>
+            <button type="submit">Upload & Process</button>
+        </form>
+        <small>Uploading a new PDF will replace the existing one.</small>
+    </details>
+
+    {% else %}
+    <!-- No Document - Upload Form -->
+    <form
+        hx-post="/partials/listing/{{ listing_id }}/document"
+        hx-encoding="multipart/form-data"
+        hx-target="#document-section"
+        hx-swap="outerHTML"
+        hx-indicator="#document-indicator"
+        class="document-upload-form"
+    >
+        <div class="document-upload-prompt">
+            <span class="document-icon">&#128196;</span>
+            <p>Upload a dealer specification PDF to extract additional options.</p>
+        </div>
+        <input type="file" name="file" accept=".pdf,application/pdf" required>
+        <button type="submit">Upload & Process</button>
+    </form>
+    {% endif %}
+</article>

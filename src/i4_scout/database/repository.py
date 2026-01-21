@@ -19,7 +19,14 @@ from tenacity import (
 )
 from typing_extensions import ParamSpec
 
-from i4_scout.models.db_models import Listing, ListingOption, Option, PriceHistory, ScrapeJob
+from i4_scout.models.db_models import (
+    Listing,
+    ListingDocument,
+    ListingOption,
+    Option,
+    PriceHistory,
+    ScrapeJob,
+)
 from i4_scout.models.pydantic_models import ListingCreate, ScrapeStatus, Source
 
 P = ParamSpec("P")
@@ -661,6 +668,8 @@ class ListingRepository:
         option_id: int,
         raw_text: str | None = None,
         confidence: float = 1.0,
+        source: str = "scrape",
+        document_id: int | None = None,
     ) -> ListingOption:
         """Associate an option with a listing.
 
@@ -669,6 +678,8 @@ class ListingRepository:
             option_id: Option ID.
             raw_text: Original text that matched.
             confidence: Match confidence (0-1).
+            source: Source of the match ('scrape' or 'pdf').
+            document_id: ID of the document if source is 'pdf'.
 
         Returns:
             Created ListingOption association.
@@ -678,6 +689,8 @@ class ListingRepository:
             option_id=option_id,
             raw_text=raw_text,
             confidence=confidence,
+            source=source,
+            document_id=document_id,
         )
         self._session.add(listing_option)
         self._session.commit()
@@ -700,20 +713,27 @@ class ListingRepository:
         )
 
     @with_db_retry
-    def clear_listing_options(self, listing_id: int) -> int:
-        """Remove all option associations for a listing.
+    def clear_listing_options(
+        self,
+        listing_id: int,
+        source: str | None = None,
+    ) -> int:
+        """Remove option associations for a listing.
 
         Args:
             listing_id: Listing ID.
+            source: If provided, only clear options from this source ('scrape' or 'pdf').
+                    If None, clears all options.
 
         Returns:
             Number of associations deleted.
         """
-        deleted = (
-            self._session.query(ListingOption)
-            .filter(ListingOption.listing_id == listing_id)
-            .delete()
+        query = self._session.query(ListingOption).filter(
+            ListingOption.listing_id == listing_id
         )
+        if source is not None:
+            query = query.filter(ListingOption.source == source)
+        deleted = query.delete()
         self._session.commit()
         return deleted
 
@@ -755,6 +775,154 @@ class ListingRepository:
         self._session.commit()
         self._session.refresh(option)
         return option, True
+
+
+class DocumentRepository:
+    """Repository for ListingDocument CRUD operations."""
+
+    def __init__(self, session: Session) -> None:
+        """Initialize repository with database session.
+
+        Args:
+            session: SQLAlchemy session instance.
+        """
+        self._session = session
+
+    @with_db_retry
+    def create_document(
+        self,
+        listing_id: int,
+        filename: str,
+        original_filename: str,
+        file_path: str,
+        file_size_bytes: int,
+        mime_type: str = "application/pdf",
+    ) -> ListingDocument:
+        """Create a new document record.
+
+        Args:
+            listing_id: ID of the listing.
+            filename: UUID-based storage filename.
+            original_filename: Original user-uploaded filename.
+            file_path: Relative path from data/documents/.
+            file_size_bytes: File size in bytes.
+            mime_type: MIME type of the file.
+
+        Returns:
+            Created ListingDocument.
+        """
+        document = ListingDocument(
+            listing_id=listing_id,
+            filename=filename,
+            original_filename=original_filename,
+            file_path=file_path,
+            file_size_bytes=file_size_bytes,
+            mime_type=mime_type,
+        )
+        self._session.add(document)
+        self._session.commit()
+        self._session.refresh(document)
+        return document
+
+    def get_document(self, document_id: int) -> ListingDocument | None:
+        """Get a document by ID.
+
+        Args:
+            document_id: Document ID.
+
+        Returns:
+            ListingDocument if found, None otherwise.
+        """
+        return (
+            self._session.query(ListingDocument)
+            .filter(ListingDocument.id == document_id)
+            .first()
+        )
+
+    def get_document_for_listing(self, listing_id: int) -> ListingDocument | None:
+        """Get the document for a listing (single PDF per listing).
+
+        Args:
+            listing_id: Listing ID.
+
+        Returns:
+            ListingDocument if exists, None otherwise.
+        """
+        return (
+            self._session.query(ListingDocument)
+            .filter(ListingDocument.listing_id == listing_id)
+            .first()
+        )
+
+    @with_db_retry
+    def update_document(
+        self,
+        document_id: int,
+        extracted_text: str | None = None,
+        options_found_json: str | None = None,
+        processed_at: datetime | None = None,
+    ) -> ListingDocument | None:
+        """Update a document's extracted text and processing timestamp.
+
+        Args:
+            document_id: Document ID.
+            extracted_text: Extracted text from PDF.
+            options_found_json: JSON list of options found in PDF.
+            processed_at: When the document was processed.
+
+        Returns:
+            Updated ListingDocument if found, None otherwise.
+        """
+        document = self.get_document(document_id)
+        if document is None:
+            return None
+
+        if extracted_text is not None:
+            document.extracted_text = extracted_text
+        if options_found_json is not None:
+            document.options_found_json = options_found_json
+        if processed_at is not None:
+            document.processed_at = processed_at
+
+        self._session.commit()
+        self._session.refresh(document)
+        return document
+
+    @with_db_retry
+    def delete_document(self, document_id: int) -> bool:
+        """Delete a document by ID.
+
+        Args:
+            document_id: Document ID.
+
+        Returns:
+            True if deleted, False if not found.
+        """
+        document = self.get_document(document_id)
+        if document is None:
+            return False
+
+        self._session.delete(document)
+        self._session.commit()
+        return True
+
+    @with_db_retry
+    def delete_document_for_listing(self, listing_id: int) -> bool:
+        """Delete the document for a listing.
+
+        Args:
+            listing_id: Listing ID.
+
+        Returns:
+            True if deleted, False if not found.
+        """
+        document = self.get_document_for_listing(listing_id)
+        if document is None:
+            return False
+
+        self._session.delete(document)
+        self._session.commit()
+        return True
 
 
 class ScrapeJobRepository:

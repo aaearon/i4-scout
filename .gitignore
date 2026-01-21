@@ -44,8 +44,14 @@ htmlcov/
 
 # Data
 data/*.db
+data/*.db-shm
+data/*.db-wal
 data/*.sqlite
 data/*.sqlite3
+data/documents/
+
+# PDF files (user uploads)
+*.pdf
 
 # PoC results (keep structure, ignore large files)
 poc/results/*/*.html

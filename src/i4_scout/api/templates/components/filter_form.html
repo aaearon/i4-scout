@@ -4,7 +4,7 @@
     hx-target="#listings-table"
     hx-trigger="submit"
     hx-swap="innerHTML"
-    hx-push-url="true"
+    hx-push-url="/listings"
     hx-indicator="#filter-indicator"
 >
     <div class="filter-group">
@@ -30,6 +30,17 @@
     </div>
 
     <div class="filter-group">
+        <label for="favorites-only">
+            <input
+                type="checkbox"
+                id="favorites-only"
+                onchange="filterFavoritesOnly(this)"
+            >
+            Favorites Only<span id="favorites-count"></span>
+        </label>
+    </div>
+
+    <div class="filter-group">
         <label for="min_score">Min Score</label>
         <input
             type="number"
@@ -50,7 +61,7 @@
             name="price_min"
             id="price_min"
             min="0"
-            step="1000"
+            step="1"
             placeholder="EUR"
             value="{{ filters.price_min if filters.price_min else '' }}"
         >
@@ -63,7 +74,7 @@
             name="price_max"
             id="price_max"
             min="0"
-            step="1000"
+            step="1"
             placeholder="EUR"
             value="{{ filters.price_max if filters.price_max else '' }}"
         >
@@ -76,7 +87,7 @@
             name="mileage_max"
             id="mileage_max"
             min="0"
-            step="5000"
+            step="1"
             placeholder="km"
             value="{{ filters.mileage_max if filters.mileage_max else '' }}"
         >
@@ -118,7 +129,7 @@
             hx-get="/partials/listings"
             hx-target="#listings-table"
             hx-trigger="input changed delay:500ms"
-            hx-push-url="true"
+            hx-push-url="/listings"
             hx-include="closest form"
         >
     </div>
@@ -195,10 +206,13 @@
         </select>
     </div>
 
-    <div class="filter-group">
+    <div class="filter-group filter-buttons">
         <button type="submit">
             Apply
             <span id="filter-indicator" class="htmx-indicator spinner"></span>
+        </button>
+        <button type="button" class="secondary outline" onclick="clearFilters()">
+            Clear
         </button>
     </div>
 </form>

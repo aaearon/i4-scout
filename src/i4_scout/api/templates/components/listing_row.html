@@ -8,9 +8,23 @@
     hx-target="find .options-popover"
     hx-swap="innerHTML"
 >
+    <td onclick="event.stopPropagation();">
+        <input type="checkbox" class="listing-checkbox"
+               data-listing-id="{{ listing.id }}"
+               data-listing-title="{{ listing.title }}"
+               data-listing-price="{{ listing.price or '' }}"
+               onchange="toggleSelection(this)">
+    </td>
+    <td onclick="event.stopPropagation();" class="favorite-cell">
+        <button type="button" class="favorite-btn" data-listing-id="{{ listing.id }}" onclick="toggleFavorite({{ listing.id }}, event)" title="Add to favorites" aria-pressed="false">&#x2606;</button>
+    </td>
     <td>{{ listing.id }}</td>
-    <td class="truncate" title="{{ listing.title }}">
-        {{ listing.title }}
+    <td class="title-cell" title="{{ listing.title }}">
+        <span class="title-text">{{ listing.title }}</span>
+        <span class="title-actions">
+            <a href="/listings/{{ listing.id }}" target="_blank" rel="noopener" onclick="event.stopPropagation();" class="action-link" title="Open details in new tab">&#x29C9;</a>
+            <a href="{{ listing.url }}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="action-link action-link-external" title="Open on AutoScout24">&#x2197;</a>
+        </span>
         <div class="options-popover">
             <span class="spinner"></span> Loading...
         </div>

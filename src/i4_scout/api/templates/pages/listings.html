@@ -19,4 +19,43 @@
         <p>Loading listings...</p>
     </div>
 </div>
+
+<!-- Compare bar (fixed at bottom) -->
+{% include "components/compare_bar.html" %}
+{% endblock %}
+
+{% block scripts %}
+<!-- Compare selection and favorites scripts -->
+<script src="/static/js/compare-selection.js"></script>
+<script src="/static/js/favorites.js"></script>
+
+<script>
+(function() {
+    const STORAGE_KEY = 'i4scout_filters';
+
+    // Check if we should restore filters (no query params but have stored filters)
+    if (window.location.search === '') {
+        const stored = sessionStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            // Redirect to the stored filters URL
+            window.location.replace('/listings?' + stored);
+            return;
+        }
+    }
+
+    // Save filters after HTMX updates the URL (covers form, sort headers, pagination)
+    document.body.addEventListener('htmx:pushedIntoHistory', function(evt) {
+        // Only save if we're on the listings page
+        if (window.location.pathname === '/listings' && window.location.search) {
+            sessionStorage.setItem(STORAGE_KEY, window.location.search.substring(1));
+        }
+    });
+
+    // Clear filters handler
+    window.clearFilters = function() {
+        sessionStorage.removeItem(STORAGE_KEY);
+        window.location.href = '/listings';
+    };
+})();
+</script>
 {% endblock %}

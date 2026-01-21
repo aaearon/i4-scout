@@ -136,10 +136,10 @@ Scraper → Parser → OptionMatcher → Scorer → Repository → SQLite
    - SQLAlchemy models with SQLite backend
    - `repository.py`: CRUD operations with URL-based deduplication, price history, and matched options storage
    - `engine.py`: Database engine with 30-second SQLite busy timeout for concurrent access
-   - **Tables**: `listings`, `options`, `listing_options` (many-to-many), `price_history`, `scrape_sessions`
+   - **Tables**: `listings`, `options`, `listing_options` (many-to-many), `listing_documents`, `price_history`, `scrape_sessions`
    - **Retry Logic**: Write operations use `@with_db_retry` decorator (5 attempts, exponential backoff 1-8s) to handle SQLite "database is locked" errors during concurrent scraping
 
-4. **CLI** (`src/i4_scout/cli.py`) - Typer-based CLI with commands: `init-database`, `scrape`, `list`, `show`, `export`, `serve`
+4. **CLI** (`src/i4_scout/cli.py`) - Typer-based CLI with commands: `init-database`, `scrape`, `list`, `show`, `export`, `enrich`, `serve`
 
 5. **Services** (`src/i4_scout/services/`)
    - `listing_service.py`: Business logic for listing operations (get, list, delete)
@@ -196,9 +196,52 @@ Score formula: `((required_matched * 100) + (nice_to_have_matched * 10)) / max_p
 
 During scraping, matched options (both required and nice-to-have) are persisted:
 - Each unique option is stored once in the `options` table (canonical names)
-- `listing_options` tracks which options matched for each listing
-- When a listing is re-scraped, its options are cleared and re-matched
+- `listing_options` tracks which options matched for each listing, with a `source` field ('scrape' or 'pdf')
+- When a listing is re-scraped, only scrape-sourced options are cleared (PDF-sourced options persist)
 - Access matched options via `listing.matched_options` property or JSON output
+
+### PDF Enrichment
+
+Dealers often have incomplete listings on AutoScout24. Users can upload dealer specification PDFs to extract additional options:
+
+**CLI:**
+```bash
+# Enrich a listing with options from a PDF
+i4-scout enrich 42 /path/to/dealer_specs.pdf
+
+# With JSON output for scripting
+i4-scout enrich 42 /path/to/dealer_specs.pdf --json
+```
+
+**JSON output:**
+```json
+{
+  "listing_id": 42,
+  "document_id": 7,
+  "options_found": ["M Sport Package", "Laser Light", "Head-Up Display"],
+  "new_options_added": ["Laser Light", "Head-Up Display"],
+  "score_before": 65.5,
+  "score_after": 82.0,
+  "is_qualified_before": false,
+  "is_qualified_after": true
+}
+```
+
+**API Endpoints:**
+- `POST /api/listings/{id}/document` - Upload/replace PDF (multipart/form-data)
+- `GET /api/listings/{id}/document` - Get document metadata
+- `GET /api/listings/{id}/document/download` - Download PDF file
+- `DELETE /api/listings/{id}/document` - Delete document (recalculates score)
+- `POST /api/listings/{id}/document/reprocess` - Re-extract options
+
+**Key behaviors:**
+- Single PDF per listing (uploading replaces existing)
+- PDF text extraction uses pdfplumber (text + tables)
+- Matches options via same logic as scraper (aliases, BMW option codes)
+- PDF-sourced options persist across re-scrapes
+- Deleting document removes PDF-sourced options and recalculates score
+
+**File storage:** `data/documents/{listing_id}.pdf`
 
 ### Scraper Performance Optimizations
 
@@ -233,6 +276,8 @@ Scrape summary includes performance stats:
 - `SearchFilters`: Search criteria for source-level filtering (price, mileage, year, countries)
 - `MatchResult`: Output from option matching
 - `ScoredResult`: Final score and qualification status
+- `DocumentRead`: Metadata for uploaded PDF documents
+- `EnrichmentResult`: Result of PDF enrichment (options found, score changes)
 
 ## API Server
 
@@ -362,8 +407,10 @@ i4-scout serve
 
 **Listings (`/listings`):**
 - Full listings table with all fields
+- Checkbox selection for comparison (max 4 listings)
+- Favorite star button per listing (persists in localStorage)
 - Hover popover showing options summary (lazy-loaded via HTMX)
-- Filter form: source, qualified only, score, price, mileage, year, country, search
+- Filter form: source, qualified only, favorites only, score, price, mileage, year, country, search
 - Options filtering: collapsible checkbox list for required and nice-to-have options
   - Has ALL mode: require all selected options (AND logic)
   - Has ANY mode: require at least one selected option (OR logic)
@@ -371,10 +418,12 @@ i4-scout serve
 - Pagination with Previous/Next navigation
 - Search with debounce (500ms delay)
 - URL state preservation (bookmarkable filters)
+- Compare bar appears when listings selected (fixed at bottom)
 
 **Listing Detail (`/listings/{id}`):**
 - Full listing information
 - Location and dealer details
+- Favorite button (persists in localStorage)
 - Color-coded option cards: green (has), red (missing required), cyan (has nice-to-have), gray (missing nice-to-have)
 - Dealbreakers section with expandable keyword list
 - Price history table with change indicators
@@ -385,6 +434,16 @@ i4-scout serve
 - Start new scrapes (source, max pages)
 - Live job progress (auto-polling every 2s for running jobs)
 - Job history with status, counts, timestamps
+
+**Compare (`/compare?ids=1,2,3`):**
+- Side-by-side comparison of up to 4 listings
+- Basic info section: price, mileage, year, location, dealer, source
+- Match score section with qualification status
+- Required options matrix with color-coded Yes/No badges
+- Nice-to-have options matrix
+- Best values highlighted (lowest price/mileage, highest score/year)
+- Bookmarkable URL with listing IDs
+- Selection stored in localStorage (persists across browser sessions)
 
 ### HTMX Partial Endpoints
 

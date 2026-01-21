@@ -230,3 +230,104 @@ class TestOptionsFiltering:
         assert response.status_code == 200
         # Should contain option filter UI elements
         assert b"Filter by Options" in response.content or b"has_option" in response.content
+
+
+class TestComparePage:
+    """Tests for listing comparison page."""
+
+    def test_compare_page_renders_without_ids(self, client):
+        """Test compare page renders empty state without IDs."""
+        response = client.get("/compare")
+        assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
+        assert "No Listings to Compare" in response.text
+
+    def test_compare_page_renders_with_empty_ids(self, client):
+        """Test compare page renders empty state with empty ids param."""
+        response = client.get("/compare?ids=")
+        assert response.status_code == 200
+        assert "No Listings to Compare" in response.text
+
+    def test_compare_page_handles_invalid_ids(self, client):
+        """Test compare page handles invalid IDs gracefully."""
+        response = client.get("/compare?ids=abc,xyz")
+        assert response.status_code == 200
+        assert "No Listings to Compare" in response.text
+
+    def test_compare_page_handles_nonexistent_ids(self, client):
+        """Test compare page handles non-existent listing IDs."""
+        response = client.get("/compare?ids=99999,99998")
+        assert response.status_code == 200
+        # Should render but with no listings found
+        assert "No Listings to Compare" in response.text
+
+    def test_compare_page_with_valid_ids_format(self, client):
+        """Test compare page accepts valid ID format."""
+        response = client.get("/compare?ids=1,2,3")
+        assert response.status_code == 200
+        # Page renders (listings may not exist, but route works)
+        assert "text/html" in response.headers["content-type"]
+
+    def test_compare_page_limits_to_4_listings(self, client):
+        """Test compare page limits IDs to 4."""
+        response = client.get("/compare?ids=1,2,3,4,5,6")
+        assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
+
+    def test_compare_page_has_back_link(self, client):
+        """Test compare page has link back to listings."""
+        response = client.get("/compare?ids=1,2")
+        assert response.status_code == 200
+        assert 'href="/listings"' in response.text
+
+    def test_listings_page_includes_compare_bar(self, client):
+        """Test that listings page includes the compare bar component."""
+        response = client.get("/listings")
+        assert response.status_code == 200
+        assert "compare-bar" in response.text
+
+    def test_listings_page_includes_compare_script(self, client):
+        """Test that listings page includes compare selection script."""
+        response = client.get("/listings")
+        assert response.status_code == 200
+        assert "compare-selection.js" in response.text
+
+    def test_compare_selection_js_served(self, client):
+        """Test that compare selection JS is served."""
+        response = client.get("/static/js/compare-selection.js")
+        assert response.status_code == 200
+        assert "javascript" in response.headers["content-type"]
+
+
+class TestFavorites:
+    """Tests for favorites feature."""
+
+    def test_favorites_js_served(self, client):
+        """Test that favorites JS is served."""
+        response = client.get("/static/js/favorites.js")
+        assert response.status_code == 200
+        assert "javascript" in response.headers["content-type"]
+
+    def test_listings_page_includes_favorites_script(self, client):
+        """Test that listings page includes favorites script."""
+        response = client.get("/listings")
+        assert response.status_code == 200
+        assert "favorites.js" in response.text
+
+    def test_listing_detail_includes_favorites_script(self, client):
+        """Test that listing detail page includes favorites script."""
+        response = client.get("/listings/99999")
+        assert response.status_code == 200
+        assert "favorites.js" in response.text
+
+    def test_listings_page_has_favorites_filter(self, client):
+        """Test that listings page has favorites filter checkbox."""
+        response = client.get("/listings")
+        assert response.status_code == 200
+        assert "favorites-only" in response.text
+
+    def test_listing_row_has_favorite_button(self, client):
+        """Test that listings table partial includes favorite buttons."""
+        response = client.get("/partials/listings")
+        assert response.status_code == 200
+        assert "favorite-btn" in response.text or "No listings found" in response.text

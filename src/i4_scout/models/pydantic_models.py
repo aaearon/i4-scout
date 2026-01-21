@@ -205,3 +205,37 @@ class ScrapeJobRead(BaseModel):
     error_message: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class DocumentRead(BaseModel):
+    """Listing document data as read from the database."""
+
+    id: int
+    listing_id: int
+    filename: str = Field(..., description="UUID-based storage filename")
+    original_filename: str = Field(..., description="Original user-uploaded filename")
+    file_path: str = Field(..., description="Relative path from data/documents/")
+    file_size_bytes: int = Field(..., ge=0, description="File size in bytes")
+    mime_type: str = Field(default="application/pdf")
+    extracted_text: Optional[str] = Field(None, description="Extracted text from PDF")
+    uploaded_at: datetime
+    processed_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class EnrichmentResult(BaseModel):
+    """Result of enriching a listing with options from a PDF document."""
+
+    listing_id: int
+    document_id: int
+    options_found: list[str] = Field(
+        default_factory=list, description="All options found in the PDF"
+    )
+    new_options_added: list[str] = Field(
+        default_factory=list, description="Options not previously matched on the listing"
+    )
+    score_before: float = Field(..., ge=0, le=100, description="Match score before enrichment")
+    score_after: float = Field(..., ge=0, le=100, description="Match score after enrichment")
+    is_qualified_before: bool = Field(..., description="Qualification status before enrichment")
+    is_qualified_after: bool = Field(..., description="Qualification status after enrichment")

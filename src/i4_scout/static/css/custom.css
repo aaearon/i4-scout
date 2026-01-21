@@ -91,6 +91,12 @@ table {
 table th,
 table td {
     white-space: nowrap;
+    padding: 0.25rem 0.4rem;
+    font-size: 0.875rem;
+}
+
+table th {
+    padding: 0.3rem 0.4rem;
 }
 
 table td.wrap {
@@ -132,10 +138,10 @@ tr[data-href]:hover {
 /* Filter form layout */
 .filter-form {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.5rem;
     align-items: end;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
 }
 
 .filter-form .filter-group {
@@ -144,13 +150,22 @@ tr[data-href]:hover {
 }
 
 .filter-form label {
-    font-size: 0.875rem;
-    margin-bottom: 0.25rem;
+    font-size: 0.75rem;
+    margin-bottom: 0.15rem;
 }
 
 .filter-form input,
 .filter-form select {
     margin-bottom: 0;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.8rem;
+    height: auto;
+}
+
+.filter-form button {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8rem;
+    height: auto;
 }
 
 /* Search debounce indicator */
@@ -547,7 +562,8 @@ footer {
 .options-filter-details {
     border: 1px solid var(--pico-muted-border-color);
     border-radius: var(--pico-border-radius);
-    padding: 0.5rem;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.8rem;
 }
 
 .options-filter-details summary {
@@ -579,14 +595,14 @@ footer {
 }
 
 .options-filter-content {
-    margin-top: 0.75rem;
+    margin-top: 0.5rem;
 }
 
 .options-match-mode {
     display: flex;
     gap: 1rem;
-    margin-bottom: 0.75rem;
-    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
 }
 
 .options-match-mode label {
@@ -603,29 +619,29 @@ footer {
 }
 
 .options-section {
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
 }
 
 .options-section strong {
     display: block;
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     text-transform: uppercase;
     color: var(--pico-muted-color);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
     letter-spacing: 0.05em;
 }
 
 .options-checkbox-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 0.25rem;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 0.15rem;
 }
 
 .option-checkbox {
     display: flex;
     align-items: center;
-    gap: 0.35rem;
-    font-size: 0.875rem;
+    gap: 0.25rem;
+    font-size: 0.75rem;
     cursor: pointer;
     margin-bottom: 0;
 }
@@ -633,6 +649,294 @@ footer {
 .option-checkbox input[type="checkbox"] {
     margin: 0;
     width: auto;
+}
+
+/* Filter buttons group */
+.filter-buttons {
+    display: flex;
+    gap: 0.35rem;
+    flex-direction: row;
+    align-items: end;
+}
+
+.filter-buttons button {
+    margin-bottom: 0;
+    white-space: nowrap;
+}
+
+/* Title cell with actions */
+.title-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 300px;
+}
+
+.title-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.title-actions {
+    flex-shrink: 0;
+    display: flex;
+    margin-left: auto;
+}
+
+.action-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    margin: 0 0.1rem;
+    border-radius: var(--pico-border-radius);
+    text-decoration: none;
+    font-size: 0.875rem;
+    opacity: 0.7;
+    transition: background-color 0.2s, opacity 0.2s;
+}
+
+.action-link:hover {
+    background-color: var(--pico-secondary-background);
+    opacity: 1;
+}
+
+.action-link-external {
+    color: #3498db;
+}
+
+/* ===== Compare Feature Styles ===== */
+
+/* Compare bar - fixed at bottom */
+.compare-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: var(--pico-card-background-color);
+    border-top: 1px solid var(--pico-muted-border-color);
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+    padding: 0.75rem 1rem;
+}
+
+.compare-bar-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.compare-bar-info {
+    font-size: 0.9rem;
+}
+
+.compare-max-hint {
+    color: var(--pico-muted-color);
+    font-size: 0.8rem;
+}
+
+.compare-bar-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.compare-bar-actions button {
+    margin: 0;
+    padding: 0.4rem 1rem;
+    font-size: 0.85rem;
+}
+
+/* Add padding to main when compare bar is visible */
+body:has(.compare-bar:not([hidden])) main {
+    padding-bottom: 5rem;
+}
+
+/* Comparison page grid layout */
+.compare-section {
+    margin-bottom: 2rem;
+}
+
+.compare-section h3 {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--pico-muted-border-color);
+}
+
+.compare-grid {
+    display: grid;
+    grid-template-columns: 140px repeat(var(--columns), 1fr);
+    gap: 0;
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    overflow: hidden;
+}
+
+.compare-row {
+    display: contents;
+}
+
+.compare-row:nth-child(odd) .compare-label,
+.compare-row:nth-child(odd) .compare-value {
+    background: var(--pico-card-sectioning-background-color);
+}
+
+.compare-label {
+    padding: 0.6rem 0.75rem;
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--pico-muted-color);
+    border-right: 1px solid var(--pico-muted-border-color);
+    display: flex;
+    align-items: center;
+}
+
+.compare-value {
+    padding: 0.6rem 0.75rem;
+    text-align: center;
+    font-size: 0.875rem;
+    border-right: 1px solid var(--pico-muted-border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.compare-value:last-child {
+    border-right: none;
+}
+
+.compare-value a {
+    text-decoration: none;
+}
+
+.compare-value a:hover {
+    text-decoration: underline;
+}
+
+/* Highlight best values */
+.highlight-best {
+    background: color-mix(in srgb, var(--pico-primary) 15%, transparent) !important;
+    font-weight: 600;
+}
+
+/* Option badges for comparison */
+.option-badge {
+    display: inline-block;
+    padding: 0.15em 0.5em;
+    border-radius: 0.25em;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.option-badge.option-has {
+    background: rgba(46, 204, 113, 0.2);
+    color: #2ecc71;
+}
+
+.option-badge.option-missing-required {
+    background: rgba(231, 76, 60, 0.15);
+    color: #e74c3c;
+}
+
+.option-badge.option-nice-has {
+    background: rgba(52, 152, 219, 0.2);
+    color: #3498db;
+}
+
+.option-badge.option-nice-missing {
+    color: var(--pico-muted-color);
+}
+
+/* Compare page footer */
+.compare-footer {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--pico-muted-border-color);
+}
+
+.compare-footer a,
+.compare-footer button {
+    margin: 0;
+}
+
+/* Checkbox column in listings table */
+.listing-checkbox {
+    margin: 0;
+    cursor: pointer;
+}
+
+#select-all {
+    margin: 0;
+    cursor: pointer;
+}
+
+/* ===== Favorites Feature Styles ===== */
+
+/* Favorite cell in table */
+.favorite-cell {
+    text-align: center;
+    padding: 0 !important;
+}
+
+/* Favorite button (small, in listing row) */
+.favorite-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 0.1rem;
+    margin: 0;
+    color: var(--pico-muted-color);
+    transition: color 0.15s;
+    line-height: 1;
+}
+
+.favorite-btn:hover {
+    color: #f1c40f;
+}
+
+.favorite-btn.is-favorite {
+    color: #f1c40f;
+}
+
+/* Large favorite button (detail page) */
+.favorite-btn-large {
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    background: var(--pico-card-background-color);
+}
+
+.favorite-btn-large:hover {
+    border-color: #f1c40f;
+    background: rgba(241, 196, 15, 0.1);
+}
+
+.favorite-btn-large.is-favorite {
+    border-color: #f1c40f;
+    background: rgba(241, 196, 15, 0.15);
+}
+
+/* Detail page actions */
+.detail-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+/* Favorites count in filter */
+#favorites-count {
+    color: #f1c40f;
+    font-weight: 600;
 }
 
 /* Mobile adjustments */
@@ -656,5 +960,156 @@ footer {
 
     .options-checkbox-grid {
         grid-template-columns: 1fr;
+    }
+
+    /* Compare bar mobile */
+    .compare-bar-content {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .compare-bar-actions {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Compare grid mobile - scroll horizontally */
+    .compare-grid {
+        grid-template-columns: 100px repeat(var(--columns), minmax(120px, 1fr));
+        overflow-x: auto;
+    }
+
+    .compare-footer {
+        flex-direction: column;
+    }
+}
+
+/* ===== Document Section Styles ===== */
+
+.document-section {
+    margin-bottom: 1.5rem;
+}
+
+.document-current {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.document-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.document-icon {
+    font-size: 2rem;
+    opacity: 0.7;
+}
+
+.document-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.document-filename {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.document-meta {
+    font-size: 0.75rem;
+    color: var(--pico-muted-color);
+}
+
+.document-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.document-actions button,
+.document-actions a.button {
+    margin: 0;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+}
+
+.document-upload-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: end;
+}
+
+.document-upload-form input[type="file"] {
+    margin-bottom: 0;
+    font-size: 0.85rem;
+}
+
+.document-upload-form button {
+    margin: 0;
+}
+
+.document-upload-prompt {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 1rem;
+    background: var(--pico-card-sectioning-background-color);
+    border-radius: var(--pico-border-radius);
+    margin-bottom: 0.5rem;
+}
+
+.document-upload-prompt p {
+    margin: 0;
+    color: var(--pico-muted-color);
+    font-size: 0.9rem;
+}
+
+/* PDF badge for options from PDF */
+.badge-pdf {
+    background-color: #9b59b6;
+    color: white;
+    font-size: 0.65rem;
+    padding: 0.1em 0.4em;
+    margin-left: 0.35rem;
+    vertical-align: middle;
+}
+
+/* Option card with PDF source - add subtle accent */
+.option-card-pdf {
+    position: relative;
+}
+
+.option-card-pdf::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 0;
+    height: 0;
+    border-top: 12px solid #9b59b6;
+    border-left: 12px solid transparent;
+}
+
+/* Mobile adjustments for document section */
+@media (max-width: 768px) {
+    .document-current {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .document-actions {
+        justify-content: flex-start;
+    }
+
+    .document-upload-form {
+        flex-direction: column;
+        align-items: stretch;
     }
 }

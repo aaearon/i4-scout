@@ -9,12 +9,24 @@
         {% set sort_indicator = ' &#9660;' %}
     {% endif %}
 {% endif %}
+{% set sort_query = 'sort_by=' ~ field ~ '&sort_order=' ~ new_order ~ '&limit=' ~ limit ~ '&offset=0' %}
+{% if filters.source %}{% set sort_query = sort_query ~ '&source=' ~ filters.source %}{% endif %}
+{% if filters.qualified_only %}{% set sort_query = sort_query ~ '&qualified_only=true' %}{% endif %}
+{% if filters.min_score %}{% set sort_query = sort_query ~ '&min_score=' ~ filters.min_score %}{% endif %}
+{% if filters.price_min %}{% set sort_query = sort_query ~ '&price_min=' ~ filters.price_min %}{% endif %}
+{% if filters.price_max %}{% set sort_query = sort_query ~ '&price_max=' ~ filters.price_max %}{% endif %}
+{% if filters.mileage_max %}{% set sort_query = sort_query ~ '&mileage_max=' ~ filters.mileage_max %}{% endif %}
+{% if filters.year_min %}{% set sort_query = sort_query ~ '&year_min=' ~ filters.year_min %}{% endif %}
+{% if filters.country %}{% set sort_query = sort_query ~ '&country=' ~ filters.country %}{% endif %}
+{% if filters.search %}{% set sort_query = sort_query ~ '&search=' ~ filters.search %}{% endif %}
+{% if filters.has_options %}{% for opt in filters.has_options %}{% set sort_query = sort_query ~ '&has_option=' ~ (opt | urlencode) %}{% endfor %}{% endif %}
+{% if filters.options_match %}{% set sort_query = sort_query ~ '&options_match=' ~ filters.options_match %}{% endif %}
 <th
     class="sortable-header {% if is_active %}sort-active{% endif %}"
     style="cursor: pointer; {% if align == 'right' %}text-align: right;{% endif %}"
-    hx-get="/partials/listings?sort_by={{ field }}&sort_order={{ new_order }}&limit={{ limit }}&offset=0{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.qualified_only %}&qualified_only=true{% endif %}{% if filters.min_score %}&min_score={{ filters.min_score }}{% endif %}{% if filters.price_min %}&price_min={{ filters.price_min }}{% endif %}{% if filters.price_max %}&price_max={{ filters.price_max }}{% endif %}{% if filters.mileage_max %}&mileage_max={{ filters.mileage_max }}{% endif %}{% if filters.year_min %}&year_min={{ filters.year_min }}{% endif %}{% if filters.country %}&country={{ filters.country }}{% endif %}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.has_options %}{% for opt in filters.has_options %}&has_option={{ opt | urlencode }}{% endfor %}{% endif %}{% if filters.options_match %}&options_match={{ filters.options_match }}{% endif %}"
+    hx-get="/partials/listings?{{ sort_query }}"
     hx-target="#listings-table"
-    hx-push-url="true"
+    hx-push-url="/listings?{{ sort_query }}"
 >{{ label }}{{ sort_indicator | safe }}</th>
 {% endmacro %}
 
@@ -23,6 +35,10 @@
     <table>
         <thead>
             <tr>
+                <th style="width: 2.5rem;">
+                    <input type="checkbox" id="select-all" title="Select all visible">
+                </th>
+                <th style="width: 1.5rem;" title="Favorites"></th>
                 <th>ID</th>
                 <th>Title</th>
                 {{ sort_header('price', 'Price', 'right') }}

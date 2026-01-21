@@ -70,6 +70,9 @@ class Listing(Base):
     price_history: Mapped[list["PriceHistory"]] = relationship(
         "PriceHistory", back_populates="listing", cascade="all, delete-orphan"
     )
+    documents: Mapped[list["ListingDocument"]] = relationship(
+        "ListingDocument", back_populates="listing", cascade="all, delete-orphan"
+    )
 
     @property
     def matched_options(self) -> list[str]:
@@ -100,6 +103,58 @@ class Option(Base):
         return f"<Option(id={self.id}, name='{self.canonical_name}')>"
 
 
+class ListingDocument(Base):
+    """Uploaded PDF document for a listing."""
+
+    __tablename__ = "listing_documents"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    listing_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("listings.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    filename: Mapped[str] = mapped_column(
+        String(255), nullable=False
+    )  # UUID-based storage name
+    original_filename: Mapped[str] = mapped_column(
+        String(255), nullable=False
+    )  # User-visible name
+    file_path: Mapped[str] = mapped_column(
+        String(500), nullable=False
+    )  # Relative path from data/documents/
+    file_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    mime_type: Mapped[str] = mapped_column(
+        String(50), default="application/pdf", nullable=False
+    )
+    extracted_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    options_found_json: Mapped[Optional[str]] = mapped_column(
+        Text, nullable=True
+    )  # JSON list of all options found in PDF
+    uploaded_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, nullable=False
+    )
+    processed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    # Relationships
+    listing: Mapped["Listing"] = relationship("Listing", back_populates="documents")
+    options: Mapped[list["ListingOption"]] = relationship(
+        "ListingOption", back_populates="document"
+    )
+
+    @property
+    def options_found(self) -> list[str]:
+        """Get list of options found in the PDF."""
+        if not self.options_found_json:
+            return []
+        import json
+        try:
+            return json.loads(self.options_found_json)
+        except (json.JSONDecodeError, TypeError):
+            return []
+
+    def __repr__(self) -> str:
+        return f"<ListingDocument(id={self.id}, listing_id={self.listing_id}, filename='{self.original_filename}')>"
+
+
 class ListingOption(Base):
     """Association between listings and matched options."""
 
@@ -117,9 +172,20 @@ class ListingOption(Base):
     )  # Original text that matched
     confidence: Mapped[float] = mapped_column(Float, default=1.0)  # Match confidence 0-1
 
+    # Source tracking for PDF enrichment
+    source: Mapped[str] = mapped_column(
+        String(20), default="scrape", nullable=False
+    )  # 'scrape' or 'pdf'
+    document_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("listing_documents.id", ondelete="SET NULL"), nullable=True
+    )
+
     # Relationships
     listing: Mapped["Listing"] = relationship("Listing", back_populates="options")
     option: Mapped["Option"] = relationship("Option", back_populates="listing_options")
+    document: Mapped[Optional["ListingDocument"]] = relationship(
+        "ListingDocument", back_populates="options"
+    )
 
 
 class PriceHistory(Base):

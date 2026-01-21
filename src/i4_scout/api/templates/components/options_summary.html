@@ -1,0 +1,24 @@
+<div class="options-summary">
+    <div class="options-summary-header">
+        <span class="required-count">
+            {{ options_status.required|selectattr('has')|list|length }}/{{ options_status.required|length }} required
+        </span>
+        <span class="nice-count">
+            +{{ options_status.nice_to_have|selectattr('has')|list|length }} nice
+        </span>
+    </div>
+    <div class="options-summary-grid">
+        {% for opt in options_status.required %}
+        <span class="opt-pill {% if opt.has %}opt-has{% else %}opt-missing{% endif %}">
+            {% if opt.has %}&#10003;{% else %}&#10007;{% endif %} {{ opt.name }}
+        </span>
+        {% endfor %}
+    </div>
+    {% if options_status.nice_to_have|selectattr('has')|list|length > 0 %}
+    <div class="options-summary-nice">
+        {% for opt in options_status.nice_to_have if opt.has %}
+        <span class="opt-pill opt-nice-has">&#10003; {{ opt.name }}</span>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>

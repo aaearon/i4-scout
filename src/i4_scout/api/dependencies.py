@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from i4_scout.config import load_options_config, load_search_filters
 from i4_scout.database.engine import get_session_factory
 from i4_scout.models.pydantic_models import OptionsConfig, SearchFilters
+from i4_scout.services.document_service import DocumentService
 from i4_scout.services.listing_service import ListingService
 
 # Template directory path
@@ -79,9 +80,26 @@ def get_templates() -> Jinja2Templates:
     return _templates
 
 
+def get_document_service(
+    session: Annotated[Session, Depends(get_db)],
+    options_config: Annotated[OptionsConfig, Depends(get_options_config)],
+) -> DocumentService:
+    """Dependency that provides a DocumentService instance.
+
+    Args:
+        session: Database session from get_db dependency.
+        options_config: Options configuration for matching.
+
+    Returns:
+        DocumentService instance.
+    """
+    return DocumentService(session, options_config)
+
+
 # Type aliases for cleaner dependency injection
 DbSession = Annotated[Session, Depends(get_db)]
 ListingServiceDep = Annotated[ListingService, Depends(get_listing_service)]
+DocumentServiceDep = Annotated[DocumentService, Depends(get_document_service)]
 OptionsConfigDep = Annotated[OptionsConfig, Depends(get_options_config)]
 SearchFiltersDep = Annotated[SearchFilters, Depends(get_search_filters)]
 TemplatesDep = Annotated[Jinja2Templates, Depends(get_templates)]

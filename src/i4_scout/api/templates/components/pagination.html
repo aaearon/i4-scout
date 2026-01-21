@@ -1,3 +1,6 @@
+{# Build query string macro for reuse #}
+{% macro build_query(offset_val) %}offset={{ offset_val }}&limit={{ limit }}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.qualified_only %}&qualified_only=true{% endif %}{% if filters.min_score %}&min_score={{ filters.min_score }}{% endif %}{% if filters.price_min %}&price_min={{ filters.price_min }}{% endif %}{% if filters.price_max %}&price_max={{ filters.price_max }}{% endif %}{% if filters.mileage_max %}&mileage_max={{ filters.mileage_max }}{% endif %}{% if filters.year_min %}&year_min={{ filters.year_min }}{% endif %}{% if filters.country %}&country={{ filters.country }}{% endif %}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.has_options %}{% for opt in filters.has_options %}&has_option={{ opt | urlencode }}{% endfor %}{% endif %}{% if filters.options_match %}&options_match={{ filters.options_match }}{% endif %}{% if filters.sort_by %}&sort_by={{ filters.sort_by }}{% endif %}{% if filters.sort_order %}&sort_order={{ filters.sort_order }}{% endif %}{% endmacro %}
+
 <div class="pagination">
     <div class="pagination-info">
         Showing {{ offset + 1 }} - {{ offset + count }} of {{ total }} listings
@@ -5,9 +8,9 @@
     <div class="pagination-links">
         {% if offset > 0 %}
         <button
-            hx-get="/partials/listings?offset={{ offset - limit }}&limit={{ limit }}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.qualified_only %}&qualified_only=true{% endif %}{% if filters.min_score %}&min_score={{ filters.min_score }}{% endif %}{% if filters.price_min %}&price_min={{ filters.price_min }}{% endif %}{% if filters.price_max %}&price_max={{ filters.price_max }}{% endif %}{% if filters.mileage_max %}&mileage_max={{ filters.mileage_max }}{% endif %}{% if filters.year_min %}&year_min={{ filters.year_min }}{% endif %}{% if filters.country %}&country={{ filters.country }}{% endif %}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.has_options %}{% for opt in filters.has_options %}&has_option={{ opt | urlencode }}{% endfor %}{% endif %}{% if filters.options_match %}&options_match={{ filters.options_match }}{% endif %}{% if filters.sort_by %}&sort_by={{ filters.sort_by }}{% endif %}{% if filters.sort_order %}&sort_order={{ filters.sort_order }}{% endif %}"
+            hx-get="/partials/listings?{{ build_query(offset - limit) }}"
             hx-target="#listings-table"
-            hx-push-url="true"
+            hx-push-url="/listings?{{ build_query(offset - limit) }}"
         >
             Previous
         </button>
@@ -17,9 +20,9 @@
 
         {% if offset + count < total %}
         <button
-            hx-get="/partials/listings?offset={{ offset + limit }}&limit={{ limit }}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.qualified_only %}&qualified_only=true{% endif %}{% if filters.min_score %}&min_score={{ filters.min_score }}{% endif %}{% if filters.price_min %}&price_min={{ filters.price_min }}{% endif %}{% if filters.price_max %}&price_max={{ filters.price_max }}{% endif %}{% if filters.mileage_max %}&mileage_max={{ filters.mileage_max }}{% endif %}{% if filters.year_min %}&year_min={{ filters.year_min }}{% endif %}{% if filters.country %}&country={{ filters.country }}{% endif %}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.has_options %}{% for opt in filters.has_options %}&has_option={{ opt | urlencode }}{% endfor %}{% endif %}{% if filters.options_match %}&options_match={{ filters.options_match }}{% endif %}{% if filters.sort_by %}&sort_by={{ filters.sort_by }}{% endif %}{% if filters.sort_order %}&sort_order={{ filters.sort_order }}{% endif %}"
+            hx-get="/partials/listings?{{ build_query(offset + limit) }}"
             hx-target="#listings-table"
-            hx-push-url="true"
+            hx-push-url="/listings?{{ build_query(offset + limit) }}"
         >
             Next
         </button>

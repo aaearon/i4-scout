@@ -7,7 +7,8 @@
         <span class="badge badge-not-qualified">Not Qualified</span>
         {% endif %}
     </div>
-    <div>
+    <div class="detail-actions">
+        <button type="button" class="favorite-btn favorite-btn-large" data-listing-id="{{ listing.id }}" onclick="toggleFavorite({{ listing.id }}, event)" title="Add to favorites" aria-pressed="false">&#x2606; Favorite</button>
         <a href="{{ listing.url }}" target="_blank" rel="noopener noreferrer">
             <button class="secondary">View on Source</button>
         </a>
@@ -85,9 +86,12 @@
     {% if options_status.required %}
     <div class="options-card-grid">
         {% for opt in options_status.required %}
-        <div class="option-card {% if opt.has %}option-card-has{% else %}option-card-missing{% endif %}">
+        <div class="option-card {% if opt.has %}option-card-has{% else %}option-card-missing{% endif %}{% if opt.in_pdf %} option-card-pdf{% endif %}">
             <span class="option-icon">{% if opt.has %}&#10003;{% else %}&#10007;{% endif %}</span>
-            <span class="option-name">{{ opt.name }}</span>
+            <span class="option-name">
+                {{ opt.name }}
+                {% if opt.in_pdf %}<span class="badge badge-pdf" title="Found in dealer PDF">PDF</span>{% endif %}
+            </span>
         </div>
         {% endfor %}
     </div>
@@ -102,9 +106,12 @@
     {% if options_status.nice_to_have %}
     <div class="options-card-grid">
         {% for opt in options_status.nice_to_have %}
-        <div class="option-card {% if opt.has %}option-card-nice-has{% else %}option-card-nice-missing{% endif %}">
+        <div class="option-card {% if opt.has %}option-card-nice-has{% else %}option-card-nice-missing{% endif %}{% if opt.in_pdf %} option-card-pdf{% endif %}">
             <span class="option-icon">{% if opt.has %}&#10003;{% else %}&#10007;{% endif %}</span>
-            <span class="option-name">{{ opt.name }}</span>
+            <span class="option-name">
+                {{ opt.name }}
+                {% if opt.in_pdf %}<span class="badge badge-pdf" title="Found in dealer PDF">PDF</span>{% endif %}
+            </span>
         </div>
         {% endfor %}
     </div>
@@ -165,6 +172,24 @@
         </div>
     </div>
 </article>
+
+<!-- Dealer Document -->
+<div
+    id="document-section"
+    hx-get="/partials/listing/{{ listing.id }}/document"
+    hx-trigger="load"
+    hx-swap="innerHTML"
+>
+    <article class="document-section">
+        <header>
+            Dealer Document
+            <span class="htmx-indicator"><span class="spinner"></span></span>
+        </header>
+        <div class="empty-state">
+            <p>Loading document section...</p>
+        </div>
+    </article>
+</div>
 
 <!-- Delete Button -->
 <article>

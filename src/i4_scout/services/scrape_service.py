@@ -258,8 +258,8 @@ class ScrapeService:
         listing, created = self._repo.upsert_listing(create_data)
 
         if not created:
-            # Clear existing options for re-scraped listings
-            self._repo.clear_listing_options(listing.id)
+            # Clear existing scrape-sourced options (preserve PDF-sourced options)
+            self._repo.clear_listing_options(listing.id, source="scrape")
 
         # Store matched options
         all_matched = match_result.matched_required + match_result.matched_nice_to_have

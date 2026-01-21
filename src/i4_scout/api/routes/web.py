@@ -2,7 +2,8 @@
 
 from fastapi import APIRouter, Query, Request
 
-from i4_scout.api.dependencies import ListingServiceDep, OptionsConfigDep, TemplatesDep
+from i4_scout.api.dependencies import DbSession, ListingServiceDep, OptionsConfigDep, TemplatesDep
+from i4_scout.database.repository import DocumentRepository
 
 router = APIRouter()
 
@@ -75,6 +76,7 @@ async def listings_page(
 async def listing_detail_page(
     request: Request,
     listing_id: int,
+    session: DbSession,
     service: ListingServiceDep,
     options_config: OptionsConfigDep,
     templates: TemplatesDep,
@@ -82,21 +84,30 @@ async def listing_detail_page(
     """Render the listing detail page."""
     listing = service.get_listing(listing_id)
 
-    # Build options status for display
+    # Build options status for display (with PDF indicator for options found in document)
     options_status = None
     if listing is not None:
+        # Get document to check which options were found in PDF
+        doc_repo = DocumentRepository(session)
+        document = doc_repo.get_document_for_listing(listing_id)
+        pdf_options_set: set[str] = set()
+        if document:
+            pdf_options_set = set(document.options_found)
+
         matched_set = set(listing.matched_options)
         required_options = []
         for opt in options_config.required:
             required_options.append({
                 "name": opt.name,
                 "has": opt.name in matched_set,
+                "in_pdf": opt.name in pdf_options_set,
             })
         nice_to_have_options = []
         for opt in options_config.nice_to_have:
             nice_to_have_options.append({
                 "name": opt.name,
                 "has": opt.name in matched_set,
+                "in_pdf": opt.name in pdf_options_set,
             })
         options_status = {
             "required": required_options,
@@ -108,6 +119,74 @@ async def listing_detail_page(
         request=request,
         name="pages/listing_detail.html",
         context={"listing": listing, "options_status": options_status},
+    )
+
+
+@router.get("/compare")
+async def compare_page(
+    request: Request,
+    templates: TemplatesDep,
+    service: ListingServiceDep,
+    options_config: OptionsConfigDep,
+    ids: str = Query("", description="Comma-separated listing IDs"),
+):
+    """Render the listing comparison page."""
+    # Parse IDs from query string
+    listing_ids = []
+    if ids:
+        for id_str in ids.split(","):
+            id_str = id_str.strip()
+            if id_str.isdigit():
+                listing_ids.append(int(id_str))
+
+    # Limit to 4 listings
+    listing_ids = listing_ids[:4]
+
+    # Fetch listings
+    listings = []
+    for listing_id in listing_ids:
+        listing = service.get_listing(listing_id)
+        if listing:
+            listings.append(listing)
+
+    # Calculate min/max values for highlighting
+    min_price = None
+    min_mileage = None
+    max_score = None
+    max_year = None
+
+    if listings:
+        prices = [lst.price for lst in listings if lst.price is not None]
+        mileages = [lst.mileage_km for lst in listings if lst.mileage_km is not None]
+        scores = [lst.match_score for lst in listings if lst.match_score is not None]
+        years = [lst.first_registration for lst in listings if lst.first_registration is not None]
+
+        if prices:
+            min_price = min(prices)
+        if mileages:
+            min_mileage = min(mileages)
+        if scores:
+            max_score = max(scores)
+        if years:
+            max_year = max(years)
+
+    # Build options by listing lookup
+    options_by_listing = {}
+    for listing in listings:
+        options_by_listing[listing.id] = set(listing.matched_options)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="pages/compare.html",
+        context={
+            "listings": listings,
+            "options_config": options_config,
+            "options_by_listing": options_by_listing,
+            "min_price": min_price,
+            "min_mileage": min_mileage,
+            "max_score": max_score,
+            "max_year": max_year,
+        },
     )
 
 

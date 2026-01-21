@@ -1,10 +1,16 @@
 """HTMX partial routes for dynamic content updates."""
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Query, Request, UploadFile
 from fastapi.responses import HTMLResponse
 from sqlalchemy import func, select
 
-from i4_scout.api.dependencies import DbSession, ListingServiceDep, OptionsConfigDep, TemplatesDep
+from i4_scout.api.dependencies import (
+    DbSession,
+    DocumentServiceDep,
+    ListingServiceDep,
+    OptionsConfigDep,
+    TemplatesDep,
+)
 from i4_scout.database.repository import ListingRepository
 from i4_scout.models.db_models import Listing
 from i4_scout.models.pydantic_models import Source
@@ -283,4 +289,119 @@ async def scrape_job_partial(
         request=request,
         name="components/scrape_job_row.html",
         context={"job": job},
+    )
+
+
+@router.get("/listing/{listing_id}/document")
+async def listing_document_partial(
+    request: Request,
+    listing_id: int,
+    service: DocumentServiceDep,
+    templates: TemplatesDep,
+):
+    """Return document section HTML fragment."""
+    document = service.get_document(listing_id)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="components/document_section.html",
+        context={"listing_id": listing_id, "document": document},
+    )
+
+
+@router.post("/listing/{listing_id}/document")
+async def upload_document_partial(
+    request: Request,
+    listing_id: int,
+    file: UploadFile,
+    service: DocumentServiceDep,
+    templates: TemplatesDep,
+):
+    """Upload document and return updated HTML fragment."""
+    from i4_scout.services.document_service import InvalidFileError, ListingNotFoundError
+
+    error_message = None
+    enrichment_result = None
+
+    try:
+        if not file.filename:
+            error_message = "No filename provided"
+        else:
+            content = await file.read()
+            service.upload_document(
+                listing_id=listing_id,
+                file_content=content,
+                original_filename=file.filename,
+            )
+            enrichment_result = service.process_document(listing_id)
+    except ListingNotFoundError as e:
+        error_message = str(e)
+    except InvalidFileError as e:
+        error_message = str(e)
+    except Exception as e:
+        error_message = f"Upload failed: {e}"
+
+    document = service.get_document(listing_id)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="components/document_section.html",
+        context={
+            "listing_id": listing_id,
+            "document": document,
+            "error_message": error_message,
+            "enrichment_result": enrichment_result,
+        },
+    )
+
+
+@router.delete("/listing/{listing_id}/document")
+async def delete_document_partial(
+    request: Request,
+    listing_id: int,
+    service: DocumentServiceDep,
+    templates: TemplatesDep,
+):
+    """Delete document and return updated HTML fragment."""
+    service.delete_document(listing_id)
+    document = service.get_document(listing_id)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="components/document_section.html",
+        context={"listing_id": listing_id, "document": document},
+    )
+
+
+@router.post("/listing/{listing_id}/document/reprocess")
+async def reprocess_document_partial(
+    request: Request,
+    listing_id: int,
+    service: DocumentServiceDep,
+    templates: TemplatesDep,
+):
+    """Reprocess document and return updated HTML fragment."""
+    from i4_scout.services.document_service import DocumentNotFoundError
+
+    error_message = None
+    enrichment_result = None
+
+    try:
+        enrichment_result = service.process_document(listing_id)
+    except DocumentNotFoundError as e:
+        error_message = str(e)
+    except Exception as e:
+        error_message = f"Reprocess failed: {e}"
+
+    document = service.get_document(listing_id)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="components/document_section.html",
+        context={
+            "listing_id": listing_id,
+            "document": document,
+            "error_message": error_message,
+            "enrichment_result": enrichment_result,
+        },
     )

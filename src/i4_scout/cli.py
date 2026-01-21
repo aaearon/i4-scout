@@ -19,7 +19,12 @@ from i4_scout.database.repository import ListingRepository
 from i4_scout.export.csv_exporter import export_to_csv
 from i4_scout.export.json_exporter import export_to_json
 from i4_scout.models.pydantic_models import ScrapeProgress, Source
-from i4_scout.services import ListingService, ScrapeService
+from i4_scout.services import DocumentService, ListingService, ScrapeService
+from i4_scout.services.document_service import (
+    DocumentNotFoundError,
+    InvalidFileError,
+    ListingNotFoundError,
+)
 
 app = typer.Typer(
     name="i4-scout",
@@ -503,6 +508,118 @@ def export(
             export_to_json(listings, output)
 
         console.print(f"[green]Export complete: {output}[/green]")
+
+
+@app.command()
+def enrich(
+    listing_id: int = typer.Argument(..., help="Listing ID to enrich."),
+    pdf_path: Path = typer.Argument(..., help="Path to dealer PDF file."),
+    config: Path | None = typer.Option(
+        None,
+        "--config",
+        "-c",
+        help="Path to options config YAML file.",
+    ),
+    json_output: bool = typer.Option(
+        False,
+        "--json",
+        help="Output as JSON (for LLM/programmatic consumption).",
+    ),
+) -> None:
+    """Enrich a listing with options from a dealer PDF file.
+
+    Extracts text and option codes from the PDF, matches against options config,
+    adds new options to the listing, and recalculates the match score.
+    """
+    # Load config
+    options_config = load_options_config(config)
+
+    # Validate PDF path
+    if not pdf_path.exists():
+        if json_output:
+            output_json({"error": f"PDF file not found: {pdf_path}"})
+        else:
+            console.print(f"[red]PDF file not found: {pdf_path}[/red]")
+        raise typer.Exit(1)
+
+    if not pdf_path.suffix.lower() == ".pdf":
+        if json_output:
+            output_json({"error": "File must have .pdf extension"})
+        else:
+            console.print("[red]File must have .pdf extension[/red]")
+        raise typer.Exit(1)
+
+    # Ensure database exists
+    init_db()
+
+    if not json_output:
+        console.print(f"[bold blue]Enriching listing #{listing_id} with {pdf_path.name}[/bold blue]")
+
+    try:
+        with get_session() as session:
+            service = DocumentService(session, options_config)
+
+            # Read PDF content
+            pdf_content = pdf_path.read_bytes()
+
+            # Upload document
+            service.upload_document(
+                listing_id=listing_id,
+                file_content=pdf_content,
+                original_filename=pdf_path.name,
+            )
+
+            # Process document
+            result = service.process_document(listing_id)
+
+            if json_output:
+                output_json({
+                    "listing_id": result.listing_id,
+                    "document_id": result.document_id,
+                    "options_found": result.options_found,
+                    "new_options_added": result.new_options_added,
+                    "score_before": result.score_before,
+                    "score_after": result.score_after,
+                    "is_qualified_before": result.is_qualified_before,
+                    "is_qualified_after": result.is_qualified_after,
+                })
+            else:
+                console.print()
+                console.print("[green]Enrichment complete![/green]")
+                console.print(f"  Options found in PDF: {len(result.options_found)}")
+                if result.options_found:
+                    console.print(f"    {', '.join(result.options_found)}")
+                console.print(f"  New options added: {len(result.new_options_added)}")
+                if result.new_options_added:
+                    console.print(f"    {', '.join(result.new_options_added)}")
+                console.print(f"  Score: {result.score_before:.1f}% -> {result.score_after:.1f}%")
+
+                # Qualification status change
+                if result.is_qualified_after and not result.is_qualified_before:
+                    console.print("[bold green]  Listing is now QUALIFIED![/bold green]")
+                elif result.is_qualified_after:
+                    console.print("  Status: Qualified")
+                else:
+                    console.print("  Status: Not Qualified")
+
+    except ListingNotFoundError as e:
+        if json_output:
+            output_json({"error": str(e)})
+        else:
+            console.print(f"[red]{e}[/red]")
+        raise typer.Exit(1) from e
+    except InvalidFileError as e:
+        if json_output:
+            output_json({"error": str(e)})
+        else:
+            console.print(f"[red]{e}[/red]")
+        raise typer.Exit(1) from e
+    except Exception as e:
+        if json_output:
+            output_json({"error": f"Unexpected error: {e}"})
+        else:
+            console.print(f"[red]Unexpected error: {e}[/red]")
+        raise typer.Exit(1) from e
 
 
 @app.command()
