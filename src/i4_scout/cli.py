@@ -198,6 +198,11 @@ def scrape(
         "--no-cache",
         help="Disable HTML caching (cache is enabled by default).",
     ),
+    force_refresh: bool = typer.Option(
+        False,
+        "--force-refresh",
+        help="Force re-fetch detail pages for all listings (ignores skip optimization).",
+    ),
 ) -> None:
     """Scrape listings from the specified source."""
     # Load config
@@ -224,6 +229,8 @@ def scrape(
         console.print(f"  Page limit: {max_pages} (stops early if no more results)")
         console.print(f"  Headless: {headless}")
         console.print(f"  Cache: {'enabled' if use_cache else 'disabled'}")
+        if force_refresh:
+            console.print("  Force refresh: [yellow]enabled[/yellow] (re-fetching all details)")
         # Show active filters
         if search_filters.price_max_eur:
             console.print(f"  Max price: {search_filters.price_max_eur:,} EUR")
@@ -250,6 +257,7 @@ def scrape(
                     search_filters=search_filters,
                     headless=headless,
                     use_cache=use_cache,
+                    force_refresh=force_refresh,
                     progress_callback=progress_callback,
                 )
             )

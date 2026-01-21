@@ -85,6 +85,7 @@ class ScrapeService:
         search_filters: SearchFilters | None = None,
         headless: bool = True,
         use_cache: bool = True,
+        force_refresh: bool = False,
         progress_callback: Callable[[ScrapeProgress], None] | None = None,
     ) -> ScrapeResult:
         """Run the scraping process.
@@ -95,6 +96,7 @@ class ScrapeService:
             search_filters: Optional search filters to apply.
             headless: Run browser in headless mode.
             use_cache: Whether to use HTML caching.
+            force_refresh: Force re-fetch detail pages even if listing exists with same price.
             progress_callback: Optional callback for progress updates.
 
         Returns:
@@ -134,7 +136,7 @@ class ScrapeService:
                     # Process each listing
                     for listing_data in listings_data:
                         result = await self._process_listing(
-                            scraper, page, listing_data, source, use_cache
+                            scraper, page, listing_data, source, use_cache, force_refresh
                         )
 
                         total_found += 1
@@ -180,6 +182,7 @@ class ScrapeService:
         listing_data: dict[str, Any],
         source: Source,
         use_cache: bool,
+        force_refresh: bool = False,
     ) -> dict[str, str]:
         """Process a single listing from search results.
 
@@ -189,17 +192,24 @@ class ScrapeService:
             listing_data: Raw listing data from search.
             source: Source being scraped.
             use_cache: Whether to use caching.
+            force_refresh: Force re-fetch even if listing exists with same price.
 
         Returns:
             Dict with "status" key: "new", "updated", or "skipped".
         """
         url = listing_data.get("url")
         price = listing_data.get("price")
+        external_id = listing_data.get("external_id")
 
-        # Check if we can skip the detail fetch
-        if url and self._repo.listing_exists_with_price(url, price):
+        # Check if we can skip the detail fetch (checks by external_id first for cross-site dedup)
+        # Skip optimization is disabled when force_refresh is True
+        if not force_refresh and url and self._repo.listing_exists_with_price(url, price, external_id):
             # Update last_seen_at for the existing listing
-            existing = self._repo.get_listing_by_url(url)
+            existing = None
+            if external_id:
+                existing = self._repo.get_listing_by_external_id(external_id)
+            if existing is None:
+                existing = self._repo.get_listing_by_url(url)
             if existing:
                 self._repo.update_listing(existing.id)
             return {"status": "skipped"}

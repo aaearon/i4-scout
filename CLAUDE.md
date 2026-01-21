@@ -47,6 +47,9 @@ i4-scout scrape autoscout24_de --max-pages 5 -C D -C NL -C B  # Multiple countri
 # Scrape without caching (cache is enabled by default)
 i4-scout scrape autoscout24_de --max-pages 5 --no-cache
 
+# Force re-fetch detail pages for all listings (updates dealer/location info)
+i4-scout scrape autoscout24_de --max-pages 5 --force-refresh
+
 # List/export
 i4-scout list --qualified
 i4-scout export --format csv --qualified
@@ -134,7 +137,7 @@ Scraper → Parser → OptionMatcher → Scorer → Repository → SQLite
 
 3. **Database** (`src/i4_scout/database/`)
    - SQLAlchemy models with SQLite backend
-   - `repository.py`: CRUD operations with URL-based deduplication, price history, and matched options storage
+   - `repository.py`: CRUD operations with external_id-based deduplication (cross-site, e.g., same listing on .de and .nl), price history, and matched options storage
    - `engine.py`: Database engine with 30-second SQLite busy timeout for concurrent access
    - **Tables**: `listings`, `options`, `listing_options` (many-to-many), `listing_documents`, `price_history`, `scrape_sessions`
    - **Retry Logic**: Write operations use `@with_db_retry` decorator (5 attempts, exponential backoff 1-8s) to handle SQLite "database is locked" errors during concurrent scraping
@@ -306,6 +309,7 @@ The scraper includes two performance optimizations to reduce unnecessary network
 
 CLI options:
 - `--no-cache`: Disable HTML caching (cache is enabled by default)
+- `--force-refresh`: Force re-fetch detail pages for all listings (ignores skip optimization)
 
 Scrape summary includes performance stats:
 - `skipped_unchanged`: Listings skipped because price hasn't changed

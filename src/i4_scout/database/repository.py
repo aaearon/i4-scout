@@ -206,19 +206,44 @@ class ListingRepository:
         """
         return self._session.query(Listing).filter(Listing.url == url).first()
 
-    def listing_exists_with_price(self, url: str, price: int | None) -> bool:
-        """Check if a listing exists with the given URL and price.
+    def get_listing_by_external_id(self, external_id: str) -> Listing | None:
+        """Get a listing by its external ID (e.g., AutoScout24 listing GUID).
+
+        Args:
+            external_id: External listing identifier.
+
+        Returns:
+            Listing if found, None otherwise.
+        """
+        return (
+            self._session.query(Listing).filter(Listing.external_id == external_id).first()
+        )
+
+    def listing_exists_with_price(
+        self, url: str, price: int | None, external_id: str | None = None
+    ) -> bool:
+        """Check if a listing exists with the given URL/external_id and price.
 
         Used to skip fetching detail pages for unchanged listings.
+        Checks by external_id first (cross-site deduplication), then falls back to URL.
 
         Args:
             url: Listing URL.
             price: Expected price (or None).
+            external_id: Optional external listing identifier for cross-site matching.
 
         Returns:
             True if listing exists with matching price, False otherwise.
         """
-        listing = self.get_listing_by_url(url)
+        # Try external_id first (same listing on different regional sites)
+        listing = None
+        if external_id:
+            listing = self.get_listing_by_external_id(external_id)
+
+        # Fall back to URL-based lookup
+        if listing is None:
+            listing = self.get_listing_by_url(url)
+
         if listing is None:
             return False
         return listing.price == price
@@ -547,7 +572,11 @@ class ListingRepository:
 
     @with_db_retry
     def upsert_listing(self, data: ListingCreate) -> tuple[Listing, bool]:
-        """Create or update a listing based on URL.
+        """Create or update a listing based on external_id (preferred) or URL.
+
+        Uses external_id for deduplication when available, allowing cross-site
+        deduplication (e.g., same listing on autoscout24.de and autoscout24.nl).
+        Falls back to URL-based matching if external_id is not provided.
 
         Args:
             data: Listing data.
@@ -555,7 +584,14 @@ class ListingRepository:
         Returns:
             Tuple of (Listing, created) where created is True if new.
         """
-        existing = self.get_listing_by_url(data.url)
+        # Try external_id first for cross-site deduplication
+        existing = None
+        if data.external_id:
+            existing = self.get_listing_by_external_id(data.external_id)
+
+        # Fall back to URL-based lookup
+        if existing is None:
+            existing = self.get_listing_by_url(data.url)
 
         if existing is None:
             # Create new listing
