@@ -3,7 +3,7 @@
 ## 1. Overview
 
 ### System Purpose
-BMW i4 eDrive40 listing scraper for AutoScout24 DE/NL. The system scrapes car listings, matches against user-defined options configuration, scores and qualifies listings based on requirements, and stores results in SQLite with a web interface for management.
+BMW i4 listing scraper for AutoScout24 DE/NL. The system scrapes car listings, matches against user-defined options configuration, scores and qualifies listings based on requirements, and stores results in SQLite with a web interface for management.
 
 ### High-Level Architecture
 ```

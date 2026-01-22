@@ -1,6 +1,6 @@
 # i4-scout
 
-CLI tool to scrape BMW i4 eDrive40 listings from AutoScout24 DE/NL, match against user-defined options, and store results in SQLite.
+CLI tool to scrape BMW i4 listings from AutoScout24 DE/NL, match against user-defined options, and store results in SQLite.
 
 ## Features
 

@@ -3,7 +3,7 @@
 > **Note:** This plan must be saved to `docs/implementation-plan.md` before starting Phase 0.
 
 ## Overview
-Python CLI tool to scrape BMW i4 eDrive40 listings from mobile.de, autoscout24.de, and autoscout24.nl, match against user-defined options, and store results in SQLite.
+Python CLI tool to scrape BMW i4 listings from mobile.de, autoscout24.de, and autoscout24.nl, match against user-defined options, and store results in SQLite.
 
 ## Technical Stack
 | Component | Choice | Rationale |

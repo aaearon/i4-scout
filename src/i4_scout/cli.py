@@ -27,7 +27,7 @@ from i4_scout.services.document_service import (
 
 app = typer.Typer(
     name="i4-scout",
-    help="BMW i4 eDrive40 listing scraper for AutoScout24 DE/NL",
+    help="BMW i4 listing scraper for AutoScout24 DE/NL",
     add_completion=False,
 )
 console = Console()
@@ -74,7 +74,7 @@ def main(
         is_eager=True,
     ),
 ) -> None:
-    """BMW i4 eDrive40 listing scraper."""
+    """BMW i4 listing scraper."""
     pass
 
 

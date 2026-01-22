@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-BMW i4 eDrive40 listing scraper for AutoScout24 DE/NL. Scrapes car listings, matches against user-defined options configuration, scores and qualifies listings, and stores results in SQLite.
+BMW i4 listing scraper for AutoScout24 DE/NL. Scrapes car listings, matches against user-defined options configuration, scores and qualifies listings, and stores results in SQLite.
 
 ## Common Commands
 
