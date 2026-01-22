@@ -1,7 +1,7 @@
 <article>
     <header>Start New Scrape</header>
     <form
-        class="scrape-form"
+        class="scrape-form scrape-form-advanced"
         hx-post="/api/scrape/jobs"
         hx-target="#scrape-result"
         hx-swap="innerHTML"
@@ -26,6 +26,110 @@
                 max="100"
                 required
             >
+        </div>
+
+        <div class="form-group form-group-wide">
+            <details class="options-filter-details">
+                <summary>
+                    <span class="options-filter-label">Advanced Options</span>
+                </summary>
+
+                <div class="advanced-options-content">
+                    <div class="advanced-options-section">
+                        <strong>Search Filter Overrides</strong>
+                        <div class="advanced-options-grid">
+                            <div class="form-group">
+                                <label for="price_max">Max Price (EUR)</label>
+                                <input
+                                    type="number"
+                                    name="price_max"
+                                    id="price_max"
+                                    min="0"
+                                    placeholder="e.g. 50000"
+                                >
+                            </div>
+                            <div class="form-group">
+                                <label for="mileage_max">Max Mileage (km)</label>
+                                <input
+                                    type="number"
+                                    name="mileage_max"
+                                    id="mileage_max"
+                                    min="0"
+                                    placeholder="e.g. 50000"
+                                >
+                            </div>
+                            <div class="form-group">
+                                <label for="year_min">Min Year</label>
+                                <input
+                                    type="number"
+                                    name="year_min"
+                                    id="year_min"
+                                    min="2020"
+                                    max="2030"
+                                    placeholder="e.g. 2023"
+                                >
+                            </div>
+                        </div>
+
+                        <div class="countries-section">
+                            <label>Countries</label>
+                            <div class="countries-checkbox-grid">
+                                <label class="option-checkbox">
+                                    <input type="checkbox" name="countries" value="D"> Germany (D)
+                                </label>
+                                <label class="option-checkbox">
+                                    <input type="checkbox" name="countries" value="NL"> Netherlands (NL)
+                                </label>
+                                <label class="option-checkbox">
+                                    <input type="checkbox" name="countries" value="B"> Belgium (B)
+                                </label>
+                                <label class="option-checkbox">
+                                    <input type="checkbox" name="countries" value="A"> Austria (A)
+                                </label>
+                                <label class="option-checkbox">
+                                    <input type="checkbox" name="countries" value="L"> Luxembourg (L)
+                                </label>
+                                <label class="option-checkbox">
+                                    <input type="checkbox" name="countries" value="F"> France (F)
+                                </label>
+                                <label class="option-checkbox">
+                                    <input type="checkbox" name="countries" value="I"> Italy (I)
+                                </label>
+                                <label class="option-checkbox">
+                                    <input type="checkbox" name="countries" value="E"> Spain (E)
+                                </label>
+                                <label class="option-checkbox">
+                                    <input type="checkbox" name="countries" value="CH"> Switzerland (CH)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="advanced-options-section">
+                        <strong>Performance Options</strong>
+                        <div class="performance-options-grid">
+                            <label class="option-checkbox">
+                                <input type="checkbox" name="use_cache" value="true" checked>
+                                Use cache (faster, may miss updates)
+                            </label>
+                            <label class="option-checkbox">
+                                <input type="checkbox" name="force_refresh" value="true">
+                                Force refresh (re-fetch all detail pages)
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="advanced-options-section">
+                        <strong>Browser Options</strong>
+                        <div class="browser-options-grid">
+                            <label class="option-checkbox">
+                                <input type="checkbox" name="headless" value="true" checked>
+                                Run in background (headless mode)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </details>
         </div>
 
         <div class="form-group">

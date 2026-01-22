@@ -41,6 +41,16 @@ async def create_scrape_job(
     # Form parameters for HTMX requests
     source: str | None = Form(None),
     max_pages: int | None = Form(None),
+    # Advanced options - search filter overrides
+    price_max: int | None = Form(None),
+    mileage_max: int | None = Form(None),
+    year_min: int | None = Form(None),
+    countries: list[str] | None = Form(None),
+    # Performance options
+    use_cache: str | None = Form(None),  # "true" if checked, None if unchecked
+    force_refresh: str | None = Form(None),
+    # Browser options
+    headless: str | None = Form(None),
 ) -> HTMLResponse | JSONResponse:
     """Create a new scrape job.
 
@@ -61,6 +71,11 @@ async def create_scrape_job(
     # Determine if this is a form submission or JSON request
     is_htmx = http_request.headers.get("HX-Request") == "true"
 
+    # Default values for performance/browser options
+    job_use_cache = True
+    job_force_refresh = False
+    job_headless = True
+
     if source is not None and max_pages is not None:
         # Form data from HTMX
         try:
@@ -68,7 +83,24 @@ async def create_scrape_job(
         except ValueError:
             raise HTTPException(status_code=422, detail=f"Invalid source: {source}") from None
         job_max_pages = max_pages
+
+        # Build search filters from form values
         job_search_filters: dict[str, Any] | None = None
+        if price_max is not None or mileage_max is not None or year_min is not None or countries:
+            job_search_filters = {}
+            if price_max is not None:
+                job_search_filters["price_max_eur"] = price_max
+            if mileage_max is not None:
+                job_search_filters["mileage_max_km"] = mileage_max
+            if year_min is not None:
+                job_search_filters["year_min"] = year_min
+            if countries:
+                job_search_filters["countries"] = countries
+
+        # Parse checkbox values (checkbox sends "true" when checked, nothing when unchecked)
+        job_use_cache = use_cache == "true"
+        job_force_refresh = force_refresh == "true"
+        job_headless = headless == "true"
     else:
         # JSON body from API client
         from pydantic import ValidationError
@@ -97,6 +129,9 @@ async def create_scrape_job(
         max_pages=job_max_pages,
         search_filters=job_search_filters,
         options_config=options_config,
+        headless=job_headless,
+        use_cache=job_use_cache,
+        force_refresh=job_force_refresh,
     )
 
     # Check if this is an HTMX request
@@ -172,6 +207,9 @@ async def run_scrape_job(
     max_pages: int,
     search_filters: dict[str, Any] | None,
     options_config: OptionsConfig,
+    headless: bool = True,
+    use_cache: bool = True,
+    force_refresh: bool = False,
 ) -> None:
     """Background task to execute a scrape job.
 
@@ -184,6 +222,9 @@ async def run_scrape_job(
         max_pages: Maximum pages to scrape.
         search_filters: Optional search filter overrides.
         options_config: Options configuration for matching.
+        headless: Whether to run browser in headless mode.
+        use_cache: Whether to use HTML caching.
+        force_refresh: Whether to force refresh all detail pages.
     """
     from i4_scout.config import load_search_filters, merge_search_filters
     from i4_scout.database.engine import get_session_factory
@@ -223,8 +264,9 @@ async def run_scrape_job(
             source=source,
             max_pages=max_pages,
             search_filters=final_filters,
-            headless=True,
-            use_cache=True,
+            headless=headless,
+            use_cache=use_cache,
+            force_refresh=force_refresh,
             progress_callback=on_progress,
         )
 
