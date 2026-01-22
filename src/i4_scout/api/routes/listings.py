@@ -33,6 +33,7 @@ async def list_listings(
         None, min_length=2, max_length=100, description="Search in title and description"
     ),
     has_issue: bool | None = Query(None, description="Filter by issue status"),
+    has_price_change: bool | None = Query(None, description="Filter by price change status"),
     sort_by: str | None = Query(
         None,
         pattern="^(price|mileage|score|first_seen|last_seen)$",
@@ -48,7 +49,7 @@ async def list_listings(
 
     Returns a paginated list of car listings with support for filtering
     by source, qualification status, minimum match score, price range,
-    mileage range, year range, country, text search, and issue status.
+    mileage range, year range, country, text search, issue status, and price changes.
 
     Results can be sorted by price, mileage, score, first_seen, or last_seen.
     """
@@ -65,6 +66,7 @@ async def list_listings(
         country=country,
         search=search,
         has_issue=has_issue,
+        has_price_change=has_price_change,
         sort_by=sort_by,
         sort_order=sort_order,
         limit=limit,

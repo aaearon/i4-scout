@@ -28,6 +28,8 @@ async def listings_page(
     options_config: OptionsConfigDep,
     source: str | None = Query(None),
     qualified_only: bool = Query(False),
+    has_issue: bool | None = Query(None),
+    has_price_change: bool | None = Query(None),
     min_score: float | None = Query(None),
     price_min: int | None = Query(None),
     price_max: int | None = Query(None),
@@ -48,6 +50,8 @@ async def listings_page(
     filters = {
         "source": source,
         "qualified_only": qualified_only,
+        "has_issue": has_issue,
+        "has_price_change": has_price_change,
         "min_score": min_score,
         "price_min": price_min,
         "price_max": price_max,

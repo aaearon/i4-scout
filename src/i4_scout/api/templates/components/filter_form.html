@@ -54,6 +54,19 @@
     </div>
 
     <div class="filter-group">
+        <label for="has_price_change">
+            <input
+                type="checkbox"
+                name="has_price_change"
+                id="has_price_change"
+                value="true"
+                {% if filters.has_price_change %}checked{% endif %}
+            >
+            Has Price Change
+        </label>
+    </div>
+
+    <div class="filter-group">
         <label for="min_score">Min Score</label>
         <input
             type="number"

@@ -76,6 +76,9 @@ class ScrapedListing(BaseModel):
     location_country: str | None = None
     dealer_name: str | None = None
     dealer_type: str | None = Field(None, description="dealer or private")
+    exterior_color: str | None = None
+    interior_color: str | None = None
+    interior_material: str | None = None
     description: str | None = None
     raw_options_text: str | None = Field(None, description="Raw equipment text from listing")
     options_list: list[str] = Field(default_factory=list, description="Parsed option names")
@@ -103,6 +106,9 @@ class ListingCreate(BaseModel):
     location_country: str | None = None
     dealer_name: str | None = None
     dealer_type: str | None = None
+    exterior_color: str | None = None
+    interior_color: str | None = None
+    interior_material: str | None = None
     description: str | None = None
     raw_options_text: str | None = None
     photo_urls: list[str] = Field(default_factory=list)
@@ -121,6 +127,10 @@ class ListingRead(ListingCreate):
     matched_options: list[str] = Field(default_factory=list)
     document_count: int = Field(default=0, description="Number of uploaded documents")
     notes_count: int = Field(default=0, description="Number of notes")
+    price_change: int | None = Field(
+        default=None, description="Price change from original (negative=drop, positive=increase)"
+    )
+    price_change_count: int = Field(default=0, description="Number of price changes (excluding initial)")
 
     model_config = ConfigDict(from_attributes=True)
 

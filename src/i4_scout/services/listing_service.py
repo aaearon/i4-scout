@@ -40,6 +40,7 @@ class ListingService:
         has_options: list[str] | None = None,
         options_match: str = "all",
         has_issue: bool | None = None,
+        has_price_change: bool | None = None,
         sort_by: str | None = None,
         sort_order: str = "desc",
         limit: int = 20,
@@ -62,6 +63,7 @@ class ListingService:
             has_options: List of option names to filter by.
             options_match: "all" to require all options, "any" to require any.
             has_issue: Filter by issue status (True, False, or None for all).
+            has_price_change: Filter by price change status (True for listings with changes).
             sort_by: Field to sort by (price, mileage, score, first_seen, last_seen).
             sort_order: Sort direction (asc, desc). Default: desc.
             limit: Maximum results to return.
@@ -85,6 +87,7 @@ class ListingService:
             has_options=has_options,
             options_match=options_match,
             has_issue=has_issue,
+            has_price_change=has_price_change,
             sort_by=sort_by,
             sort_order=sort_order,
             limit=limit,
@@ -107,6 +110,7 @@ class ListingService:
             has_options=has_options,
             options_match=options_match,
             has_issue=has_issue,
+            has_price_change=has_price_change,
         )
 
         # Convert ORM objects to Pydantic models
@@ -163,6 +167,17 @@ class ListingService:
         Returns:
             ListingRead Pydantic model.
         """
+        # Compute price change from eagerly-loaded history
+        price_change = None
+        price_change_count = 0
+        if listing.price_history and len(listing.price_history) > 1:
+            # Sort by recorded_at to get oldest (original) and newest (current)
+            sorted_history = sorted(listing.price_history, key=lambda h: h.recorded_at)
+            original_price = sorted_history[0].price
+            current_price = sorted_history[-1].price
+            price_change = current_price - original_price
+            price_change_count = len(listing.price_history) - 1
+
         return ListingRead(
             id=listing.id,
             source=listing.source,
@@ -180,6 +195,9 @@ class ListingService:
             location_country=listing.location_country,
             dealer_name=listing.dealer_name,
             dealer_type=listing.dealer_type,
+            exterior_color=listing.exterior_color,
+            interior_color=listing.interior_color,
+            interior_material=listing.interior_material,
             description=listing.description,
             raw_options_text=listing.raw_options_text,
             photo_urls=listing.photo_urls or [],
@@ -191,4 +209,6 @@ class ListingService:
             matched_options=listing.matched_options,
             document_count=len(listing.documents) if listing.documents else 0,
             notes_count=len(listing.notes) if listing.notes else 0,
+            price_change=price_change,
+            price_change_count=price_change_count,
         )

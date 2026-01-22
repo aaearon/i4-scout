@@ -6,7 +6,7 @@ from collections.abc import Callable
 from datetime import datetime, timezone
 from typing import Any, TypeVar
 
-from sqlalchemy import asc, desc, or_
+from sqlalchemy import asc, desc, func, or_
 from sqlalchemy import select as sa_select
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Query, Session, joinedload
@@ -108,6 +108,9 @@ class ListingRepository:
             year=data.year,
             first_registration=data.first_registration,
             vin=data.vin,
+            exterior_color=data.exterior_color,
+            interior_color=data.interior_color,
+            interior_material=data.interior_material,
             location_city=data.location_city,
             location_zip=data.location_zip,
             location_country=data.location_country,
@@ -159,6 +162,9 @@ class ListingRepository:
                 year=data.year,
                 first_registration=data.first_registration,
                 vin=data.vin,
+                exterior_color=data.exterior_color,
+                interior_color=data.interior_color,
+                interior_material=data.interior_material,
                 location_city=data.location_city,
                 location_zip=data.location_zip,
                 location_country=data.location_country,
@@ -265,6 +271,7 @@ class ListingRepository:
         has_options: list[str] | None = None,
         options_match: str = "all",
         has_issue: bool | None = None,
+        has_price_change: bool | None = None,
     ) -> Query[Listing]:
         """Apply common filters to a listing query.
 
@@ -284,6 +291,7 @@ class ListingRepository:
             has_options: List of option names to filter by.
             options_match: "all" to require all options, "any" to require any.
             has_issue: Filter by issue status (True, False, or None for all).
+            has_price_change: Filter by price change status (True for listings with changes).
 
         Returns:
             Filtered query.
@@ -352,6 +360,18 @@ class ListingRepository:
         if has_issue is not None:
             query = query.filter(Listing.has_issue == has_issue)
 
+        if has_price_change is not None:
+            # Subquery for listings with more than 1 price history entry
+            subq = (
+                sa_select(PriceHistory.listing_id)
+                .group_by(PriceHistory.listing_id)
+                .having(func.count(PriceHistory.id) > 1)
+            )
+            if has_price_change:
+                query = query.filter(Listing.id.in_(subq))
+            else:
+                query = query.filter(~Listing.id.in_(subq))
+
         return query
 
     def get_listings(
@@ -370,6 +390,7 @@ class ListingRepository:
         has_options: list[str] | None = None,
         options_match: str = "all",
         has_issue: bool | None = None,
+        has_price_change: bool | None = None,
         sort_by: str | None = None,
         sort_order: str = "desc",
         limit: int | None = None,
@@ -392,6 +413,7 @@ class ListingRepository:
             has_options: List of option names to filter by.
             options_match: "all" to require all options, "any" to require any.
             has_issue: Filter by issue status (True, False, or None for all).
+            has_price_change: Filter by price change status (True for listings with changes).
             sort_by: Field to sort by (price, mileage, score, first_seen, last_seen).
             sort_order: Sort direction (asc, desc). Default: desc.
             limit: Maximum number of results.
@@ -403,6 +425,7 @@ class ListingRepository:
         query = self._session.query(Listing).options(
             joinedload(Listing.documents),
             joinedload(Listing.notes),
+            joinedload(Listing.price_history),
         )
         query = self._apply_listing_filters(
             query,
@@ -420,6 +443,7 @@ class ListingRepository:
             has_options=has_options,
             options_match=options_match,
             has_issue=has_issue,
+            has_price_change=has_price_change,
         )
 
         # Sorting
@@ -461,6 +485,7 @@ class ListingRepository:
         has_options: list[str] | None = None,
         options_match: str = "all",
         has_issue: bool | None = None,
+        has_price_change: bool | None = None,
     ) -> int:
         """Count listings with optional filters.
 
@@ -479,6 +504,7 @@ class ListingRepository:
             has_options: List of option names to filter by.
             options_match: "all" to require all options, "any" to require any.
             has_issue: Filter by issue status (True, False, or None for all).
+            has_price_change: Filter by price change status (True for listings with changes).
 
         Returns:
             Number of matching listings.
@@ -500,6 +526,7 @@ class ListingRepository:
             has_options=has_options,
             options_match=options_match,
             has_issue=has_issue,
+            has_price_change=has_price_change,
         )
         return query.count()
 
@@ -616,6 +643,9 @@ class ListingRepository:
         existing.year = data.year if data.year is not None else existing.year
         existing.first_registration = data.first_registration or existing.first_registration
         existing.vin = data.vin or existing.vin
+        existing.exterior_color = data.exterior_color or existing.exterior_color
+        existing.interior_color = data.interior_color or existing.interior_color
+        existing.interior_material = data.interior_material or existing.interior_material
         existing.location_city = data.location_city or existing.location_city
         existing.location_zip = data.location_zip or existing.location_zip
         existing.location_country = data.location_country or existing.location_country

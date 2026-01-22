@@ -128,6 +128,10 @@ Scraper → Parser → OptionMatcher → Scorer → Repository → SQLite
      - `parse_json_ld_sync()`: Extracts `dealer_name`, `dealer_type` (dealer/private), `location_city`, `location_zip`, `location_country`
      - Normalizes `@type: "AutoDealer"` → "dealer", `@type: "Person"` → "private"
      - Handles missing/malformed JSON-LD gracefully
+   - **Vehicle Colors**: Extracts color information from dt/dd pairs:
+     - `parse_colors_sync()`: Extracts `exterior_color`, `interior_color`, `interior_material`
+     - German labels: Außenfarbe, Farbe der Innenausstattung, Innenausstattung
+     - Dutch labels: Kleur, Kleur interieur, Materiaal
 
 2. **Matching Engine** (`src/i4_scout/matching/`)
    - `normalizer.py`: Text normalization (German umlauts, case, punctuation)
@@ -295,6 +299,27 @@ curl -X DELETE "http://localhost:8000/api/listings/42/notes/5"
 - Notes stored in `listing_notes` table
 - Cascade delete: notes are automatically deleted when listing is deleted
 
+### Price Change Visibility
+
+Track and display price changes (drops and increases) for listings:
+
+**Web Interface:**
+- Price change indicator in listings table (next to notes count):
+  - Green down arrow with amount for price drops (e.g., "↓ -2,000")
+  - Red up arrow with amount for price increases (e.g., "↑ +1,500")
+- "Has Price Change" checkbox filter in listings page
+- Indicator shows total change from original price (first recorded → current)
+
+**API:**
+```bash
+# Filter listings with price changes
+curl "http://localhost:8000/api/listings?has_price_change=true"
+```
+
+**ListingRead fields:**
+- `price_change`: Total change from original price (negative = drop, positive = increase, null = no change)
+- `price_change_count`: Number of price changes recorded (excluding initial price)
+
 ### Scraper Performance Optimizations
 
 The scraper includes two performance optimizations to reduce unnecessary network requests:
@@ -323,9 +348,9 @@ Scrape summary includes performance stats:
 
 ## Key Pydantic Models
 
-- `ListingCreate`: Input data for creating/upserting listings (includes `has_issue` field)
+- `ListingCreate`: Input data for creating/upserting listings (includes `has_issue`, color fields)
 - `ListingRead`: Listing data as read from database (extends ListingCreate with timestamps)
-- `ScrapedListing`: Output from detail page scraping
+- `ScrapedListing`: Output from detail page scraping (includes `exterior_color`, `interior_color`, `interior_material`)
 - `OptionsConfig`: Parsed YAML configuration for options matching
 - `SearchFilters`: Search criteria for source-level filtering (price, mileage, year, countries)
 - `MatchResult`: Output from option matching
@@ -402,6 +427,7 @@ i4-scout serve --reload
 ?country=D                 # Country code (D, NL, B, etc.)
 ?search=M%20Sport          # Text search in title/description (URL-encoded)
 ?has_issue=true            # Filter by issue status (true/false)
+?has_price_change=true     # Filter by price change status (true/false)
 ```
 
 **Sorting:**

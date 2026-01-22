@@ -9,28 +9,34 @@
         {% set sort_indicator = ' &#9660;' %}
     {% endif %}
 {% endif %}
-{% set sort_query = 'sort_by=' ~ field ~ '&sort_order=' ~ new_order ~ '&limit=' ~ limit ~ '&offset=0' %}
-{% if filters.source %}{% set sort_query = sort_query ~ '&source=' ~ filters.source %}{% endif %}
-{% if filters.qualified_only %}{% set sort_query = sort_query ~ '&qualified_only=true' %}{% endif %}
-{% if filters.min_score %}{% set sort_query = sort_query ~ '&min_score=' ~ filters.min_score %}{% endif %}
-{% if filters.price_min %}{% set sort_query = sort_query ~ '&price_min=' ~ filters.price_min %}{% endif %}
-{% if filters.price_max %}{% set sort_query = sort_query ~ '&price_max=' ~ filters.price_max %}{% endif %}
-{% if filters.mileage_max %}{% set sort_query = sort_query ~ '&mileage_max=' ~ filters.mileage_max %}{% endif %}
-{% if filters.year_min %}{% set sort_query = sort_query ~ '&year_min=' ~ filters.year_min %}{% endif %}
-{% if filters.country %}{% set sort_query = sort_query ~ '&country=' ~ filters.country %}{% endif %}
-{% if filters.search %}{% set sort_query = sort_query ~ '&search=' ~ filters.search %}{% endif %}
-{% if filters.has_options %}{% for opt in filters.has_options %}{% set sort_query = sort_query ~ '&has_option=' ~ (opt | urlencode) %}{% endfor %}{% endif %}
-{% if filters.options_match %}{% set sort_query = sort_query ~ '&options_match=' ~ filters.options_match %}{% endif %}
+{# Use namespace to allow modification inside loops #}
+{% set ns = namespace(query='sort_by=' ~ field ~ '&sort_order=' ~ new_order ~ '&limit=' ~ limit ~ '&offset=0') %}
+{% if filters.source %}{% set ns.query = ns.query ~ '&source=' ~ filters.source %}{% endif %}
+{% if filters.qualified_only %}{% set ns.query = ns.query ~ '&qualified_only=true' %}{% endif %}
+{% if filters.has_issue %}{% set ns.query = ns.query ~ '&has_issue=true' %}{% endif %}
+{% if filters.has_price_change %}{% set ns.query = ns.query ~ '&has_price_change=true' %}{% endif %}
+{% if filters.min_score %}{% set ns.query = ns.query ~ '&min_score=' ~ filters.min_score %}{% endif %}
+{% if filters.price_min %}{% set ns.query = ns.query ~ '&price_min=' ~ filters.price_min %}{% endif %}
+{% if filters.price_max %}{% set ns.query = ns.query ~ '&price_max=' ~ filters.price_max %}{% endif %}
+{% if filters.mileage_max %}{% set ns.query = ns.query ~ '&mileage_max=' ~ filters.mileage_max %}{% endif %}
+{% if filters.year_min %}{% set ns.query = ns.query ~ '&year_min=' ~ filters.year_min %}{% endif %}
+{% if filters.country %}{% set ns.query = ns.query ~ '&country=' ~ filters.country %}{% endif %}
+{% if filters.search %}{% set ns.query = ns.query ~ '&search=' ~ filters.search %}{% endif %}
+{% if filters.has_options %}{% for opt in filters.has_options %}{% set ns.query = ns.query ~ '&has_option=' ~ (opt | urlencode) %}{% endfor %}{% endif %}
+{% if filters.options_match %}{% set ns.query = ns.query ~ '&options_match=' ~ filters.options_match %}{% endif %}
 <th
     class="sortable-header {% if is_active %}sort-active{% endif %}"
     style="cursor: pointer; {% if align == 'right' %}text-align: right;{% endif %}"
-    hx-get="/partials/listings?{{ sort_query }}"
+    hx-get="/partials/listings?{{ ns.query }}"
     hx-target="#listings-table"
-    hx-push-url="/listings?{{ sort_query }}"
+    hx-push-url="/listings?{{ ns.query }}"
 >{{ label }}{{ sort_indicator | safe }}</th>
 {% endmacro %}
 
 {% if listings %}
+<div class="pagination-info-top">
+    Showing {{ offset + 1 }} - {{ offset + count }} of {{ total }} listings
+</div>
 <div class="table-container">
     <table>
         <thead>
