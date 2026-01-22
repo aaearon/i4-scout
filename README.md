@@ -8,10 +8,12 @@ CLI tool to scrape BMW i4 eDrive40 listings from AutoScout24 DE/NL, match agains
 - Match listings against configurable required/nice-to-have options
 - Score and qualify listings based on option matches
 - Export to CSV/JSON
-- SQLite storage with price history tracking
+- SQLite storage with price history tracking and **price change visibility**
 - **Web Interface** with dashboard, filtering, comparison, and favorites
 - **REST API** for programmatic access
 - PDF enrichment to extract options from dealer spec sheets
+- Issue tracking and notes for dealer communication
+- Vehicle color extraction (exterior, interior, material)
 - Docker support
 
 ## Installation
@@ -59,11 +61,14 @@ Start the server with `i4-scout serve` and navigate to http://localhost:8000.
 
 - **Dashboard**: Statistics overview with auto-refresh
 - **Listings**: Filterable table with sorting, pagination, and hover popovers
-- **Comparison**: Select up to 4 listings for side-by-side comparison
+- **Price Changes**: Visual indicators for price drops (green) and increases (red)
+- **Comparison**: Select up to 4 listings for side-by-side comparison (includes colors)
 - **Copy to Clipboard**: Export selected listings as LLM-friendly markdown
 - **Favorites**: Star listings (persisted in browser localStorage)
+- **Issue Tracking**: Mark listings with issues (e.g., DEKRA findings)
 - **Notes**: Add work log style notes to track dealer communication
 - **PDF Enrichment**: Upload dealer spec PDFs to extract additional options
+- **Advanced Scrape Options**: Configure search filters, cache, and browser settings
 
 See [CLAUDE.md](CLAUDE.md) for full documentation.
 
