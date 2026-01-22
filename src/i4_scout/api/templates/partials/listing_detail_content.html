@@ -57,6 +57,18 @@
         <div class="value">{{ listing.first_registration.strftime('%m/%Y') if listing.first_registration else 'N/A' }}</div>
     </div>
     <div class="detail-item">
+        <div class="label">Exterior Color</div>
+        <div class="value">{{ listing.exterior_color or '--' }}</div>
+    </div>
+    <div class="detail-item">
+        <div class="label">Interior Color</div>
+        <div class="value">{{ listing.interior_color or '--' }}</div>
+    </div>
+    <div class="detail-item">
+        <div class="label">Interior Material</div>
+        <div class="value">{{ listing.interior_material or '--' }}</div>
+    </div>
+    <div class="detail-item">
         <div class="label">Match Score</div>
         <div class="value">
             {% if listing.match_score is not none %}

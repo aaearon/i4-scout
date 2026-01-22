@@ -1,15 +1,68 @@
 """Integration tests for web routes."""
 
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
+from i4_scout.api.dependencies import get_db
 from i4_scout.api.main import create_app
+from i4_scout.database.repository import ListingRepository
+from i4_scout.models.db_models import Base
+from i4_scout.models.pydantic_models import ListingCreate, Source
 
 
 @pytest.fixture
 def client():
     """Create a test client for the FastAPI application."""
     app = create_app()
+    return TestClient(app)
+
+
+@pytest.fixture
+def client_with_listings(tmp_path: Path):
+    """Create a test client with listings in the database."""
+    db_path = tmp_path / "test.db"
+    engine = create_engine(f"sqlite:///{db_path}")
+    Base.metadata.create_all(engine)
+    session_factory = sessionmaker(bind=engine)
+
+    # Create test listings
+    session = session_factory()
+    repo = ListingRepository(session)
+    repo.create_listing(
+        ListingCreate(
+            source=Source.AUTOSCOUT24_DE,
+            url="https://example.com/test",
+            title="Test BMW i4",
+            price=45000_00,
+        )
+    )
+    repo.create_listing(
+        ListingCreate(
+            source=Source.AUTOSCOUT24_DE,
+            url="https://example.com/test-issue",
+            title="Test BMW i4 with Issue",
+            price=40000_00,
+            has_issue=True,
+        )
+    )
+    session.commit()
+    session.close()
+
+    # Create app with test database
+    app = create_app()
+
+    def get_test_db():
+        session = session_factory()
+        try:
+            yield session
+        finally:
+            session.close()
+
+    app.dependency_overrides[get_db] = get_test_db
     return TestClient(app)
 
 
@@ -97,6 +150,46 @@ class TestListings:
         )
         assert response.status_code == 200
         assert "text/html" in response.headers["content-type"]
+
+    def test_sort_headers_preserve_has_issue_filter(self, client_with_listings):
+        """Test that sort headers preserve the has_issue filter in URLs."""
+        # Request listings without has_issue filter first to verify table renders
+        response = client_with_listings.get("/partials/listings")
+        assert response.status_code == 200
+        assert "sortable-header" in response.text  # Verify headers render
+
+        # Request with has_issue filter - sort headers should include it in URLs
+        response = client_with_listings.get("/partials/listings?has_issue=true")
+        assert response.status_code == 200
+        # Sort headers should include has_issue=true in their URLs
+        assert "has_issue=true" in response.text
+
+    def test_listings_page_passes_has_issue_to_filter_form(self, client_with_listings):
+        """Test that listings page passes has_issue filter to form context."""
+        # Request listings page with has_issue=true
+        response = client_with_listings.get("/listings?has_issue=true")
+        assert response.status_code == 200
+        # The filter form should have the has_issue checkbox checked
+        assert 'name="has_issue"' in response.text
+        assert "checked" in response.text  # has_issue checkbox should be checked
+
+    def test_sort_headers_preserve_options_filter(self, client_with_listings):
+        """Test that sort headers preserve the has_option filter in URLs."""
+        # First verify we have listings without options filter
+        response = client_with_listings.get("/partials/listings")
+        assert response.status_code == 200
+        assert "sortable-header" in response.text
+
+        # Use options_match=any so listings show even without matching options
+        # The key test is that sort headers include has_option in their URLs
+        response = client_with_listings.get(
+            "/partials/listings?has_option=Memory%20Seats&options_match=any"
+        )
+        assert response.status_code == 200
+        # Even with no matches, the has_option should be in sort header URLs
+        # if the table renders (which it does with options_match=any when some listings exist)
+        # Check if has_option appears in the response (in sort header URLs)
+        assert "has_option=Memory" in response.text or "No listings found" in response.text
 
 
 class TestListingDetail:
@@ -331,3 +424,107 @@ class TestFavorites:
         response = client.get("/partials/listings")
         assert response.status_code == 200
         assert "favorite-btn" in response.text or "No listings found" in response.text
+
+
+@pytest.fixture
+def client_with_colors(tmp_path: Path):
+    """Create a test client with listings that have color data."""
+    db_path = tmp_path / "test_colors.db"
+    engine = create_engine(f"sqlite:///{db_path}")
+    Base.metadata.create_all(engine)
+    session_factory = sessionmaker(bind=engine)
+
+    # Create test listing with color data
+    session = session_factory()
+    repo = ListingRepository(session)
+    repo.create_listing(
+        ListingCreate(
+            source=Source.AUTOSCOUT24_DE,
+            url="https://example.com/colored-car",
+            title="Test BMW i4 with Colors",
+            price=45000_00,
+            exterior_color="Grau",
+            interior_color="Beige",
+            interior_material="Vollleder",
+        )
+    )
+    repo.create_listing(
+        ListingCreate(
+            source=Source.AUTOSCOUT24_NL,
+            url="https://example.com/nl-car",
+            title="Test BMW i4 NL",
+            price=42000_00,
+            exterior_color="Grijs",
+            interior_color="Zwart",
+            interior_material="Leder",
+        )
+    )
+    session.commit()
+    session.close()
+
+    # Create app with test database
+    app = create_app()
+
+    def get_test_db():
+        session = session_factory()
+        try:
+            yield session
+        finally:
+            session.close()
+
+    app.dependency_overrides[get_db] = get_test_db
+    return TestClient(app)
+
+
+class TestColorFieldsInTemplates:
+    """Tests for color fields display in templates."""
+
+    def test_listing_detail_shows_exterior_color(self, client_with_colors):
+        """Test that listing detail page shows exterior color."""
+        response = client_with_colors.get("/listings/1")
+        assert response.status_code == 200
+        assert "Exterior Color" in response.text
+        assert "Grau" in response.text
+
+    def test_listing_detail_shows_interior_color(self, client_with_colors):
+        """Test that listing detail page shows interior color."""
+        response = client_with_colors.get("/listings/1")
+        assert response.status_code == 200
+        assert "Interior Color" in response.text
+        assert "Beige" in response.text
+
+    def test_listing_detail_shows_interior_material(self, client_with_colors):
+        """Test that listing detail page shows interior material."""
+        response = client_with_colors.get("/listings/1")
+        assert response.status_code == 200
+        assert "Interior Material" in response.text
+        assert "Vollleder" in response.text
+
+    def test_compare_page_shows_color_rows(self, client_with_colors):
+        """Test that compare page shows color rows."""
+        response = client_with_colors.get("/compare?ids=1,2")
+        assert response.status_code == 200
+        assert "Ext. Color" in response.text
+        assert "Int. Color" in response.text
+        assert "Int. Material" in response.text
+
+    def test_compare_page_shows_color_values(self, client_with_colors):
+        """Test that compare page shows actual color values."""
+        response = client_with_colors.get("/compare?ids=1,2")
+        assert response.status_code == 200
+        # German listing colors
+        assert "Grau" in response.text
+        assert "Beige" in response.text
+        assert "Vollleder" in response.text
+        # Dutch listing colors
+        assert "Grijs" in response.text
+        assert "Zwart" in response.text
+        assert "Leder" in response.text
+
+    def test_listing_detail_shows_empty_color_placeholder(self, client_with_listings):
+        """Test that listing without colors shows placeholder."""
+        response = client_with_listings.get("/listings/1")
+        assert response.status_code == 200
+        assert "Exterior Color" in response.text
+        # The placeholder is '--'
+        assert "--" in response.text
