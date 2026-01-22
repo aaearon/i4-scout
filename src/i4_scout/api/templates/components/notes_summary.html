@@ -1,0 +1,17 @@
+<div class="notes-summary">
+    {% if notes %}
+    <div class="notes-summary-header">
+        {{ notes|length }} note{% if notes|length != 1 %}s{% endif %}
+    </div>
+    <div class="notes-summary-list">
+        {% for note in notes %}
+        <div class="note-preview">
+            <span class="note-preview-timestamp">{{ note.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+            <p class="note-preview-text">{{ note.content }}</p>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="notes-summary-empty">No notes</p>
+    {% endif %}
+</div>

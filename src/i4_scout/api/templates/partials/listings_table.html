@@ -34,6 +34,91 @@
 {% endmacro %}
 
 {% if listings %}
+{# Active filter chips #}
+{% set has_active_filters = filters.source or filters.qualified_only or filters.has_issue or filters.has_price_change or filters.min_score or filters.price_min or filters.price_max or filters.mileage_max or filters.year_min or filters.country or filters.search or filters.has_options %}
+{% if has_active_filters %}
+<div class="active-filters" id="active-filters">
+    <span class="active-filters-label">Active filters:</span>
+    {% if filters.source %}
+    <button type="button" class="filter-chip" onclick="removeFilter('source')" aria-label="Remove source filter">
+        Source: {{ filters.source.replace('autoscout24_', '').upper() }}
+        <span class="chip-remove">&times;</span>
+    </button>
+    {% endif %}
+    {% if filters.qualified_only %}
+    <button type="button" class="filter-chip filter-chip-success" onclick="removeFilter('qualified_only')" aria-label="Remove qualified only filter">
+        Qualified
+        <span class="chip-remove">&times;</span>
+    </button>
+    {% endif %}
+    {% if filters.has_issue %}
+    <button type="button" class="filter-chip filter-chip-danger" onclick="removeFilter('has_issue')" aria-label="Remove has issues filter">
+        Has Issues
+        <span class="chip-remove">&times;</span>
+    </button>
+    {% endif %}
+    {% if filters.has_price_change %}
+    <button type="button" class="filter-chip" onclick="removeFilter('has_price_change')" aria-label="Remove price change filter">
+        Price Changed
+        <span class="chip-remove">&times;</span>
+    </button>
+    {% endif %}
+    {% if filters.min_score %}
+    <button type="button" class="filter-chip" onclick="removeFilter('min_score')" aria-label="Remove minimum score filter">
+        Score &ge; {{ filters.min_score }}
+        <span class="chip-remove">&times;</span>
+    </button>
+    {% endif %}
+    {% if filters.price_min %}
+    <button type="button" class="filter-chip" onclick="removeFilter('price_min')" aria-label="Remove minimum price filter">
+        Price &ge; {{ "{:,.0f}".format(filters.price_min) }}
+        <span class="chip-remove">&times;</span>
+    </button>
+    {% endif %}
+    {% if filters.price_max %}
+    <button type="button" class="filter-chip" onclick="removeFilter('price_max')" aria-label="Remove maximum price filter">
+        Price &le; {{ "{:,.0f}".format(filters.price_max) }}
+        <span class="chip-remove">&times;</span>
+    </button>
+    {% endif %}
+    {% if filters.mileage_max %}
+    <button type="button" class="filter-chip" onclick="removeFilter('mileage_max')" aria-label="Remove maximum mileage filter">
+        Mileage &le; {{ "{:,.0f}".format(filters.mileage_max) }} km
+        <span class="chip-remove">&times;</span>
+    </button>
+    {% endif %}
+    {% if filters.year_min %}
+    <button type="button" class="filter-chip" onclick="removeFilter('year_min')" aria-label="Remove minimum year filter">
+        Year &ge; {{ filters.year_min }}
+        <span class="chip-remove">&times;</span>
+    </button>
+    {% endif %}
+    {% if filters.country %}
+    <button type="button" class="filter-chip" onclick="removeFilter('country')" aria-label="Remove country filter">
+        Country: {{ filters.country }}
+        <span class="chip-remove">&times;</span>
+    </button>
+    {% endif %}
+    {% if filters.search %}
+    <button type="button" class="filter-chip" onclick="removeFilter('search')" aria-label="Remove search filter">
+        "{{ filters.search[:20] }}{% if filters.search|length > 20 %}...{% endif %}"
+        <span class="chip-remove">&times;</span>
+    </button>
+    {% endif %}
+    {% if filters.has_options %}
+    {% for opt in filters.has_options %}
+    <button type="button" class="filter-chip filter-chip-info" onclick="removeOptionFilter('{{ opt }}')" aria-label="Remove option filter: {{ opt }}">
+        {{ opt }}
+        <span class="chip-remove">&times;</span>
+    </button>
+    {% endfor %}
+    {% endif %}
+    <button type="button" class="filter-chip-clear" onclick="clearFilters()" aria-label="Clear all filters">
+        Clear All
+    </button>
+</div>
+{% endif %}
+
 <div class="pagination-info-top">
     Showing {{ offset + 1 }} - {{ offset + count }} of {{ total }} listings
 </div>

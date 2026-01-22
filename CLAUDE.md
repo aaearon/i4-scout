@@ -503,6 +503,7 @@ i4-scout serve
 - Checkbox selection for comparison (max 4 listings)
 - Favorite star button per listing (persists in localStorage)
 - Hover popover showing options summary (lazy-loaded via HTMX)
+- Hover popover showing notes preview when hovering over notes count badge
 - Filter form: source, qualified only, favorites only, has issues, score, price, mileage, year, country, search
 - Options filtering: collapsible checkbox list for required and nice-to-have options
   - Has ALL mode: require all selected options (AND logic)
@@ -560,6 +561,7 @@ These endpoints return HTML fragments for HTMX requests:
   - `has_issue`: Filter by issue status (true/false)
 - `GET /partials/listing/{id}` - Listing detail content
 - `GET /partials/listing/{id}/options-summary` - Options summary for hover popover
+- `GET /partials/listing/{id}/notes-summary` - Notes summary for hover popover
 - `GET /partials/listing/{id}/price-chart` - Price history chart
 - `PATCH /partials/listing/{id}/issue` - Toggle issue flag (returns updated button)
 - `GET /partials/listing/{id}/notes` - Notes section

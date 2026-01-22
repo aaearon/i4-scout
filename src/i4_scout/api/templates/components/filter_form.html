@@ -77,7 +77,10 @@
             step="1"
             placeholder="0-100"
             value="{{ filters.min_score if filters.min_score else '' }}"
+            oninput="validateNumberRange(this, 0, 100)"
+            aria-describedby="min_score_hint"
         >
+        <small id="min_score_hint" class="form-hint">0-100</small>
     </div>
 
     <div class="filter-group">
@@ -90,6 +93,7 @@
             step="1"
             placeholder="EUR"
             value="{{ filters.price_min if filters.price_min else '' }}"
+            oninput="validateNumberRange(this, 0)"
         >
     </div>
 
@@ -103,6 +107,7 @@
             step="1"
             placeholder="EUR"
             value="{{ filters.price_max if filters.price_max else '' }}"
+            oninput="validateNumberRange(this, 0)"
         >
     </div>
 
@@ -116,6 +121,7 @@
             step="1"
             placeholder="km"
             value="{{ filters.mileage_max if filters.mileage_max else '' }}"
+            oninput="validateNumberRange(this, 0)"
         >
     </div>
 
@@ -129,19 +135,26 @@
             max="2030"
             placeholder="YYYY"
             value="{{ filters.year_min if filters.year_min else '' }}"
+            oninput="validateNumberRange(this, 2015, 2030)"
+            aria-describedby="year_min_hint"
         >
+        <small id="year_min_hint" class="form-hint">2015-2030</small>
     </div>
 
     <div class="filter-group">
         <label for="country">Country</label>
-        <input
-            type="text"
-            name="country"
-            id="country"
-            maxlength="5"
-            placeholder="D, NL, B..."
-            value="{{ filters.country if filters.country else '' }}"
-        >
+        <select name="country" id="country">
+            <option value="">Any Country</option>
+            <option value="D" {% if filters.country == 'D' %}selected{% endif %}>Germany (D)</option>
+            <option value="NL" {% if filters.country == 'NL' %}selected{% endif %}>Netherlands (NL)</option>
+            <option value="B" {% if filters.country == 'B' %}selected{% endif %}>Belgium (B)</option>
+            <option value="A" {% if filters.country == 'A' %}selected{% endif %}>Austria (A)</option>
+            <option value="L" {% if filters.country == 'L' %}selected{% endif %}>Luxembourg (L)</option>
+            <option value="F" {% if filters.country == 'F' %}selected{% endif %}>France (F)</option>
+            <option value="I" {% if filters.country == 'I' %}selected{% endif %}>Italy (I)</option>
+            <option value="E" {% if filters.country == 'E' %}selected{% endif %}>Spain (E)</option>
+            <option value="CH" {% if filters.country == 'CH' %}selected{% endif %}>Switzerland (CH)</option>
+        </select>
     </div>
 
     <div class="filter-group">

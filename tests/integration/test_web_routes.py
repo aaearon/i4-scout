@@ -528,3 +528,91 @@ class TestColorFieldsInTemplates:
         assert "Exterior Color" in response.text
         # The placeholder is '--'
         assert "--" in response.text
+
+
+@pytest.fixture
+def client_with_notes(tmp_path: Path):
+    """Create a test client with listings that have notes."""
+    from i4_scout.models.db_models import ListingNote
+
+    db_path = tmp_path / "test_notes.db"
+    engine = create_engine(f"sqlite:///{db_path}")
+    Base.metadata.create_all(engine)
+    session_factory = sessionmaker(bind=engine)
+
+    # Create test listing with notes
+    session = session_factory()
+    repo = ListingRepository(session)
+    listing = repo.create_listing(
+        ListingCreate(
+            source=Source.AUTOSCOUT24_DE,
+            url="https://example.com/noted-car",
+            title="Test BMW i4 with Notes",
+            price=45000_00,
+        )
+    )
+
+    # Add notes to the listing
+    note1 = ListingNote(
+        listing_id=listing.id,
+        content="Called dealer, car is available.",
+    )
+    note2 = ListingNote(
+        listing_id=listing.id,
+        content="Scheduled viewing for Saturday.",
+    )
+    session.add(note1)
+    session.add(note2)
+    session.commit()
+    session.close()
+
+    # Create app with test database
+    app = create_app()
+
+    def get_test_db():
+        session = session_factory()
+        try:
+            yield session
+        finally:
+            session.close()
+
+    app.dependency_overrides[get_db] = get_test_db
+    return TestClient(app)
+
+
+class TestNotesSummary:
+    """Tests for notes summary partial (hover popover)."""
+
+    def test_notes_summary_not_found(self, client):
+        """Test notes summary for non-existent listing returns empty state."""
+        response = client.get("/partials/listing/99999/notes-summary")
+        assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
+        # Should show "No notes" for listing without notes
+        assert "No notes" in response.text
+
+    def test_notes_summary_endpoint_exists(self, client):
+        """Test that notes summary endpoint exists."""
+        response = client.get("/partials/listing/1/notes-summary")
+        assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
+
+    def test_notes_summary_shows_note_count(self, client_with_notes):
+        """Test notes summary shows note count header."""
+        response = client_with_notes.get("/partials/listing/1/notes-summary")
+        assert response.status_code == 200
+        assert "2 notes" in response.text
+
+    def test_notes_summary_shows_note_content(self, client_with_notes):
+        """Test notes summary displays note content."""
+        response = client_with_notes.get("/partials/listing/1/notes-summary")
+        assert response.status_code == 200
+        assert "Called dealer" in response.text
+        assert "Scheduled viewing" in response.text
+
+    def test_notes_summary_shows_timestamps(self, client_with_notes):
+        """Test notes summary displays timestamps."""
+        response = client_with_notes.get("/partials/listing/1/notes-summary")
+        assert response.status_code == 200
+        # Timestamps should be in YYYY-MM-DD HH:MM format
+        assert "note-preview-timestamp" in response.text

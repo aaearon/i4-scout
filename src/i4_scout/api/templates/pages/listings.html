@@ -57,16 +57,74 @@
         window.location.href = '/listings';
     };
 
-    // Options popover cursor tracking
+    // Keyboard handler for table rows (accessibility)
+    window.handleRowKeydown = function(event, row) {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            window.location.href = row.dataset.href;
+        } else if (event.key === 'Escape') {
+            // Dismiss popover by blurring the row
+            row.blur();
+        }
+    };
+
+    // Form validation helper
+    window.validateNumberRange = function(input, min, max) {
+        const value = input.value;
+        if (value === '') {
+            input.removeAttribute('aria-invalid');
+            return;
+        }
+        const num = parseInt(value, 10);
+        const isValid = !isNaN(num) && num >= min && (max === undefined || num <= max);
+        input.setAttribute('aria-invalid', !isValid);
+    };
+
+    // Remove a single filter and reload
+    window.removeFilter = function(filterName) {
+        const params = new URLSearchParams(window.location.search);
+        params.delete(filterName);
+        // Also update the form input if it exists
+        const input = document.querySelector(`[name="${filterName}"]`);
+        if (input) {
+            if (input.type === 'checkbox') {
+                input.checked = false;
+            } else if (input.tagName === 'SELECT') {
+                input.value = '';
+            } else {
+                input.value = '';
+            }
+        }
+        // Navigate to updated URL
+        const newUrl = '/listings' + (params.toString() ? '?' + params.toString() : '');
+        window.location.href = newUrl;
+    };
+
+    // Remove a single option filter
+    window.removeOptionFilter = function(optionName) {
+        const params = new URLSearchParams(window.location.search);
+        // Get all has_option values and remove the specified one
+        const options = params.getAll('has_option').filter(opt => opt !== optionName);
+        params.delete('has_option');
+        options.forEach(opt => params.append('has_option', opt));
+        // Also uncheck the checkbox in the form
+        const checkboxes = document.querySelectorAll(`input[name="has_option"][value="${optionName}"]`);
+        checkboxes.forEach(cb => cb.checked = false);
+        // Navigate to updated URL
+        const newUrl = '/listings' + (params.toString() ? '?' + params.toString() : '');
+        window.location.href = newUrl;
+    };
+
+    // Popover cursor tracking
     const POPOVER_OFFSET_X = 15;
     const POPOVER_OFFSET_Y = 15;
 
-    function positionPopover(popover, e) {
+    function positionPopover(popover, e, width) {
         if (!popover) return;
 
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight;
-        const popoverWidth = 450;
+        const popoverWidth = width || 450;
         const popoverHeight = popover.offsetHeight || 200;
 
         let x = e.clientX + POPOVER_OFFSET_X;
@@ -93,9 +151,31 @@
     // Use event delegation for dynamically loaded content
     document.addEventListener('mousemove', function(e) {
         const row = e.target.closest('.listing-row');
-        if (row) {
-            const popover = row.querySelector('.options-popover');
-            positionPopover(popover, e);
+        if (!row) return;
+
+        // Check if hovering over notes indicator
+        const notesIndicator = e.target.closest('.notes-indicator');
+        if (notesIndicator) {
+            // Position notes popover, hide options popover
+            const notesPopover = notesIndicator.nextElementSibling;
+            if (notesPopover && notesPopover.classList.contains('notes-popover')) {
+                positionPopover(notesPopover, e, 400);
+            }
+            // Hide options popover when hovering notes
+            const optionsPopover = row.querySelector('.options-popover');
+            if (optionsPopover) {
+                optionsPopover.style.display = 'none';
+            }
+        } else {
+            // Position options popover, restore its display
+            const optionsPopover = row.querySelector('.options-popover');
+            if (optionsPopover) {
+                optionsPopover.style.display = '';
+                positionPopover(optionsPopover, e, 450);
+            }
+            // Hide notes popover when not hovering notes indicator
+            const notesPopovers = row.querySelectorAll('.notes-popover');
+            notesPopovers.forEach(p => p.style.display = '');
         }
     });
 })();

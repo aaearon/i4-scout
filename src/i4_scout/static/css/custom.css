@@ -1,6 +1,28 @@
 /* Custom styles for i4-scout web frontend */
 
-/* HTMX Loading Indicator */
+/* ===== CSS Custom Properties ===== */
+:root {
+    /* Semantic colors */
+    --color-success: #2ecc71;
+    --color-danger: #e74c3c;
+    --color-info: #3498db;
+    --color-warning: #f1c40f;
+    --color-muted: #6c757d;
+    --color-purple: #9b59b6;
+
+    /* Derived colors with transparency */
+    --color-success-bg: rgba(46, 204, 113, 0.15);
+    --color-success-bg-subtle: rgba(46, 204, 113, 0.2);
+    --color-danger-bg: rgba(231, 76, 60, 0.15);
+    --color-danger-bg-subtle: rgba(231, 76, 60, 0.1);
+    --color-info-bg: rgba(52, 152, 219, 0.15);
+    --color-info-bg-subtle: rgba(52, 152, 219, 0.2);
+    --color-warning-bg: rgba(241, 196, 15, 0.15);
+    --color-warning-bg-subtle: rgba(241, 196, 15, 0.1);
+    --color-purple-bg: rgba(155, 89, 182, 0.15);
+}
+
+/* ===== HTMX Loading Indicator ===== */
 .htmx-indicator {
     display: none;
 }
@@ -39,17 +61,17 @@
 }
 
 .badge-qualified {
-    background-color: #2ecc71;
+    background-color: var(--color-success);
     color: white;
 }
 
 .badge-not-qualified {
-    background-color: #6c757d;
+    background-color: var(--color-muted);
     color: white;
 }
 
 .badge-source {
-    background-color: #3498db;
+    background-color: var(--color-info);
     color: white;
 }
 
@@ -121,6 +143,16 @@ tr[data-href]:hover {
     background-color: var(--pico-table-row-stripped-background-color);
 }
 
+tr[data-href]:focus-visible {
+    outline: 2px solid var(--pico-primary);
+    outline-offset: -2px;
+    background-color: var(--pico-table-row-stripped-background-color);
+}
+
+tr[data-href]:focus:not(:focus-visible) {
+    outline: none;
+}
+
 /* Sortable headers */
 .sortable-header {
     user-select: none;
@@ -133,6 +165,47 @@ tr[data-href]:hover {
 
 .sortable-header.sort-active {
     color: var(--pico-primary);
+}
+
+/* ===== Form Validation Styles ===== */
+input[aria-invalid="true"],
+select[aria-invalid="true"],
+textarea[aria-invalid="true"] {
+    border-color: var(--color-danger) !important;
+    background-color: var(--color-danger-bg-subtle);
+}
+
+input[aria-invalid="true"]:focus,
+select[aria-invalid="true"]:focus,
+textarea[aria-invalid="true"]:focus {
+    box-shadow: 0 0 0 2px var(--color-danger-bg);
+}
+
+.form-error {
+    color: var(--color-danger);
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+    display: block;
+}
+
+.form-group-error .form-error {
+    display: block;
+}
+
+.form-hint {
+    color: var(--pico-muted-color);
+    font-size: 0.7rem;
+    display: none;
+}
+
+.filter-form .form-hint {
+    display: none;
+}
+
+/* Valid state */
+input[aria-invalid="false"]:not(:placeholder-shown),
+select[aria-invalid="false"]:not(:placeholder-shown) {
+    border-color: var(--color-success);
 }
 
 /* Filter form layout */
@@ -280,19 +353,19 @@ tr[data-href]:hover {
 
 /* Option has/missing indicators (legacy) */
 .option-has {
-    color: #2ecc71;
+    color: var(--color-success);
     font-weight: bold;
     font-size: 1.25rem;
 }
 
 .option-missing {
-    color: #e74c3c;
+    color: var(--color-danger);
     font-weight: bold;
     font-size: 1.25rem;
 }
 
 .option-missing-nice {
-    color: #6c757d;
+    color: var(--color-muted);
     font-weight: bold;
     font-size: 1.25rem;
 }
@@ -314,33 +387,33 @@ tr[data-href]:hover {
 }
 
 .option-card-has {
-    background: rgba(46, 204, 113, 0.15);
-    border-left: 3px solid #2ecc71;
+    background: var(--color-success-bg);
+    border-left: 3px solid var(--color-success);
 }
 
 .option-card-has .option-icon {
-    color: #2ecc71;
+    color: var(--color-success);
     font-weight: bold;
 }
 
 .option-card-missing {
-    background: rgba(231, 76, 60, 0.1);
-    border-left: 3px solid #e74c3c;
+    background: var(--color-danger-bg-subtle);
+    border-left: 3px solid var(--color-danger);
     opacity: 0.85;
 }
 
 .option-card-missing .option-icon {
-    color: #e74c3c;
+    color: var(--color-danger);
     font-weight: bold;
 }
 
 .option-card-nice-has {
-    background: rgba(52, 152, 219, 0.15);
-    border-left: 3px solid #3498db;
+    background: var(--color-info-bg);
+    border-left: 3px solid var(--color-info);
 }
 
 .option-card-nice-has .option-icon {
-    color: #3498db;
+    color: var(--color-info);
     font-weight: bold;
 }
 
@@ -356,7 +429,7 @@ tr[data-href]:hover {
 
 /* Dealbreakers section */
 .dealbreakers-section .no-dealbreakers {
-    color: #2ecc71;
+    color: var(--color-success);
     margin: 0;
 }
 
@@ -389,7 +462,9 @@ tr[data-href]:hover {
     pointer-events: none;
 }
 
-.listing-row:hover .options-popover {
+.listing-row:hover .options-popover,
+.listing-row:focus .options-popover,
+.listing-row:focus-within .options-popover {
     display: block;
 }
 
@@ -407,7 +482,7 @@ tr[data-href]:hover {
 }
 
 .options-summary-header .nice-count {
-    color: #3498db;
+    color: var(--color-info);
 }
 
 .options-summary-grid,
@@ -429,19 +504,19 @@ tr[data-href]:hover {
 }
 
 .opt-has {
-    background: rgba(46, 204, 113, 0.2);
-    color: #2ecc71;
+    background: var(--color-success-bg-subtle);
+    color: var(--color-success);
 }
 
 .opt-missing {
-    background: rgba(231, 76, 60, 0.15);
-    color: #e74c3c;
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
     opacity: 0.8;
 }
 
 .opt-nice-has {
-    background: rgba(52, 152, 219, 0.2);
-    color: #3498db;
+    background: var(--color-info-bg-subtle);
+    color: var(--color-info);
 }
 
 .options-summary-empty {
@@ -459,11 +534,11 @@ tr[data-href]:hover {
 
 /* Price change indicators */
 .price-up {
-    color: #e74c3c;
+    color: var(--color-danger);
 }
 
 .price-down {
-    color: #2ecc71;
+    color: var(--color-success);
 }
 
 /* Scrape form */
@@ -582,19 +657,19 @@ tr[data-href]:hover {
 
 /* Job status badges */
 .status-pending {
-    background-color: #6c757d;
+    background-color: var(--color-muted);
 }
 
 .status-running {
-    background-color: #3498db;
+    background-color: var(--color-info);
 }
 
 .status-completed {
-    background-color: #2ecc71;
+    background-color: var(--color-success);
 }
 
 .status-failed {
-    background-color: #e74c3c;
+    background-color: var(--color-danger);
 }
 
 /* Empty state */
@@ -636,15 +711,15 @@ footer {
 }
 
 .alert-success {
-    background-color: rgba(46, 204, 113, 0.15);
-    border: 1px solid #2ecc71;
-    color: #2ecc71;
+    background-color: var(--color-success-bg);
+    border: 1px solid var(--color-success);
+    color: var(--color-success);
 }
 
 .alert-error {
-    background-color: rgba(231, 76, 60, 0.15);
-    border: 1px solid #e74c3c;
-    color: #e74c3c;
+    background-color: var(--color-danger-bg);
+    border: 1px solid var(--color-danger);
+    color: var(--color-danger);
 }
 
 /* Options filter section */
@@ -744,6 +819,104 @@ footer {
     width: auto;
 }
 
+/* ===== Active Filter Chips ===== */
+.active-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--pico-card-sectioning-background-color);
+    border-radius: var(--pico-border-radius);
+    border: 1px solid var(--pico-muted-border-color);
+}
+
+.active-filters-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--pico-muted-color);
+    margin-right: 0.25rem;
+}
+
+.filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background: var(--pico-secondary-background);
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: 1rem;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.filter-chip:hover {
+    background: var(--pico-table-row-stripped-background-color);
+    border-color: var(--color-danger);
+}
+
+.filter-chip:hover .chip-remove {
+    color: var(--color-danger);
+}
+
+.filter-chip-success {
+    background: var(--color-success-bg);
+    border-color: var(--color-success);
+    color: var(--color-success);
+}
+
+.filter-chip-danger {
+    background: var(--color-danger-bg);
+    border-color: var(--color-danger);
+    color: var(--color-danger);
+}
+
+.filter-chip-info {
+    background: var(--color-info-bg);
+    border-color: var(--color-info);
+    color: var(--color-info);
+}
+
+.chip-remove {
+    font-size: 1rem;
+    line-height: 1;
+    opacity: 0.6;
+    transition: opacity 0.15s, color 0.15s;
+}
+
+.filter-chip:hover .chip-remove {
+    opacity: 1;
+}
+
+.filter-chip-clear {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: transparent;
+    border: 1px dashed var(--pico-muted-border-color);
+    border-radius: 1rem;
+    cursor: pointer;
+    color: var(--pico-muted-color);
+    transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+    margin: 0;
+    margin-left: auto;
+}
+
+.filter-chip-clear:hover {
+    background: var(--color-danger-bg-subtle);
+    border-color: var(--color-danger);
+    color: var(--color-danger);
+}
+
 /* Filter buttons group */
 .filter-buttons {
     display: flex;
@@ -799,7 +972,7 @@ footer {
 }
 
 .action-link-external {
-    color: #3498db;
+    color: var(--color-info);
 }
 
 /* ===== Compare Feature Styles ===== */
@@ -848,15 +1021,15 @@ footer {
 
 /* Copy button feedback states */
 #copy-btn.copy-success {
-    border-color: #2ecc71;
-    color: #2ecc71;
-    background: rgba(46, 204, 113, 0.1);
+    border-color: var(--color-success);
+    color: var(--color-success);
+    background: var(--color-success-bg-subtle);
 }
 
 #copy-btn.copy-error {
-    border-color: #e74c3c;
-    color: #e74c3c;
-    background: rgba(231, 76, 60, 0.1);
+    border-color: var(--color-danger);
+    color: var(--color-danger);
+    background: var(--color-danger-bg-subtle);
 }
 
 /* Add padding to main when compare bar is visible */
@@ -941,18 +1114,18 @@ body:has(.compare-bar:not([hidden])) main {
 }
 
 .option-badge.option-has {
-    background: rgba(46, 204, 113, 0.2);
-    color: #2ecc71;
+    background: var(--color-success-bg-subtle);
+    color: var(--color-success);
 }
 
 .option-badge.option-missing-required {
-    background: rgba(231, 76, 60, 0.15);
-    color: #e74c3c;
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
 }
 
 .option-badge.option-nice-has {
-    background: rgba(52, 152, 219, 0.2);
-    color: #3498db;
+    background: var(--color-info-bg-subtle);
+    color: var(--color-info);
 }
 
 .option-badge.option-nice-missing {
@@ -1006,11 +1179,11 @@ body:has(.compare-bar:not([hidden])) main {
 }
 
 .favorite-btn:hover {
-    color: #f1c40f;
+    color: var(--color-warning);
 }
 
 .favorite-btn.is-favorite {
-    color: #f1c40f;
+    color: var(--color-warning);
 }
 
 /* Large favorite button (detail page) */
@@ -1023,13 +1196,13 @@ body:has(.compare-bar:not([hidden])) main {
 }
 
 .favorite-btn-large:hover {
-    border-color: #f1c40f;
-    background: rgba(241, 196, 15, 0.1);
+    border-color: var(--color-warning);
+    background: var(--color-warning-bg-subtle);
 }
 
 .favorite-btn-large.is-favorite {
-    border-color: #f1c40f;
-    background: rgba(241, 196, 15, 0.15);
+    border-color: var(--color-warning);
+    background: var(--color-warning-bg);
 }
 
 /* Detail page actions */
@@ -1041,7 +1214,7 @@ body:has(.compare-bar:not([hidden])) main {
 
 /* Favorites count in filter */
 #favorites-count {
-    color: #f1c40f;
+    color: var(--color-warning);
     font-weight: 600;
 }
 
@@ -1179,7 +1352,7 @@ body:has(.compare-bar:not([hidden])) main {
 
 /* PDF badge for options from PDF */
 .badge-pdf {
-    background-color: #9b59b6;
+    background-color: var(--color-purple);
     color: white;
     font-size: 0.65rem;
     padding: 0.1em 0.4em;
@@ -1199,7 +1372,7 @@ body:has(.compare-bar:not([hidden])) main {
     right: 0;
     width: 0;
     height: 0;
-    border-top: 12px solid #9b59b6;
+    border-top: 12px solid var(--color-purple);
     border-left: 12px solid transparent;
 }
 
@@ -1223,7 +1396,7 @@ body:has(.compare-bar:not([hidden])) main {
 /* ===== Issue Marker Styles ===== */
 
 .badge-issue {
-    background-color: #e74c3c;
+    background-color: var(--color-danger);
     color: white;
 }
 
@@ -1236,7 +1409,7 @@ body:has(.compare-bar:not([hidden])) main {
 
 /* Issue icon in listing row */
 .issue-icon {
-    color: #e74c3c;
+    color: var(--color-danger);
     font-size: 0.9rem;
     margin-right: 0.25rem;
     flex-shrink: 0;
@@ -1245,7 +1418,7 @@ body:has(.compare-bar:not([hidden])) main {
 
 /* Document icon in listing row */
 .document-icon {
-    color: #9b59b6;
+    color: var(--color-purple);
     font-size: 0.85rem;
     margin-right: 0.25rem;
     flex-shrink: 0;
@@ -1253,11 +1426,80 @@ body:has(.compare-bar:not([hidden])) main {
 
 /* Notes indicator in listing row */
 .notes-indicator {
-    color: #3498db;
+    color: var(--color-info);
     font-size: 0.8rem;
     font-weight: 600;
     margin-right: 0.25rem;
     flex-shrink: 0;
+    cursor: pointer;
+    position: relative;
+}
+
+/* Notes hover popover */
+.notes-popover {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    width: 400px;
+    max-width: 90vw;
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 1rem;
+    background: var(--pico-card-background-color);
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+}
+
+.notes-indicator:hover + .notes-popover,
+.notes-indicator:focus + .notes-popover {
+    display: block;
+}
+
+/* Notes summary content */
+.notes-summary-header {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--color-info);
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--pico-muted-border-color);
+}
+
+.notes-summary-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.note-preview {
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--pico-muted-border-color);
+}
+
+.note-preview:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.note-preview-timestamp {
+    font-size: 0.75rem;
+    color: var(--pico-muted-color);
+    font-family: monospace;
+}
+
+.note-preview-text {
+    margin: 0.25rem 0 0;
+    font-size: 0.875rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.notes-summary-empty {
+    color: var(--pico-muted-color);
+    font-size: 0.875rem;
+    margin: 0;
 }
 
 @keyframes throb {
@@ -1283,14 +1525,14 @@ body:has(.compare-bar:not([hidden])) main {
 }
 
 .issue-toggle-btn:hover {
-    border-color: #e74c3c;
-    background: rgba(231, 76, 60, 0.1);
+    border-color: var(--color-danger);
+    background: var(--color-danger-bg-subtle);
 }
 
 .issue-toggle-btn.has-issue {
-    border-color: #e74c3c;
-    background: rgba(231, 76, 60, 0.15);
-    color: #e74c3c;
+    border-color: var(--color-danger);
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
 }
 
 /* ===== Notes Section Styles ===== */
@@ -1361,8 +1603,8 @@ body:has(.compare-bar:not([hidden])) main {
 }
 
 .note-delete-btn:hover {
-    background: rgba(231, 76, 60, 0.15);
-    color: #e74c3c;
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
 }
 
 .note-content {
@@ -1398,9 +1640,9 @@ body:has(.compare-bar:not([hidden])) main {
 }
 
 .price-drop {
-    color: #2ecc71;
+    color: var(--color-success);
 }
 
 .price-increase {
-    color: #e74c3c;
+    color: var(--color-danger);
 }

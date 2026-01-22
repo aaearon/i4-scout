@@ -479,6 +479,23 @@ async def listing_notes_partial(
     )
 
 
+@router.get("/listing/{listing_id}/notes-summary")
+async def listing_notes_summary_partial(
+    request: Request,
+    listing_id: int,
+    note_service: NoteServiceDep,
+    templates: TemplatesDep,
+) -> HTMLResponse:
+    """Return notes summary HTML fragment for hover preview."""
+    notes = note_service.get_notes(listing_id)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="components/notes_summary.html",
+        context={"notes": notes},
+    )
+
+
 @router.post("/listing/{listing_id}/notes")
 async def add_note_partial(
     request: Request,
