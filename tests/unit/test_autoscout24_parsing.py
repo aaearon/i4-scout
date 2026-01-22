@@ -535,3 +535,92 @@ class TestAutoScout24DetailParsingIntegration:
         assert result.dealer_name == "Van Hooff BMW"
         assert result.location_city == "VELDHOVEN"
         assert result.location_country == "NL"
+
+
+class TestAutoScout24ColorParsing:
+    """Tests for vehicle color extraction from detail pages."""
+
+    def test_parse_colors_extracts_german_exterior_color(self, de_detail_html: str) -> None:
+        """Exterior color (Außenfarbe) should be extracted from German detail page."""
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
+
+        result = AutoScout24DEScraper.parse_colors_sync(de_detail_html)
+
+        assert result["exterior_color"] == "Grau"
+
+    def test_parse_colors_extracts_german_interior_color(self, de_detail_html: str) -> None:
+        """Interior color (Farbe der Innenausstattung) should be extracted from German detail page."""
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
+
+        result = AutoScout24DEScraper.parse_colors_sync(de_detail_html)
+
+        assert result["interior_color"] == "Beige"
+
+    def test_parse_colors_extracts_german_interior_material(self, de_detail_html: str) -> None:
+        """Interior material (Innenausstattung) should be extracted from German detail page."""
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
+
+        result = AutoScout24DEScraper.parse_colors_sync(de_detail_html)
+
+        assert result["interior_material"] == "Vollleder"
+
+    def test_parse_colors_extracts_dutch_exterior_color(self, nl_detail_html: str) -> None:
+        """Exterior color (Kleur) should be extracted from Dutch detail page."""
+        from i4_scout.scrapers.autoscout24_nl import AutoScout24NLScraper
+
+        result = AutoScout24NLScraper.parse_colors_sync(nl_detail_html)
+
+        assert result["exterior_color"] == "Grijs"
+
+    def test_parse_colors_extracts_dutch_interior_color(self, nl_detail_html: str) -> None:
+        """Interior color (Kleur interieur) should be extracted from Dutch detail page."""
+        from i4_scout.scrapers.autoscout24_nl import AutoScout24NLScraper
+
+        result = AutoScout24NLScraper.parse_colors_sync(nl_detail_html)
+
+        assert result["interior_color"] == "Zwart"
+
+    def test_parse_colors_extracts_dutch_interior_material(self, nl_detail_html: str) -> None:
+        """Interior material (Materiaal) should be extracted from Dutch detail page."""
+        from i4_scout.scrapers.autoscout24_nl import AutoScout24NLScraper
+
+        result = AutoScout24NLScraper.parse_colors_sync(nl_detail_html)
+
+        assert result["interior_material"] == "Leder"
+
+    def test_parse_colors_handles_missing_data(self) -> None:
+        """Parser should return None for missing color fields."""
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
+
+        html = "<html><body><h1>No color data here</h1></body></html>"
+        result = AutoScout24DEScraper.parse_colors_sync(html)
+
+        assert result["exterior_color"] is None
+        assert result["interior_color"] is None
+        assert result["interior_material"] is None
+
+    async def test_parse_listing_detail_includes_colors(self, de_detail_html: str) -> None:
+        """parse_listing_detail should include color data from German page."""
+        from i4_scout.scrapers.autoscout24_de import AutoScout24DEScraper
+
+        scraper = AutoScout24DEScraper(None)  # type: ignore
+        result = await scraper.parse_listing_detail(
+            de_detail_html, "https://example.com/listing"
+        )
+
+        assert result.exterior_color == "Grau"
+        assert result.interior_color == "Beige"
+        assert result.interior_material == "Vollleder"
+
+    async def test_parse_listing_detail_includes_nl_colors(self, nl_detail_html: str) -> None:
+        """parse_listing_detail should include color data from Dutch page."""
+        from i4_scout.scrapers.autoscout24_nl import AutoScout24NLScraper
+
+        scraper = AutoScout24NLScraper(None)  # type: ignore
+        result = await scraper.parse_listing_detail(
+            nl_detail_html, "https://example.com/listing"
+        )
+
+        assert result.exterior_color == "Grijs"
+        assert result.interior_color == "Zwart"
+        assert result.interior_material == "Leder"

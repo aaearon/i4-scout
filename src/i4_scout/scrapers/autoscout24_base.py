@@ -233,6 +233,7 @@ class AutoScout24BaseScraper(BaseScraper):
         options = self.parse_options_sync(html)
         description = self.parse_description_sync(html)
         json_ld_data = self.parse_json_ld_sync(html)
+        colors = self.parse_colors_sync(html)
         soup = BeautifulSoup(html, "html.parser")
 
         # Extract basic info from detail page
@@ -276,6 +277,9 @@ class AutoScout24BaseScraper(BaseScraper):
             location_country=location_country,
             dealer_name=dealer_name,
             dealer_type=dealer_type,
+            exterior_color=colors.get("exterior_color"),
+            interior_color=colors.get("interior_color"),
+            interior_material=colors.get("interior_material"),
         )
 
     @classmethod
@@ -398,6 +402,50 @@ class AutoScout24BaseScraper(BaseScraper):
             return desc_elem.get_text(separator="\n", strip=True)
 
         return None
+
+    # Color label mappings for DE and NL sites
+    COLOR_LABELS: ClassVar[dict[str, list[str]]] = {
+        "exterior_color": ["Außenfarbe", "Kleur"],
+        "interior_color": ["Farbe der Innenausstattung", "Kleur interieur"],
+        "interior_material": ["Innenausstattung", "Materiaal"],
+    }
+
+    @classmethod
+    def parse_colors_sync(cls, html: str) -> dict[str, str | None]:
+        """Extract vehicle color information from detail page HTML.
+
+        Parses dt/dd pairs for color labels (German and Dutch).
+
+        Args:
+            html: Raw HTML content of detail page.
+
+        Returns:
+            Dict with exterior_color, interior_color, interior_material.
+        """
+        soup = BeautifulSoup(html, "html.parser")
+        result: dict[str, str | None] = {
+            "exterior_color": None,
+            "interior_color": None,
+            "interior_material": None,
+        }
+
+        # Find all dt elements and look for color labels
+        dt_elements = soup.find_all("dt")
+
+        for dt in dt_elements:
+            label = dt.get_text(strip=True)
+
+            for field, labels in cls.COLOR_LABELS.items():
+                if label in labels:
+                    # Get the next dd sibling
+                    dd = dt.find_next_sibling("dd")
+                    if dd:
+                        value = dd.get_text(strip=True)
+                        if value:
+                            result[field] = value
+                    break
+
+        return result
 
     @classmethod
     def parse_json_ld_sync(cls, html: str) -> dict[str, Any] | None:

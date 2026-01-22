@@ -41,6 +41,11 @@ class Listing(Base):
     first_registration: Mapped[date | None] = mapped_column(Date, nullable=True)
     vin: Mapped[str | None] = mapped_column(String(17), nullable=True)
 
+    # Vehicle colors
+    exterior_color: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    interior_color: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    interior_material: Mapped[str | None] = mapped_column(String(100), nullable=True)
+
     # Location
     location_city: Mapped[str | None] = mapped_column(String(100), nullable=True)
     location_zip: Mapped[str | None] = mapped_column(String(20), nullable=True)
