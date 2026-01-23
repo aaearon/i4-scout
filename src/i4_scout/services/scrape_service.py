@@ -14,6 +14,7 @@ from i4_scout.matching.option_matcher import match_options
 from i4_scout.matching.scorer import calculate_score
 from i4_scout.models.pydantic_models import (
     ListingCreate,
+    ListingStatus,
     OptionsConfig,
     ScrapeProgress,
     ScrapeResult,
@@ -107,6 +108,7 @@ class ScrapeService:
         updated_count = 0
         skipped_count = 0
         fetched_count = 0
+        seen_listing_ids: list[int] = []
 
         async with self._create_browser_context(headless) as (browser, page):
             scraper = self._create_scraper(source, browser)
@@ -149,6 +151,10 @@ class ScrapeService:
                         elif result["status"] == "skipped":
                             skipped_count += 1
 
+                        # Track seen listing ID for lifecycle tracking
+                        if result.get("listing_id"):
+                            seen_listing_ids.append(result["listing_id"])
+
                         # Emit progress with current listing
                         if progress_callback:
                             progress_callback(ScrapeProgress(
@@ -166,6 +172,9 @@ class ScrapeService:
                 except Exception:
                     logger.exception("Error scraping page %d, continuing to next page", page_num)
                     continue
+
+        # Update lifecycle tracking after scrape
+        self._update_lifecycle_after_scrape(source, seen_listing_ids)
 
         return ScrapeResult(
             total_found=total_found,
@@ -212,16 +221,18 @@ class ScrapeService:
                 existing = self._repo.get_listing_by_url(url)
             if existing:
                 self._repo.update_listing(existing.id)
-            return {"status": "skipped"}
+                return {"status": "skipped", "listing_id": existing.id}
+            return {"status": "skipped", "listing_id": None}
 
-        # Get detail page for options, description, and location/dealer info
-        options_list = []
+        # Get detail page for options, description, location/dealer info, and photos
+        options_list: list[str] = []
         description = None
         location_city = None
         location_zip = None
         location_country = None
         dealer_name = None
         dealer_type = None
+        photo_urls: list[str] = []
         if url:
             try:
                 detail = await scraper.scrape_listing_detail(page, url, use_cache=use_cache)
@@ -232,6 +243,7 @@ class ScrapeService:
                 location_country = detail.location_country
                 dealer_name = detail.dealer_name
                 dealer_type = detail.dealer_type
+                photo_urls = detail.photo_urls
             except Exception:
                 logger.exception("Error fetching detail page %s", url)
 
@@ -263,6 +275,7 @@ class ScrapeService:
             location_country=location_country,
             dealer_name=dealer_name,
             dealer_type=dealer_type,
+            photo_urls=photo_urls,
             match_score=scored_result.score,
             is_qualified=scored_result.is_qualified,
         )
@@ -280,7 +293,50 @@ class ScrapeService:
             option, _ = self._repo.get_or_create_option(option_name)
             self._repo.add_option_to_listing(listing.id, option.id)
 
-        return {"status": "new" if created else "updated"}
+        return {"status": "new" if created else "updated", "listing_id": listing.id}
+
+    def _update_lifecycle_after_scrape(
+        self, source: Source, seen_listing_ids: list[int]
+    ) -> None:
+        """Update listing lifecycle status after a scrape.
+
+        - Reset consecutive_misses for seen listings
+        - Increment consecutive_misses for unseen listings
+        - Mark listings as delisted when consecutive_misses >= 2
+
+        Args:
+            source: The source that was scraped.
+            seen_listing_ids: IDs of listings that were seen during the scrape.
+        """
+        # Get all active listings for this source
+        active_listings = self._repo.get_active_listings_by_source(source)
+        active_ids = {listing.id for listing in active_listings}
+
+        # Calculate seen and unseen listings
+        seen_set = set(seen_listing_ids)
+        seen_active_ids = list(seen_set & active_ids)
+        unseen_active_ids = list(active_ids - seen_set)
+
+        # Reset misses for seen listings (including new ones)
+        self._repo.reset_consecutive_misses(list(seen_set))
+
+        # Increment misses for unseen listings
+        self._repo.increment_consecutive_misses(unseen_active_ids)
+
+        # Mark listings as delisted if they've missed 2+ scrapes
+        # We need to check which unseen listings now have >= 2 misses
+        for listing in active_listings:
+            if listing.id in unseen_active_ids:
+                # After increment, check if threshold reached
+                # Note: consecutive_misses was 0-based before increment,
+                # so after increment it's 1 for first miss, 2 for second miss
+                if listing.consecutive_misses >= 1:  # Will be 2 after increment
+                    self._repo.update_listing_status(listing.id, ListingStatus.DELISTED)
+                    logger.info(
+                        "Marked listing %d as delisted (consecutive_misses=%d)",
+                        listing.id,
+                        listing.consecutive_misses + 1,
+                    )
 
     def _get_scraper_class(self, source: Source) -> type:
         """Get the scraper class for a source.

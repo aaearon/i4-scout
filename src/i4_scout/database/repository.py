@@ -28,7 +28,7 @@ from i4_scout.models.db_models import (
     PriceHistory,
     ScrapeJob,
 )
-from i4_scout.models.pydantic_models import ListingCreate, ScrapeStatus, Source
+from i4_scout.models.pydantic_models import ListingCreate, ListingStatus, ScrapeStatus, Source
 
 P = ParamSpec("P")
 R = TypeVar("R")
@@ -273,6 +273,7 @@ class ListingRepository:
         has_issue: bool | None = None,
         has_price_change: bool | None = None,
         recently_updated: bool | None = None,
+        status: ListingStatus | None = None,
     ) -> Query[Listing]:
         """Apply common filters to a listing query.
 
@@ -294,6 +295,7 @@ class ListingRepository:
             has_issue: Filter by issue status (True, False, or None for all).
             has_price_change: Filter by price change status (True for listings with changes).
             recently_updated: Filter by recent price changes (True for listings with price changes within 24h).
+            status: Filter by listing status (ACTIVE, DELISTED, or None for all).
 
         Returns:
             Filtered query.
@@ -394,6 +396,9 @@ class ListingRepository:
             else:
                 query = query.filter(~Listing.id.in_(recent_change_subq))
 
+        if status is not None:
+            query = query.filter(Listing.status == status)
+
         return query
 
     def get_listings(
@@ -414,6 +419,7 @@ class ListingRepository:
         has_issue: bool | None = None,
         has_price_change: bool | None = None,
         recently_updated: bool | None = None,
+        status: ListingStatus | None = None,
         sort_by: str | None = None,
         sort_order: str = "desc",
         limit: int | None = None,
@@ -438,6 +444,7 @@ class ListingRepository:
             has_issue: Filter by issue status (True, False, or None for all).
             has_price_change: Filter by price change status (True for listings with changes).
             recently_updated: Filter by recent price changes (True for listings with price changes within 24h).
+            status: Filter by listing status (ACTIVE, DELISTED, or None for all).
             sort_by: Field to sort by (price, mileage, score, first_seen, last_seen).
             sort_order: Sort direction (asc, desc). Default: desc.
             limit: Maximum number of results.
@@ -469,6 +476,7 @@ class ListingRepository:
             has_issue=has_issue,
             has_price_change=has_price_change,
             recently_updated=recently_updated,
+            status=status,
         )
 
         # Sorting
@@ -512,6 +520,7 @@ class ListingRepository:
         has_issue: bool | None = None,
         has_price_change: bool | None = None,
         recently_updated: bool | None = None,
+        status: ListingStatus | None = None,
     ) -> int:
         """Count listings with optional filters.
 
@@ -532,6 +541,7 @@ class ListingRepository:
             has_issue: Filter by issue status (True, False, or None for all).
             has_price_change: Filter by price change status (True for listings with changes).
             recently_updated: Filter by recent price changes (True for listings with price changes within 24h).
+            status: Filter by listing status (ACTIVE, DELISTED, or None for all).
 
         Returns:
             Number of matching listings.
@@ -555,6 +565,7 @@ class ListingRepository:
             has_issue=has_issue,
             has_price_change=has_price_change,
             recently_updated=recently_updated,
+            status=status,
         )
         return query.count()
 
@@ -601,6 +612,104 @@ class ListingRepository:
             return None
 
         listing.has_issue = has_issue
+        self._session.commit()
+        self._session.refresh(listing)
+
+        return listing
+
+    # ========== LIFECYCLE ==========
+
+    def get_active_listings_by_source(self, source: Source) -> list[Listing]:
+        """Get all active listings for a source.
+
+        Used for lifecycle tracking to identify which listings should be
+        checked during a scrape.
+
+        Args:
+            source: Source to filter by.
+
+        Returns:
+            List of active Listing objects for the source.
+        """
+        return (
+            self._session.query(Listing)
+            .filter(Listing.source == source, Listing.status == ListingStatus.ACTIVE)
+            .all()
+        )
+
+    @with_db_retry
+    def increment_consecutive_misses(self, listing_ids: list[int]) -> int:
+        """Increment consecutive_misses for listings not seen during a scrape.
+
+        Args:
+            listing_ids: IDs of listings that were not seen.
+
+        Returns:
+            Number of listings updated.
+        """
+        if not listing_ids:
+            return 0
+
+        updated = (
+            self._session.query(Listing)
+            .filter(Listing.id.in_(listing_ids))
+            .update(
+                {Listing.consecutive_misses: Listing.consecutive_misses + 1},
+                synchronize_session=False,
+            )
+        )
+        self._session.commit()
+        return updated
+
+    @with_db_retry
+    def reset_consecutive_misses(self, listing_ids: list[int]) -> int:
+        """Reset consecutive_misses to 0 for listings seen during a scrape.
+
+        Also resets status to ACTIVE if the listing was previously delisted
+        (the listing reappeared).
+
+        Args:
+            listing_ids: IDs of listings that were seen.
+
+        Returns:
+            Number of listings updated.
+        """
+        if not listing_ids:
+            return 0
+
+        updated = (
+            self._session.query(Listing)
+            .filter(Listing.id.in_(listing_ids))
+            .update(
+                {
+                    Listing.consecutive_misses: 0,
+                    Listing.status: ListingStatus.ACTIVE,
+                },
+                synchronize_session=False,
+            )
+        )
+        self._session.commit()
+        return updated
+
+    @with_db_retry
+    def update_listing_status(
+        self, listing_id: int, status: ListingStatus
+    ) -> Listing | None:
+        """Update the status of a listing.
+
+        Args:
+            listing_id: Listing ID to update.
+            status: New status (ACTIVE or DELISTED).
+
+        Returns:
+            Updated Listing if found, None otherwise.
+        """
+        listing = self.get_listing_by_id(listing_id)
+        if listing is None:
+            return None
+
+        listing.status = status
+        listing.status_changed_at = datetime.now(timezone.utc)
         self._session.commit()
         self._session.refresh(listing)
 

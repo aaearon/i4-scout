@@ -1,0 +1,169 @@
+{% if photo_urls and photo_urls|length > 0 %}
+<article class="photo-gallery-section">
+    <header>Photos ({{ photo_urls|length }})</header>
+    <div class="photo-gallery" id="gallery-{{ listing_id }}">
+        <!-- Main Image -->
+        <div class="gallery-main">
+            <img
+                src="{{ photo_urls[0] }}/720x540.webp"
+                alt="Listing photo 1"
+                class="gallery-main-img"
+                loading="lazy"
+                onclick="openLightbox({{ listing_id }}, 0)"
+            >
+        </div>
+
+        <!-- Thumbnail Strip -->
+        {% if photo_urls|length > 1 %}
+        <div class="gallery-thumbnails">
+            {% for url in photo_urls %}
+            <div
+                class="gallery-thumb{% if loop.index0 == 0 %} gallery-thumb-active{% endif %}"
+                data-index="{{ loop.index0 }}"
+                onclick="selectThumbnail({{ listing_id }}, {{ loop.index0 }}, '{{ url }}')"
+            >
+                <img
+                    src="{{ url }}/120x90.webp"
+                    alt="Thumbnail {{ loop.index }}"
+                    loading="lazy"
+                >
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Lightbox Modal -->
+    <dialog id="lightbox-{{ listing_id }}" class="lightbox-dialog">
+        <div class="lightbox-content">
+            <button class="lightbox-close" onclick="closeLightbox({{ listing_id }})" aria-label="Close">&times;</button>
+            <button class="lightbox-nav lightbox-prev" onclick="lightboxNav({{ listing_id }}, -1)" aria-label="Previous">&lsaquo;</button>
+            <img
+                id="lightbox-img-{{ listing_id }}"
+                src="{{ photo_urls[0] }}/1280x960.webp"
+                alt="Full size photo"
+                class="lightbox-img"
+            >
+            <button class="lightbox-nav lightbox-next" onclick="lightboxNav({{ listing_id }}, 1)" aria-label="Next">&rsaquo;</button>
+            <div class="lightbox-counter">
+                <span id="lightbox-counter-{{ listing_id }}">1</span> / {{ photo_urls|length }}
+            </div>
+        </div>
+    </dialog>
+</article>
+
+<script>
+(function() {
+    // Photo URLs for this gallery
+    const galleryUrls_{{ listing_id }} = [
+        {% for url in photo_urls %}
+        "{{ url }}"{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    let currentIndex_{{ listing_id }} = 0;
+
+    // Store in window for access from onclick handlers
+    window.galleryUrls = window.galleryUrls || {};
+    window.galleryUrls[{{ listing_id }}] = galleryUrls_{{ listing_id }};
+    window.currentIndex = window.currentIndex || {};
+    window.currentIndex[{{ listing_id }}] = 0;
+})();
+
+function selectThumbnail(listingId, index, baseUrl) {
+    // Update current index
+    window.currentIndex[listingId] = index;
+
+    // Update main image
+    const mainImg = document.querySelector(`#gallery-${listingId} .gallery-main-img`);
+    if (mainImg) {
+        mainImg.src = baseUrl + '/720x540.webp';
+    }
+
+    // Update thumbnail active state
+    const thumbs = document.querySelectorAll(`#gallery-${listingId} .gallery-thumb`);
+    thumbs.forEach((thumb, i) => {
+        thumb.classList.toggle('gallery-thumb-active', i === index);
+    });
+}
+
+function openLightbox(listingId, index) {
+    window.currentIndex[listingId] = index;
+    updateLightboxImage(listingId, index);
+
+    const dialog = document.getElementById(`lightbox-${listingId}`);
+    if (dialog) {
+        dialog.showModal();
+    }
+}
+
+function closeLightbox(listingId) {
+    const dialog = document.getElementById(`lightbox-${listingId}`);
+    if (dialog) {
+        dialog.close();
+    }
+}
+
+function lightboxNav(listingId, direction) {
+    const urls = window.galleryUrls[listingId];
+    let index = window.currentIndex[listingId] + direction;
+
+    // Wrap around
+    if (index < 0) index = urls.length - 1;
+    if (index >= urls.length) index = 0;
+
+    window.currentIndex[listingId] = index;
+    updateLightboxImage(listingId, index);
+
+    // Also update thumbnail selection
+    const thumbs = document.querySelectorAll(`#gallery-${listingId} .gallery-thumb`);
+    thumbs.forEach((thumb, i) => {
+        thumb.classList.toggle('gallery-thumb-active', i === index);
+    });
+}
+
+function updateLightboxImage(listingId, index) {
+    const urls = window.galleryUrls[listingId];
+    const img = document.getElementById(`lightbox-img-${listingId}`);
+    const counter = document.getElementById(`lightbox-counter-${listingId}`);
+
+    if (img) {
+        img.src = urls[index] + '/1280x960.webp';
+    }
+    if (counter) {
+        counter.textContent = index + 1;
+    }
+}
+
+// Close lightbox on backdrop click
+document.querySelectorAll('.lightbox-dialog').forEach(dialog => {
+    dialog.addEventListener('click', (e) => {
+        if (e.target === dialog) {
+            dialog.close();
+        }
+    });
+});
+
+// Keyboard navigation for lightbox
+document.addEventListener('keydown', (e) => {
+    const openDialog = document.querySelector('.lightbox-dialog[open]');
+    if (openDialog) {
+        const listingId = openDialog.id.replace('lightbox-', '');
+        if (e.key === 'ArrowLeft') {
+            lightboxNav(listingId, -1);
+        } else if (e.key === 'ArrowRight') {
+            lightboxNav(listingId, 1);
+        } else if (e.key === 'Escape') {
+            openDialog.close();
+        }
+    }
+});
+</script>
+{% else %}
+<article class="photo-gallery-section">
+    <header>Photos</header>
+    <div class="empty-state">
+        <p>No photos available</p>
+    </div>
+</article>
+{% endif %}

@@ -29,6 +29,13 @@ class ScrapeStatus(str, Enum):
     CANCELLED = "cancelled"
 
 
+class ListingStatus(str, Enum):
+    """Status of a listing in its lifecycle."""
+
+    ACTIVE = "active"
+    DELISTED = "delisted"
+
+
 class OptionConfig(BaseModel):
     """Configuration for a single option to match."""
 
@@ -117,6 +124,8 @@ class ListingCreate(BaseModel):
     is_qualified: bool = False
     dedup_hash: str | None = None
     has_issue: bool = False
+    status: ListingStatus = ListingStatus.ACTIVE
+    consecutive_misses: int = Field(default=0, ge=0)
 
 
 class ListingRead(ListingCreate):
@@ -135,8 +144,22 @@ class ListingRead(ListingCreate):
     last_price_change_at: datetime | None = Field(
         default=None, description="Timestamp of most recent price change"
     )
+    status_changed_at: datetime | None = Field(
+        default=None, description="Timestamp when status changed from active"
+    )
 
     model_config = ConfigDict(from_attributes=True)
+
+    @property
+    def days_on_market(self) -> int:
+        """Calculate days listing has been on market.
+
+        For active listings: from first_seen_at to now.
+        For delisted listings: from first_seen_at to status_changed_at.
+        """
+        end_time = self.status_changed_at if self.status == ListingStatus.DELISTED else utc_now()
+        delta = end_time - self.first_seen_at
+        return max(0, delta.days)
 
 
 class ScrapeSession(BaseModel):

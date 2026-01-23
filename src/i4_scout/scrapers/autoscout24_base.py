@@ -234,6 +234,7 @@ class AutoScout24BaseScraper(BaseScraper):
         description = self.parse_description_sync(html)
         json_ld_data = self.parse_json_ld_sync(html)
         colors = self.parse_colors_sync(html)
+        photo_urls = self.parse_photo_urls_sync(html)
         soup = BeautifulSoup(html, "html.parser")
 
         # Extract basic info from detail page
@@ -280,6 +281,7 @@ class AutoScout24BaseScraper(BaseScraper):
             exterior_color=colors.get("exterior_color"),
             interior_color=colors.get("interior_color"),
             interior_material=colors.get("interior_material"),
+            photo_urls=photo_urls,
         )
 
     @classmethod
@@ -446,6 +448,35 @@ class AutoScout24BaseScraper(BaseScraper):
                     break
 
         return result
+
+    @classmethod
+    def parse_photo_urls_sync(cls, html: str) -> list[str]:
+        """Extract unique photo URLs from detail page HTML.
+
+        Parses photo URLs from the listing images CDN, returning base URLs
+        without resolution suffixes. Order is preserved (first occurrence).
+
+        Args:
+            html: Raw HTML content of detail page.
+
+        Returns:
+            List of unique base photo URLs (e.g., https://prod.pictures.autoscout24.net/listing-images/{guid}_{guid}.jpg)
+        """
+        # Pattern matches full URL up to .jpg, excluding resolution suffix
+        pattern = r'https://prod\.pictures\.autoscout24\.net/listing-images/[a-f0-9-]+_[a-f0-9-]+\.jpg'
+
+        # Find all matches
+        matches = re.findall(pattern, html)
+
+        # Deduplicate while preserving order
+        seen: set[str] = set()
+        unique_urls: list[str] = []
+        for url in matches:
+            if url not in seen:
+                seen.add(url)
+                unique_urls.append(url)
+
+        return unique_urls
 
     @classmethod
     def parse_json_ld_sync(cls, html: str) -> dict[str, Any] | None:

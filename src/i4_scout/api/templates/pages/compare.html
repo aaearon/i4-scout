@@ -31,6 +31,27 @@
             {% endfor %}
         </div>
 
+        <!-- Photo thumbnail row -->
+        <div class="compare-row">
+            <div class="compare-label">Photo</div>
+            {% for listing in listings %}
+            <div class="compare-value compare-photo-cell">
+                {% if listing.photo_urls and listing.photo_urls|length > 0 %}
+                <img
+                    src="{{ listing.photo_urls[0] }}/120x90.webp"
+                    alt="{{ listing.title }}"
+                    class="compare-thumbnail"
+                    onclick="openComparePhoto({{ listing.id }}, '{{ listing.photo_urls[0] }}')"
+                    title="Click to enlarge ({{ listing.photo_urls|length }} photos)"
+                    loading="lazy"
+                >
+                {% else %}
+                <div class="compare-no-photo">No photo</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
         <!-- Price row -->
         <div class="compare-row">
             <div class="compare-label">Price</div>
@@ -224,6 +245,19 @@
     <button class="outline" onclick="clearCompareSelections()">Clear Selection</button>
 </footer>
 
+<!-- Lightbox dialog for compare photos -->
+<dialog id="compare-lightbox" class="lightbox-dialog">
+    <div class="lightbox-content">
+        <button class="lightbox-close" onclick="document.getElementById('compare-lightbox').close()" aria-label="Close">&times;</button>
+        <img
+            id="compare-lightbox-img"
+            src=""
+            alt="Full size photo"
+            class="lightbox-img"
+        >
+    </div>
+</dialog>
+
 {% else %}
 <div class="empty-state">
     <h2>No Listings to Compare</h2>
@@ -239,5 +273,27 @@ function clearCompareSelections() {
     localStorage.removeItem('i4scout_compare_selections');
     window.location.href = '/listings';
 }
+
+function openComparePhoto(listingId, baseUrl) {
+    const dialog = document.getElementById('compare-lightbox');
+    const img = document.getElementById('compare-lightbox-img');
+    if (dialog && img) {
+        img.src = baseUrl + '/1280x960.webp';
+        img.alt = 'Listing ' + listingId + ' photo';
+        dialog.showModal();
+    }
+}
+
+// Close lightbox on backdrop click
+document.addEventListener('DOMContentLoaded', function() {
+    const dialog = document.getElementById('compare-lightbox');
+    if (dialog) {
+        dialog.addEventListener('click', function(e) {
+            if (e.target === dialog) {
+                dialog.close();
+            }
+        });
+    }
+});
 </script>
 {% endblock %}

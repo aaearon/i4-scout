@@ -57,6 +57,12 @@ i4-scout export --format csv --qualified
 # Recalculate scores after changing scoring weights
 i4-scout recalculate-scores
 i4-scout recalculate-scores --json  # JSON output
+
+# Database migrations (Alembic)
+alembic current                          # Show current revision
+alembic upgrade head                     # Apply all pending migrations
+alembic downgrade -1                     # Revert last migration
+alembic revision --autogenerate -m "description"  # Create new migration
 ```
 
 ## LLM-Friendly Output (--json flag)
@@ -354,6 +360,62 @@ curl "http://localhost:8000/api/listings?recently_updated=true"
 - `price_change`: Total change from original price (negative = drop, positive = increase, null = no change)
 - `price_change_count`: Number of price changes recorded (excluding initial price)
 - `last_price_change_at`: Timestamp of most recent price change (null if no changes)
+
+### Listing Lifecycle Tracking
+
+Track when listings disappear from the source and show days on market:
+
+**Status values:**
+- `active` (default): Listing is currently available on the source
+- `delisted`: Listing has disappeared from the source (after 2 consecutive missed scrapes)
+
+**How it works:**
+1. During each scrape, listings seen are tracked
+2. For listings not seen: `consecutive_misses` is incremented
+3. For listings seen: `consecutive_misses` is reset to 0 (status also resets to active if delisted)
+4. After 2 consecutive misses, status changes to `delisted`
+
+**Web Interface:**
+- Status badge (Active/Delisted) in listing detail header
+- Delisted icon in listings table for delisted items
+- "Days on market" indicator in listing detail
+- Status filter dropdown in filter form (Active / Delisted / All)
+
+**API:**
+```bash
+# Filter by status
+curl "http://localhost:8000/api/listings?status=active"
+curl "http://localhost:8000/api/listings?status=delisted"
+```
+
+**ListingRead fields:**
+- `status`: "active" or "delisted"
+- `consecutive_misses`: Number of consecutive scrapes where listing was not seen
+- `status_changed_at`: Timestamp when status last changed (null if never changed)
+- `days_on_market`: Computed property (first_seen_at to status_changed_at for delisted, to now for active)
+
+### Photo Gallery
+
+Display listing photos with thumbnail navigation and lightbox viewer:
+
+**Features:**
+- Photo URLs extracted from listing detail pages
+- Main image display (720x540)
+- Horizontal thumbnail strip with scroll
+- Click thumbnail to change main image
+- Click main image to open lightbox
+- Lightbox: full-size image, prev/next navigation, keyboard support (arrow keys, Escape)
+
+**Photo URL format:**
+- Base URL: `https://prod.pictures.autoscout24.net/listing-images/{guid}_{guid}.jpg`
+- Resolution variants: `/120x90.webp` (thumb), `/720x540.webp` (main), `/1280x960.webp` (lightbox)
+
+**Compare page:**
+- Thumbnail row showing first photo from each listing
+- Click opens lightbox for that listing
+
+**ListingRead fields:**
+- `photo_urls`: List of base photo URLs (without resolution suffix)
 
 ### Global Scrape Progress Banner
 

@@ -17,7 +17,7 @@ from i4_scout.api.dependencies import (
 )
 from i4_scout.database.repository import ListingRepository
 from i4_scout.models.db_models import Listing
-from i4_scout.models.pydantic_models import Source
+from i4_scout.models.pydantic_models import ListingStatus, Source
 from i4_scout.services.job_service import JobService
 
 router = APIRouter(prefix="/partials")
@@ -102,6 +102,7 @@ async def listings_partial(
     has_issue: bool | None = Query(None),
     has_price_change: bool | None = Query(None),
     recently_updated: bool | None = Query(None),
+    status: str | None = Query(None),
     min_score: str | None = Query(None),
     price_min: str | None = Query(None),
     price_max: str | None = Query(None),
@@ -140,12 +141,21 @@ async def listings_partial(
         except ValueError:
             pass
 
+    # Convert status string to ListingStatus enum if provided
+    status_enum = None
+    if status:
+        try:
+            status_enum = ListingStatus(status)
+        except ValueError:
+            pass
+
     listings, total = service.get_listings(
         source=source_enum,
         qualified_only=qualified_only,
         has_issue=has_issue,
         has_price_change=has_price_change,
         recently_updated=recently_updated,
+        status=status_enum,
         min_score=min_score_val,
         price_min=price_min_val,
         price_max=price_max_val,
@@ -167,6 +177,7 @@ async def listings_partial(
         "has_issue": has_issue,
         "has_price_change": has_price_change,
         "recently_updated": recently_updated,
+        "status": status,
         "min_score": min_score_val,
         "price_min": price_min_val,
         "price_max": price_max_val,
@@ -192,6 +203,8 @@ async def listings_partial(
         push_url_params.append("has_price_change=true")
     if recently_updated:
         push_url_params.append("recently_updated=true")
+    if status:
+        push_url_params.append(f"status={status}")
     if min_score_val is not None:
         push_url_params.append(f"min_score={min_score_val}")
     if price_min_val is not None:
@@ -257,6 +270,30 @@ async def listing_detail_partial(
         request=request,
         name="partials/listing_detail_content.html",
         context={"listing": listing},
+    )
+
+
+@router.get("/listing/{listing_id}/gallery")
+async def listing_gallery_partial(
+    request: Request,
+    listing_id: int,
+    service: ListingServiceDep,
+    templates: TemplatesDep,
+) -> HTMLResponse:
+    """Return photo gallery HTML fragment."""
+    listing = service.get_listing(listing_id)
+    if listing is None:
+        return HTMLResponse(
+            content='<div class="empty-state"><p>Listing not found.</p></div>',
+            status_code=200,
+        )
+
+    photo_urls = listing.photo_urls if listing.photo_urls else []
+
+    return templates.TemplateResponse(
+        request=request,
+        name="components/photo_gallery.html",
+        context={"listing_id": listing_id, "photo_urls": photo_urls},
     )
 
 

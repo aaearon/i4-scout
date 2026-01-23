@@ -6,7 +6,7 @@ from typing import Optional
 from sqlalchemy import JSON, Boolean, Date, DateTime, Enum, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-from i4_scout.models.pydantic_models import ScrapeStatus, Source
+from i4_scout.models.pydantic_models import ListingStatus, ScrapeStatus, Source
 
 
 def utc_now() -> datetime:
@@ -67,6 +67,13 @@ class Listing(Base):
 
     # User flags
     has_issue: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+
+    # Lifecycle tracking
+    status: Mapped[str] = mapped_column(
+        Enum(ListingStatus), default=ListingStatus.ACTIVE, nullable=False, index=True
+    )
+    status_changed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    consecutive_misses: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     # Timestamps
     first_seen_at: Mapped[datetime] = mapped_column(
