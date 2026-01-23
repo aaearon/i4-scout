@@ -1,11 +1,23 @@
 """Service layer for listing operations."""
 
+from dataclasses import dataclass
 from typing import Any
 
 from sqlalchemy.orm import Session
 
 from i4_scout.database.repository import ListingRepository
-from i4_scout.models.pydantic_models import ListingRead, Source
+from i4_scout.matching.scorer import calculate_score
+from i4_scout.models.pydantic_models import ListingRead, MatchResult, OptionsConfig, Source
+
+
+@dataclass
+class RecalculateResult:
+    """Result of recalculating scores for all listings."""
+
+    total_processed: int
+    score_changed: int
+    qualification_changed: int
+    changes: list[dict[str, Any]]
 
 
 class ListingService:
@@ -41,6 +53,7 @@ class ListingService:
         options_match: str = "all",
         has_issue: bool | None = None,
         has_price_change: bool | None = None,
+        recently_updated: bool | None = None,
         sort_by: str | None = None,
         sort_order: str = "desc",
         limit: int = 20,
@@ -64,6 +77,7 @@ class ListingService:
             options_match: "all" to require all options, "any" to require any.
             has_issue: Filter by issue status (True, False, or None for all).
             has_price_change: Filter by price change status (True for listings with changes).
+            recently_updated: Filter by recent price changes (True for listings with price changes within 24h).
             sort_by: Field to sort by (price, mileage, score, first_seen, last_seen).
             sort_order: Sort direction (asc, desc). Default: desc.
             limit: Maximum results to return.
@@ -88,6 +102,7 @@ class ListingService:
             options_match=options_match,
             has_issue=has_issue,
             has_price_change=has_price_change,
+            recently_updated=recently_updated,
             sort_by=sort_by,
             sort_order=sort_order,
             limit=limit,
@@ -111,6 +126,7 @@ class ListingService:
             options_match=options_match,
             has_issue=has_issue,
             has_price_change=has_price_change,
+            recently_updated=recently_updated,
         )
 
         # Convert ORM objects to Pydantic models
@@ -158,6 +174,97 @@ class ListingService:
             return None
         return self._to_listing_read(listing)
 
+    def recalculate_scores(
+        self,
+        options_config: OptionsConfig,
+    ) -> RecalculateResult:
+        """Recalculate scores for all listings using current scoring weights.
+
+        This is useful after changing scoring weights to update existing listings
+        without re-scraping.
+
+        Args:
+            options_config: Configuration for option matching.
+
+        Returns:
+            RecalculateResult with counts and changes.
+        """
+        # Get all listings (no pagination)
+        listings = self._repo.get_listings(limit=None)
+
+        total_processed = 0
+        score_changed = 0
+        qualification_changed = 0
+        changes: list[dict[str, Any]] = []
+
+        # Build sets of required and nice_to_have option names for classification
+        required_names = {opt.name for opt in options_config.required}
+        nice_to_have_names = {opt.name for opt in options_config.nice_to_have}
+
+        for listing in listings:
+            old_score = listing.match_score
+            old_qualified = listing.is_qualified
+
+            # Get matched options for this listing
+            matched_option_names = listing.matched_options
+
+            # Classify matched options into required vs nice_to_have
+            matched_required = [
+                name for name in matched_option_names if name in required_names
+            ]
+            matched_nice_to_have = [
+                name for name in matched_option_names if name in nice_to_have_names
+            ]
+
+            # Build MatchResult
+            missing_required = [
+                opt.name for opt in options_config.required
+                if opt.name not in matched_option_names
+            ]
+
+            match_result = MatchResult(
+                matched_required=matched_required,
+                matched_nice_to_have=matched_nice_to_have,
+                missing_required=missing_required,
+                has_dealbreaker=False,  # Not rechecking dealbreakers
+            )
+
+            # Calculate new score
+            scored_result = calculate_score(match_result, options_config)
+
+            # Update listing if score or qualification changed
+            score_diff = abs((scored_result.score or 0) - (old_score or 0))
+            if score_diff > 0.001 or scored_result.is_qualified != old_qualified:
+                self._repo.update_listing(
+                    listing.id,
+                    match_score=scored_result.score,
+                    is_qualified=scored_result.is_qualified,
+                )
+
+                if score_diff > 0.001:
+                    score_changed += 1
+
+                if scored_result.is_qualified != old_qualified:
+                    qualification_changed += 1
+
+                changes.append({
+                    "id": listing.id,
+                    "title": listing.title[:50] if listing.title else "",
+                    "old_score": round(old_score, 2) if old_score else 0,
+                    "new_score": round(scored_result.score, 2),
+                    "old_qualified": old_qualified,
+                    "new_qualified": scored_result.is_qualified,
+                })
+
+            total_processed += 1
+
+        return RecalculateResult(
+            total_processed=total_processed,
+            score_changed=score_changed,
+            qualification_changed=qualification_changed,
+            changes=changes,
+        )
+
     def _to_listing_read(self, listing: Any) -> ListingRead:
         """Convert ORM Listing to ListingRead Pydantic model.
 
@@ -170,6 +277,7 @@ class ListingService:
         # Compute price change from eagerly-loaded history
         price_change = None
         price_change_count = 0
+        last_price_change_at = None
         if listing.price_history and len(listing.price_history) > 1:
             # Sort by recorded_at to get oldest (original) and newest (current)
             sorted_history = sorted(listing.price_history, key=lambda h: h.recorded_at)
@@ -177,6 +285,8 @@ class ListingService:
             current_price = sorted_history[-1].price
             price_change = current_price - original_price
             price_change_count = len(listing.price_history) - 1
+            # The most recent price change is the last entry (after the initial)
+            last_price_change_at = sorted_history[-1].recorded_at
 
         return ListingRead(
             id=listing.id,
@@ -211,4 +321,5 @@ class ListingService:
             notes_count=len(listing.notes) if listing.notes else 0,
             price_change=price_change,
             price_change_count=price_change_count,
+            last_price_change_at=last_price_change_at,
         )

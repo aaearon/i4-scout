@@ -1,5 +1,8 @@
 """HTMX partial routes for dynamic content updates."""
 
+from datetime import datetime
+from urllib.parse import quote
+
 from fastapi import APIRouter, Query, Request, UploadFile
 from fastapi.responses import HTMLResponse
 from sqlalchemy import func, select
@@ -98,6 +101,7 @@ async def listings_partial(
     qualified_only: bool = Query(False),
     has_issue: bool | None = Query(None),
     has_price_change: bool | None = Query(None),
+    recently_updated: bool | None = Query(None),
     min_score: str | None = Query(None),
     price_min: str | None = Query(None),
     price_max: str | None = Query(None),
@@ -141,6 +145,7 @@ async def listings_partial(
         qualified_only=qualified_only,
         has_issue=has_issue,
         has_price_change=has_price_change,
+        recently_updated=recently_updated,
         min_score=min_score_val,
         price_min=price_min_val,
         price_max=price_max_val,
@@ -161,6 +166,7 @@ async def listings_partial(
         "qualified_only": qualified_only,
         "has_issue": has_issue,
         "has_price_change": has_price_change,
+        "recently_updated": recently_updated,
         "min_score": min_score_val,
         "price_min": price_min_val,
         "price_max": price_max_val,
@@ -174,7 +180,49 @@ async def listings_partial(
         "sort_order": sort_order,
     }
 
-    return templates.TemplateResponse(
+    # Build the push URL with active filters
+    push_url_params = []
+    if source_val:
+        push_url_params.append(f"source={source_val}")
+    if qualified_only:
+        push_url_params.append("qualified_only=true")
+    if has_issue:
+        push_url_params.append("has_issue=true")
+    if has_price_change:
+        push_url_params.append("has_price_change=true")
+    if recently_updated:
+        push_url_params.append("recently_updated=true")
+    if min_score_val is not None:
+        push_url_params.append(f"min_score={min_score_val}")
+    if price_min_val is not None:
+        push_url_params.append(f"price_min={price_min_val}")
+    if price_max_val is not None:
+        push_url_params.append(f"price_max={price_max_val}")
+    if mileage_max_val is not None:
+        push_url_params.append(f"mileage_max={mileage_max_val}")
+    if year_min_val is not None:
+        push_url_params.append(f"year_min={year_min_val}")
+    if country_val:
+        push_url_params.append(f"country={country_val}")
+    if search_val:
+        push_url_params.append(f"search={quote(search_val)}")
+    if has_options_val:
+        for opt in has_options_val:
+            push_url_params.append(f"has_option={quote(opt)}")
+    if options_match_val != "all":
+        push_url_params.append(f"options_match={options_match_val}")
+    if sort_by_val:
+        push_url_params.append(f"sort_by={sort_by_val}")
+    if sort_order != "desc":
+        push_url_params.append(f"sort_order={sort_order}")
+    if offset > 0:
+        push_url_params.append(f"offset={offset}")
+
+    push_url = "/listings"
+    if push_url_params:
+        push_url = f"/listings?{'&'.join(push_url_params)}"
+
+    response = templates.TemplateResponse(
         request=request,
         name="partials/listings_table.html",
         context={
@@ -184,8 +232,11 @@ async def listings_partial(
             "limit": limit,
             "offset": offset,
             "filters": filters,
+            "now": datetime.utcnow(),
         },
     )
+    response.headers["HX-Push-Url"] = push_url
+    return response
 
 
 @router.get("/listing/{listing_id}")
@@ -253,6 +304,60 @@ async def listing_price_chart_partial(
         request=request,
         name="components/price_chart.html",
         context={"history": history, "enumerate": enumerate},
+    )
+
+
+@router.get("/scrape/active")
+async def scrape_active_partial(
+    request: Request,
+    session: DbSession,
+    templates: TemplatesDep,
+) -> HTMLResponse:
+    """Return active scrape progress banner HTML fragment."""
+    from i4_scout.models.pydantic_models import ScrapeStatus
+
+    service = JobService(session)
+    # Get more jobs to ensure we don't miss a running one
+    jobs = service.get_recent_jobs(limit=10)
+
+    # Find the most recent running job (jobs are sorted newest first)
+    # Only show RUNNING jobs, not PENDING (they haven't started yet)
+    active_job = None
+    for job in jobs:
+        if job.status == ScrapeStatus.RUNNING:
+            active_job = job
+            break
+
+    return templates.TemplateResponse(
+        request=request,
+        name="components/scrape_progress_banner.html",
+        context={"active_job": active_job},
+    )
+
+
+@router.get("/scrape/active-status")
+async def scrape_active_status_partial(
+    request: Request,
+    session: DbSession,
+    templates: TemplatesDep,
+) -> HTMLResponse:
+    """Return detailed active job status HTML fragment for scrape page."""
+    from i4_scout.models.pydantic_models import ScrapeStatus
+
+    service = JobService(session)
+    jobs = service.get_recent_jobs(limit=10)
+
+    # Find the most recent running job
+    active_job = None
+    for job in jobs:
+        if job.status == ScrapeStatus.RUNNING:
+            active_job = job
+            break
+
+    return templates.TemplateResponse(
+        request=request,
+        name="components/active_job_status.html",
+        context={"active_job": active_job},
     )
 
 

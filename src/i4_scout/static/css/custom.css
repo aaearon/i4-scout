@@ -208,8 +208,146 @@ select[aria-invalid="false"]:not(:placeholder-shown) {
     border-color: var(--color-success);
 }
 
-/* Filter form layout */
-.filter-form {
+/* ===== Filter Form Structured Layout ===== */
+.filter-form-structured {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.filter-form-structured input,
+.filter-form-structured select {
+    margin-bottom: 0;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.8rem;
+    height: auto;
+}
+
+.filter-form-structured button {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8rem;
+    height: auto;
+    margin: 0;
+}
+
+/* Quick toggle row */
+.filter-toggles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--pico-card-sectioning-background-color);
+    border-radius: var(--pico-border-radius);
+}
+
+.filter-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 2rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    border: 1px solid var(--pico-muted-border-color);
+    background: transparent;
+    margin: 0;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.filter-toggle:hover {
+    border-color: var(--pico-primary);
+}
+
+.filter-toggle:has(input:checked) {
+    background: var(--pico-primary-background);
+    border-color: var(--pico-primary);
+}
+
+.filter-toggle input[type="checkbox"] {
+    display: none;
+}
+
+.filter-toggle span {
+    user-select: none;
+}
+
+/* Two-column sections */
+.filter-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.filter-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.filter-section-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--pico-muted-color);
+    margin-bottom: 0.15rem;
+}
+
+.filter-row {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Paired range inputs */
+.filter-range {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.filter-range input {
+    flex: 1;
+    min-width: 0;
+}
+
+.range-separator {
+    color: var(--pico-muted-color);
+    font-size: 0.9rem;
+}
+
+/* Search section */
+.filter-search input[type="search"] {
+    width: 100%;
+    transition: border-color 0.2s;
+}
+
+.filter-search input[type="search"]:focus {
+    border-color: var(--pico-primary);
+}
+
+/* Options filter section */
+.filter-options-section {
+    /* inherits from existing styles */
+}
+
+/* Sort/actions bar */
+.filter-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--pico-muted-border-color);
+}
+
+.filter-actions .sort-select {
+    width: auto;
+    min-width: 100px;
+}
+
+/* Legacy filter-form grid (fallback) */
+.filter-form:not(.filter-form-structured) {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 0.5rem;
@@ -217,37 +355,28 @@ select[aria-invalid="false"]:not(:placeholder-shown) {
     margin-bottom: 1rem;
 }
 
-.filter-form .filter-group {
+.filter-form:not(.filter-form-structured) .filter-group {
     display: flex;
     flex-direction: column;
 }
 
-.filter-form label {
+.filter-form:not(.filter-form-structured) label {
     font-size: 0.75rem;
     margin-bottom: 0.15rem;
 }
 
-.filter-form input,
-.filter-form select {
+.filter-form:not(.filter-form-structured) input,
+.filter-form:not(.filter-form-structured) select {
     margin-bottom: 0;
     padding: 0.35rem 0.5rem;
     font-size: 0.8rem;
     height: auto;
 }
 
-.filter-form button {
+.filter-form:not(.filter-form-structured) button {
     padding: 0.35rem 0.75rem;
     font-size: 0.8rem;
     height: auto;
-}
-
-/* Search debounce indicator */
-.filter-form input[type="search"] {
-    transition: border-color 0.2s;
-}
-
-.filter-form input[type="search"]:focus {
-    border-color: var(--pico-primary);
 }
 
 /* Pagination */
@@ -293,30 +422,55 @@ select[aria-invalid="false"]:not(:placeholder-shown) {
     margin: 0;
 }
 
-.detail-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-bottom: 2rem;
-}
-
-.detail-item {
-    padding: 1rem;
+.detail-table {
     background: var(--pico-card-background-color);
     border-radius: var(--pico-border-radius);
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0 2rem;
 }
 
-.detail-item .label {
-    font-size: 0.75rem;
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--pico-muted-border-color);
+}
+
+.detail-row:nth-last-child(-n+2) {
+    border-bottom: none;
+}
+
+.detail-row .label {
+    font-size: 0.8rem;
     color: var(--pico-muted-color);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 0.25rem;
 }
 
-.detail-item .value {
-    font-size: 1.25rem;
+.detail-row .value {
     font-weight: 600;
+    text-align: right;
+}
+
+.detail-row .value .badge {
+    font-weight: normal;
+}
+
+@media (max-width: 768px) {
+    .detail-table {
+        grid-template-columns: 1fr;
+        padding: 0.75rem 1rem;
+    }
+
+    .detail-row:last-child {
+        border-bottom: none;
+    }
+
+    .detail-row:nth-last-child(2) {
+        border-bottom: 1px solid var(--pico-muted-border-color);
+    }
 }
 
 /* Options list */
@@ -670,6 +824,11 @@ select[aria-invalid="false"]:not(:placeholder-shown) {
 
 .status-failed {
     background-color: var(--color-danger);
+}
+
+.status-cancelled {
+    background-color: var(--color-warning);
+    color: #000;
 }
 
 /* Empty state */
@@ -1224,8 +1383,22 @@ body:has(.compare-bar:not([hidden])) main {
         grid-template-columns: repeat(2, 1fr);
     }
 
-    .filter-form {
+    .filter-form:not(.filter-form-structured) {
         grid-template-columns: 1fr;
+    }
+
+    /* Structured filter form mobile */
+    .filter-columns {
+        grid-template-columns: 1fr;
+    }
+
+    .filter-toggles {
+        justify-content: center;
+    }
+
+    .filter-actions {
+        flex-wrap: wrap;
+        justify-content: center;
     }
 
     .detail-header {
@@ -1420,6 +1593,14 @@ body:has(.compare-bar:not([hidden])) main {
 .document-icon {
     color: var(--color-purple);
     font-size: 0.85rem;
+    margin-right: 0.25rem;
+    flex-shrink: 0;
+}
+
+/* Updated icon in listing row (recently updated within 24h) */
+.updated-icon {
+    color: var(--color-info);
+    font-size: 0.9rem;
     margin-right: 0.25rem;
     flex-shrink: 0;
 }
@@ -1645,4 +1826,141 @@ body:has(.compare-bar:not([hidden])) main {
 
 .price-increase {
     color: var(--color-danger);
+}
+
+/* ===== Scrape Progress Banner Styles ===== */
+
+.scrape-progress-banner {
+    background: var(--color-info-bg);
+    border-bottom: 1px solid var(--color-info);
+    padding: 0.5rem 1rem;
+}
+
+.scrape-progress-banner .progress-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.875rem;
+}
+
+.scrape-progress-banner .spinner {
+    margin-left: 0;
+    width: 0.875em;
+    height: 0.875em;
+    border-width: 2px;
+    color: var(--color-info);
+}
+
+.scrape-progress-banner .progress-text {
+    flex: 1;
+}
+
+.scrape-progress-banner .progress-text strong {
+    color: var(--color-info);
+}
+
+.scrape-progress-banner .progress-link {
+    font-size: 0.8rem;
+    color: var(--color-info);
+    text-decoration: none;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--color-info);
+    border-radius: var(--pico-border-radius);
+    transition: background-color 0.15s;
+}
+
+.scrape-progress-banner .progress-link:hover {
+    background: var(--color-info);
+    color: white;
+}
+
+/* ===== Active Job Status Card (Scrape Page) ===== */
+
+.active-job-card {
+    border-left: 4px solid var(--color-info);
+    margin-bottom: 1.5rem;
+}
+
+.active-job-card header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.active-job-card header strong {
+    font-size: 1rem;
+}
+
+.active-job-progress {
+    margin: 1rem 0;
+}
+
+.progress-bar-container {
+    height: 8px;
+    background: var(--pico-muted-border-color);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.progress-bar {
+    height: 100%;
+    background: var(--color-info);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.active-job-progress .progress-text {
+    font-size: 0.875rem;
+    color: var(--pico-muted-color);
+    text-align: center;
+}
+
+.active-job-stats {
+    display: flex;
+    justify-content: space-around;
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.active-job-stats .stat {
+    text-align: center;
+}
+
+.active-job-stats .stat-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--pico-primary);
+}
+
+.active-job-stats .stat-label {
+    font-size: 0.75rem;
+    color: var(--pico-muted-color);
+    text-transform: uppercase;
+}
+
+.active-job-card footer {
+    font-size: 0.8rem;
+    color: var(--pico-muted-color);
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--pico-muted-border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.active-job-card .stop-btn {
+    background: var(--color-danger);
+    border-color: var(--color-danger);
+    color: white;
+    padding: 0.3rem 0.75rem;
+    font-size: 0.8rem;
+    margin: 0;
+}
+
+.active-job-card .stop-btn:hover {
+    background: color-mix(in srgb, var(--color-danger) 80%, black);
 }

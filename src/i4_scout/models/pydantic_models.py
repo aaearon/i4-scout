@@ -26,6 +26,7 @@ class ScrapeStatus(str, Enum):
     RUNNING = "running"
     COMPLETED = "completed"
     FAILED = "failed"
+    CANCELLED = "cancelled"
 
 
 class OptionConfig(BaseModel):
@@ -131,6 +132,9 @@ class ListingRead(ListingCreate):
         default=None, description="Price change from original (negative=drop, positive=increase)"
     )
     price_change_count: int = Field(default=0, description="Number of price changes (excluding initial)")
+    last_price_change_at: datetime | None = Field(
+        default=None, description="Timestamp of most recent price change"
+    )
 
     model_config = ConfigDict(from_attributes=True)
 

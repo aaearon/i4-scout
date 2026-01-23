@@ -1,179 +1,166 @@
 <form
-    class="filter-form"
+    class="filter-form filter-form-structured"
     hx-get="/partials/listings"
     hx-target="#listings-table"
-    hx-trigger="submit"
+    hx-trigger="submit, change from:select, change from:input[type='checkbox']:not(#favorites-only), change from:input[type='radio'], input changed delay:300ms from:input[type='number'], input changed delay:400ms from:input[type='search']"
     hx-swap="innerHTML"
-    hx-push-url="/listings"
     hx-indicator="#filter-indicator"
 >
-    <div class="filter-group">
-        <label for="source">Source</label>
-        <select name="source" id="source">
-            <option value="">All Sources</option>
-            <option value="autoscout24_de" {% if filters.source == 'autoscout24_de' %}selected{% endif %}>AutoScout24 DE</option>
-            <option value="autoscout24_nl" {% if filters.source == 'autoscout24_nl' %}selected{% endif %}>AutoScout24 NL</option>
-        </select>
-    </div>
-
-    <div class="filter-group">
-        <label for="qualified_only">
+    <!-- Quick Filters (toggle row) -->
+    <div class="filter-section filter-toggles">
+        <label class="filter-toggle">
             <input
                 type="checkbox"
                 name="qualified_only"
-                id="qualified_only"
                 value="true"
                 {% if filters.qualified_only %}checked{% endif %}
             >
-            Qualified Only
+            <span>Qualified</span>
         </label>
-    </div>
-
-    <div class="filter-group">
-        <label for="favorites-only">
+        <label class="filter-toggle">
             <input
                 type="checkbox"
                 id="favorites-only"
                 onchange="filterFavoritesOnly(this)"
             >
-            Favorites Only<span id="favorites-count"></span>
+            <span>Favorites<span id="favorites-count"></span></span>
         </label>
-    </div>
-
-    <div class="filter-group">
-        <label for="has_issue">
+        <label class="filter-toggle">
             <input
                 type="checkbox"
                 name="has_issue"
-                id="has_issue"
                 value="true"
                 {% if filters.has_issue %}checked{% endif %}
             >
-            Has Issues
+            <span>Has Issues</span>
         </label>
-    </div>
-
-    <div class="filter-group">
-        <label for="has_price_change">
+        <label class="filter-toggle">
             <input
                 type="checkbox"
                 name="has_price_change"
-                id="has_price_change"
                 value="true"
                 {% if filters.has_price_change %}checked{% endif %}
             >
-            Has Price Change
+            <span>Price Change</span>
+        </label>
+        <label class="filter-toggle">
+            <input
+                type="checkbox"
+                name="recently_updated"
+                value="true"
+                {% if filters.recently_updated %}checked{% endif %}
+            >
+            <span>Recently Updated</span>
         </label>
     </div>
 
-    <div class="filter-group">
-        <label for="min_score">Min Score</label>
-        <input
-            type="number"
-            name="min_score"
-            id="min_score"
-            min="0"
-            max="100"
-            step="1"
-            placeholder="0-100"
-            value="{{ filters.min_score if filters.min_score else '' }}"
-            oninput="validateNumberRange(this, 0, 100)"
-            aria-describedby="min_score_hint"
-        >
-        <small id="min_score_hint" class="form-hint">0-100</small>
+    <!-- Vehicle + Location Columns -->
+    <div class="filter-columns">
+        <!-- Vehicle Section -->
+        <div class="filter-column">
+            <div class="filter-section-label">Vehicle</div>
+            <div class="filter-range">
+                <input
+                    type="number"
+                    name="price_min"
+                    id="price_min"
+                    min="0"
+                    step="1"
+                    placeholder="Price min"
+                    value="{{ filters.price_min if filters.price_min else '' }}"
+                    oninput="validateNumberRange(this, 0)"
+                >
+                <span class="range-separator">-</span>
+                <input
+                    type="number"
+                    name="price_max"
+                    id="price_max"
+                    min="0"
+                    step="1"
+                    placeholder="Price max"
+                    value="{{ filters.price_max if filters.price_max else '' }}"
+                    oninput="validateNumberRange(this, 0)"
+                >
+            </div>
+            <div class="filter-row">
+                <input
+                    type="number"
+                    name="min_score"
+                    id="min_score"
+                    min="0"
+                    max="100"
+                    step="1"
+                    placeholder="Min score (0-100)"
+                    value="{{ filters.min_score if filters.min_score else '' }}"
+                    oninput="validateNumberRange(this, 0, 100)"
+                >
+            </div>
+            <div class="filter-row">
+                <input
+                    type="number"
+                    name="mileage_max"
+                    id="mileage_max"
+                    min="0"
+                    step="1"
+                    placeholder="Max mileage (km)"
+                    value="{{ filters.mileage_max if filters.mileage_max else '' }}"
+                    oninput="validateNumberRange(this, 0)"
+                >
+            </div>
+            <div class="filter-row">
+                <input
+                    type="number"
+                    name="year_min"
+                    id="year_min"
+                    min="2015"
+                    max="2030"
+                    placeholder="Min year (2015-2030)"
+                    value="{{ filters.year_min if filters.year_min else '' }}"
+                    oninput="validateNumberRange(this, 2015, 2030)"
+                >
+            </div>
+        </div>
+
+        <!-- Location Section -->
+        <div class="filter-column">
+            <div class="filter-section-label">Location</div>
+            <div class="filter-row">
+                <select name="source" id="source">
+                    <option value="">All Sources</option>
+                    <option value="autoscout24_de" {% if filters.source == 'autoscout24_de' %}selected{% endif %}>AutoScout24 DE</option>
+                    <option value="autoscout24_nl" {% if filters.source == 'autoscout24_nl' %}selected{% endif %}>AutoScout24 NL</option>
+                </select>
+            </div>
+            <div class="filter-row">
+                <select name="country" id="country">
+                    <option value="">Any Country</option>
+                    <option value="D" {% if filters.country == 'D' %}selected{% endif %}>Germany (D)</option>
+                    <option value="NL" {% if filters.country == 'NL' %}selected{% endif %}>Netherlands (NL)</option>
+                    <option value="B" {% if filters.country == 'B' %}selected{% endif %}>Belgium (B)</option>
+                    <option value="A" {% if filters.country == 'A' %}selected{% endif %}>Austria (A)</option>
+                    <option value="L" {% if filters.country == 'L' %}selected{% endif %}>Luxembourg (L)</option>
+                    <option value="F" {% if filters.country == 'F' %}selected{% endif %}>France (F)</option>
+                    <option value="I" {% if filters.country == 'I' %}selected{% endif %}>Italy (I)</option>
+                    <option value="E" {% if filters.country == 'E' %}selected{% endif %}>Spain (E)</option>
+                    <option value="CH" {% if filters.country == 'CH' %}selected{% endif %}>Switzerland (CH)</option>
+                </select>
+            </div>
+        </div>
     </div>
 
-    <div class="filter-group">
-        <label for="price_min">Price Min</label>
-        <input
-            type="number"
-            name="price_min"
-            id="price_min"
-            min="0"
-            step="1"
-            placeholder="EUR"
-            value="{{ filters.price_min if filters.price_min else '' }}"
-            oninput="validateNumberRange(this, 0)"
-        >
-    </div>
-
-    <div class="filter-group">
-        <label for="price_max">Price Max</label>
-        <input
-            type="number"
-            name="price_max"
-            id="price_max"
-            min="0"
-            step="1"
-            placeholder="EUR"
-            value="{{ filters.price_max if filters.price_max else '' }}"
-            oninput="validateNumberRange(this, 0)"
-        >
-    </div>
-
-    <div class="filter-group">
-        <label for="mileage_max">Mileage Max</label>
-        <input
-            type="number"
-            name="mileage_max"
-            id="mileage_max"
-            min="0"
-            step="1"
-            placeholder="km"
-            value="{{ filters.mileage_max if filters.mileage_max else '' }}"
-            oninput="validateNumberRange(this, 0)"
-        >
-    </div>
-
-    <div class="filter-group">
-        <label for="year_min">Reg Year Min</label>
-        <input
-            type="number"
-            name="year_min"
-            id="year_min"
-            min="2015"
-            max="2030"
-            placeholder="YYYY"
-            value="{{ filters.year_min if filters.year_min else '' }}"
-            oninput="validateNumberRange(this, 2015, 2030)"
-            aria-describedby="year_min_hint"
-        >
-        <small id="year_min_hint" class="form-hint">2015-2030</small>
-    </div>
-
-    <div class="filter-group">
-        <label for="country">Country</label>
-        <select name="country" id="country">
-            <option value="">Any Country</option>
-            <option value="D" {% if filters.country == 'D' %}selected{% endif %}>Germany (D)</option>
-            <option value="NL" {% if filters.country == 'NL' %}selected{% endif %}>Netherlands (NL)</option>
-            <option value="B" {% if filters.country == 'B' %}selected{% endif %}>Belgium (B)</option>
-            <option value="A" {% if filters.country == 'A' %}selected{% endif %}>Austria (A)</option>
-            <option value="L" {% if filters.country == 'L' %}selected{% endif %}>Luxembourg (L)</option>
-            <option value="F" {% if filters.country == 'F' %}selected{% endif %}>France (F)</option>
-            <option value="I" {% if filters.country == 'I' %}selected{% endif %}>Italy (I)</option>
-            <option value="E" {% if filters.country == 'E' %}selected{% endif %}>Spain (E)</option>
-            <option value="CH" {% if filters.country == 'CH' %}selected{% endif %}>Switzerland (CH)</option>
-        </select>
-    </div>
-
-    <div class="filter-group">
-        <label for="search">Search</label>
+    <!-- Search Section -->
+    <div class="filter-section filter-search">
         <input
             type="search"
             name="search"
             id="search"
-            placeholder="Search title/description"
+            placeholder="Search title/description..."
             value="{{ filters.search if filters.search else '' }}"
-            hx-get="/partials/listings"
-            hx-target="#listings-table"
-            hx-trigger="input changed delay:500ms"
-            hx-push-url="/listings"
-            hx-include="closest form"
         >
     </div>
 
-    <div class="filter-group filter-group-wide">
+    <!-- Options Filter Section -->
+    <div class="filter-section filter-options-section">
         <details class="options-filter-details" {% if filters.has_options %}open{% endif %}>
             <summary>
                 <span class="options-filter-label">Filter by Options</span>
@@ -227,25 +214,18 @@
         </details>
     </div>
 
-    <div class="filter-group">
-        <label for="sort_by">Sort By</label>
-        <select name="sort_by" id="sort_by">
+    <!-- Sort + Actions Bar -->
+    <div class="filter-actions">
+        <select name="sort_by" id="sort_by" class="sort-select">
             <option value="first_seen" {% if filters.sort_by == 'first_seen' or not filters.sort_by %}selected{% endif %}>Date Added</option>
             <option value="price" {% if filters.sort_by == 'price' %}selected{% endif %}>Price</option>
             <option value="mileage" {% if filters.sort_by == 'mileage' %}selected{% endif %}>Mileage</option>
             <option value="score" {% if filters.sort_by == 'score' %}selected{% endif %}>Score</option>
         </select>
-    </div>
-
-    <div class="filter-group">
-        <label for="sort_order">Order</label>
-        <select name="sort_order" id="sort_order">
-            <option value="desc" {% if filters.sort_order == 'desc' or not filters.sort_order %}selected{% endif %}>Descending</option>
-            <option value="asc" {% if filters.sort_order == 'asc' %}selected{% endif %}>Ascending</option>
+        <select name="sort_order" id="sort_order" class="sort-select">
+            <option value="desc" {% if filters.sort_order == 'desc' or not filters.sort_order %}selected{% endif %}>Desc</option>
+            <option value="asc" {% if filters.sort_order == 'asc' %}selected{% endif %}>Asc</option>
         </select>
-    </div>
-
-    <div class="filter-group filter-buttons">
         <button type="submit">
             Apply
             <span id="filter-indicator" class="htmx-indicator spinner"></span>

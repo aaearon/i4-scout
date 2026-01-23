@@ -53,6 +53,10 @@ i4-scout scrape autoscout24_de --max-pages 5 --force-refresh
 # List/export
 i4-scout list --qualified
 i4-scout export --format csv --qualified
+
+# Recalculate scores after changing scoring weights
+i4-scout recalculate-scores
+i4-scout recalculate-scores --json  # JSON output
 ```
 
 ## LLM-Friendly Output (--json flag)
@@ -106,6 +110,19 @@ i4-scout scrape autoscout24_de --max-pages 3 --json
     "skipped_unchanged": 25,
     "fetched_details": 20
   }
+}
+```
+
+**`recalculate-scores --json`:**
+```json
+{
+  "status": "success",
+  "total_processed": 222,
+  "score_changed": 217,
+  "qualification_changed": 0,
+  "changes": [
+    {"id": 69, "title": "BMW i4 eDrive40...", "old_score": 94.92, "new_score": 85.37, "old_qualified": true, "new_qualified": true}
+  ]
 }
 ```
 
@@ -197,7 +214,7 @@ A listing is qualified when:
 1. ALL required options are matched (via option list OR title/description text search)
 2. NO dealbreakers are found
 
-Score formula: `((required_matched * 100) + (nice_to_have_matched * 10)) / max_possible * 100`
+Score formula: `((required_matched * 75) + (nice_to_have_matched * 25)) / max_possible * 100` (3:1 weight ratio, nice-to-have contributes ~20% to total score)
 
 ### Matched Options Storage
 
@@ -310,15 +327,46 @@ Track and display price changes (drops and increases) for listings:
 - "Has Price Change" checkbox filter in listings page
 - Indicator shows total change from original price (first recorded → current)
 
+### Recently Updated Indicator
+
+Show listings that have had price changes within the last 24 hours:
+
+**Web Interface:**
+- Refresh icon (↻) in listings table title cell for listings with recent price changes
+- "Recently Updated" checkbox filter in listings page
+- Tooltip shows hours since last price change
+
+**Logic:**
+- A listing is "recently updated" if it has a price change recorded within 24 hours
+- Only actual data changes (price) are considered updates, not just re-scraping
+- The `last_price_change_at` field tracks when the most recent price change occurred
+
 **API:**
 ```bash
 # Filter listings with price changes
 curl "http://localhost:8000/api/listings?has_price_change=true"
+
+# Filter listings with recent price changes (within 24h)
+curl "http://localhost:8000/api/listings?recently_updated=true"
 ```
 
 **ListingRead fields:**
 - `price_change`: Total change from original price (negative = drop, positive = increase, null = no change)
 - `price_change_count`: Number of price changes recorded (excluding initial price)
+- `last_price_change_at`: Timestamp of most recent price change (null if no changes)
+
+### Global Scrape Progress Banner
+
+When a scrape job is running, a progress banner is displayed at the top of all pages (except listing detail and compare pages) showing:
+- Source being scraped
+- Current page progress (e.g., "Page 3 / 10")
+- Listings found and new count
+- Link to the scrape control page
+
+The banner polls every 2 seconds for updates and automatically disappears when the scrape completes. When no scrape is running, the component polls every 10 seconds to detect new jobs.
+
+**HTMX endpoint:**
+- `GET /partials/scrape/active` - Returns progress banner HTML or empty placeholder
 
 ### Scraper Performance Optimizations
 
@@ -398,6 +446,12 @@ i4-scout serve --reload
 **Statistics:**
 - `GET /api/stats` - Get aggregated statistics
 
+**Scrape Jobs:**
+- `POST /api/scrape/jobs` - Start a new scrape job
+- `GET /api/scrape/jobs` - List recent scrape jobs
+- `GET /api/scrape/jobs/{id}` - Get scrape job status
+- `POST /api/scrape/jobs/{id}/cancel` - Cancel a running scrape job
+
 **Other:**
 - `GET /health` - Health check
 - `GET /docs` - OpenAPI documentation (Swagger UI)
@@ -428,6 +482,7 @@ i4-scout serve --reload
 ?search=M%20Sport          # Text search in title/description (URL-encoded)
 ?has_issue=true            # Filter by issue status (true/false)
 ?has_price_change=true     # Filter by price change status (true/false)
+?recently_updated=true     # Filter by recent price changes (within 24h)
 ```
 
 **Sorting:**
@@ -498,13 +553,14 @@ i4-scout serve
 - Full listings table with all fields
 - Status icons in title cell:
   - Issue icon (warning symbol, red) for flagged items
+  - Updated icon (refresh symbol, blue) for listings with price changes in last 24h
   - Document icon (purple) for listings with uploaded PDF
   - Notes icon with count (blue badge) for listings with notes
 - Checkbox selection for comparison (max 4 listings)
 - Favorite star button per listing (persists in localStorage)
 - Hover popover showing options summary (lazy-loaded via HTMX)
 - Hover popover showing notes preview when hovering over notes count badge
-- Filter form: source, qualified only, favorites only, has issues, score, price, mileage, year, country, search
+- Filter form: source, qualified only, favorites only, has issues, price change, recently updated, score, price, mileage, year, country, search
 - Options filtering: collapsible checkbox list for required and nice-to-have options
   - Has ALL mode: require all selected options (AND logic)
   - Has ANY mode: require at least one selected option (OR logic)
@@ -533,9 +589,11 @@ i4-scout serve
 - External link to source
 
 **Scrape Control (`/scrape`):**
-- Start new scrapes (source, max pages)
+- Active job status card with progress bar, stats, and stop button
+- Start new scrapes (source, max pages, advanced options)
 - Live job progress (auto-polling every 2s for running jobs)
 - Job history with status, counts, timestamps
+- Cancel running jobs via stop button (sets status to CANCELLED)
 
 **Compare (`/compare?ids=1,2,3`):**
 - Side-by-side comparison of up to 4 listings
@@ -559,6 +617,7 @@ These endpoints return HTML fragments for HTMX requests:
   - `has_option` (repeatable): Filter by option name
   - `options_match`: `all` (AND, default) or `any` (OR)
   - `has_issue`: Filter by issue status (true/false)
+  - `recently_updated`: Filter by recent price changes (true/false)
 - `GET /partials/listing/{id}` - Listing detail content
 - `GET /partials/listing/{id}/options-summary` - Options summary for hover popover
 - `GET /partials/listing/{id}/notes-summary` - Notes summary for hover popover
@@ -567,5 +626,7 @@ These endpoints return HTML fragments for HTMX requests:
 - `GET /partials/listing/{id}/notes` - Notes section
 - `POST /partials/listing/{id}/notes` - Add note (returns new note HTML)
 - `DELETE /partials/listing/{id}/notes/{note_id}` - Delete note
+- `GET /partials/scrape/active` - Global progress banner (polls every 2s when running, 10s otherwise)
+- `GET /partials/scrape/active-status` - Detailed job status card for scrape page
 - `GET /partials/scrape/jobs` - Scrape jobs list
 - `GET /partials/scrape/job/{id}` - Single job row (for polling)

@@ -28,6 +28,11 @@
         <span class="title-text">{{ listing.title }}</span>
         <span class="title-actions">
             {% if listing.has_issue %}<span class="issue-icon" title="Has issue">&#x26A0;</span>{% endif %}
+            {# Show "updated" badge only for listings with recent price changes (within 24h) #}
+            {% if listing.last_price_change_at %}
+                {% set change_hours_ago = ((now - listing.last_price_change_at).total_seconds() / 3600) | int %}
+                {% if change_hours_ago < 24 %}<span class="updated-icon" title="Price changed {{ change_hours_ago }}h ago">&#x21BB;</span>{% endif %}
+            {% endif %}
             {% if listing.document_count > 0 %}<span class="document-icon" title="Has dealer document">&#x1F4C4;</span>{% endif %}
             {% if listing.notes_count > 0 %}
                 <span

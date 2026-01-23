@@ -15,6 +15,7 @@
 {% if filters.qualified_only %}{% set ns.query = ns.query ~ '&qualified_only=true' %}{% endif %}
 {% if filters.has_issue %}{% set ns.query = ns.query ~ '&has_issue=true' %}{% endif %}
 {% if filters.has_price_change %}{% set ns.query = ns.query ~ '&has_price_change=true' %}{% endif %}
+{% if filters.recently_updated %}{% set ns.query = ns.query ~ '&recently_updated=true' %}{% endif %}
 {% if filters.min_score %}{% set ns.query = ns.query ~ '&min_score=' ~ filters.min_score %}{% endif %}
 {% if filters.price_min %}{% set ns.query = ns.query ~ '&price_min=' ~ filters.price_min %}{% endif %}
 {% if filters.price_max %}{% set ns.query = ns.query ~ '&price_max=' ~ filters.price_max %}{% endif %}
@@ -35,7 +36,7 @@
 
 {% if listings %}
 {# Active filter chips #}
-{% set has_active_filters = filters.source or filters.qualified_only or filters.has_issue or filters.has_price_change or filters.min_score or filters.price_min or filters.price_max or filters.mileage_max or filters.year_min or filters.country or filters.search or filters.has_options %}
+{% set has_active_filters = filters.source or filters.qualified_only or filters.has_issue or filters.has_price_change or filters.recently_updated or filters.min_score or filters.price_min or filters.price_max or filters.mileage_max or filters.year_min or filters.country or filters.search or filters.has_options %}
 {% if has_active_filters %}
 <div class="active-filters" id="active-filters">
     <span class="active-filters-label">Active filters:</span>
@@ -60,6 +61,12 @@
     {% if filters.has_price_change %}
     <button type="button" class="filter-chip" onclick="removeFilter('has_price_change')" aria-label="Remove price change filter">
         Price Changed
+        <span class="chip-remove">&times;</span>
+    </button>
+    {% endif %}
+    {% if filters.recently_updated %}
+    <button type="button" class="filter-chip filter-chip-info" onclick="removeFilter('recently_updated')" aria-label="Remove recently updated filter">
+        Recently Updated
         <span class="chip-remove">&times;</span>
     </button>
     {% endif %}

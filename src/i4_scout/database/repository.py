@@ -272,6 +272,7 @@ class ListingRepository:
         options_match: str = "all",
         has_issue: bool | None = None,
         has_price_change: bool | None = None,
+        recently_updated: bool | None = None,
     ) -> Query[Listing]:
         """Apply common filters to a listing query.
 
@@ -292,6 +293,7 @@ class ListingRepository:
             options_match: "all" to require all options, "any" to require any.
             has_issue: Filter by issue status (True, False, or None for all).
             has_price_change: Filter by price change status (True for listings with changes).
+            recently_updated: Filter by recent price changes (True for listings with price changes within 24h).
 
         Returns:
             Filtered query.
@@ -372,6 +374,26 @@ class ListingRepository:
             else:
                 query = query.filter(~Listing.id.in_(subq))
 
+        if recently_updated is not None:
+            # Filter for listings with a price change recorded within last 24 hours
+            # This matches the badge logic in the template
+            from datetime import datetime, timedelta
+            cutoff_time = datetime.utcnow() - timedelta(hours=24)
+            # Subquery for listings with price history entries recorded recently
+            # We need count > 1 (has changes) AND most recent recorded_at is recent
+            recent_change_subq = (
+                sa_select(PriceHistory.listing_id)
+                .group_by(PriceHistory.listing_id)
+                .having(
+                    func.count(PriceHistory.id) > 1,
+                    func.max(PriceHistory.recorded_at) >= cutoff_time
+                )
+            )
+            if recently_updated:
+                query = query.filter(Listing.id.in_(recent_change_subq))
+            else:
+                query = query.filter(~Listing.id.in_(recent_change_subq))
+
         return query
 
     def get_listings(
@@ -391,6 +413,7 @@ class ListingRepository:
         options_match: str = "all",
         has_issue: bool | None = None,
         has_price_change: bool | None = None,
+        recently_updated: bool | None = None,
         sort_by: str | None = None,
         sort_order: str = "desc",
         limit: int | None = None,
@@ -414,6 +437,7 @@ class ListingRepository:
             options_match: "all" to require all options, "any" to require any.
             has_issue: Filter by issue status (True, False, or None for all).
             has_price_change: Filter by price change status (True for listings with changes).
+            recently_updated: Filter by recent price changes (True for listings with price changes within 24h).
             sort_by: Field to sort by (price, mileage, score, first_seen, last_seen).
             sort_order: Sort direction (asc, desc). Default: desc.
             limit: Maximum number of results.
@@ -444,6 +468,7 @@ class ListingRepository:
             options_match=options_match,
             has_issue=has_issue,
             has_price_change=has_price_change,
+            recently_updated=recently_updated,
         )
 
         # Sorting
@@ -486,6 +511,7 @@ class ListingRepository:
         options_match: str = "all",
         has_issue: bool | None = None,
         has_price_change: bool | None = None,
+        recently_updated: bool | None = None,
     ) -> int:
         """Count listings with optional filters.
 
@@ -505,6 +531,7 @@ class ListingRepository:
             options_match: "all" to require all options, "any" to require any.
             has_issue: Filter by issue status (True, False, or None for all).
             has_price_change: Filter by price change status (True for listings with changes).
+            recently_updated: Filter by recent price changes (True for listings with price changes within 24h).
 
         Returns:
             Number of matching listings.
@@ -527,6 +554,7 @@ class ListingRepository:
             options_match=options_match,
             has_issue=has_issue,
             has_price_change=has_price_change,
+            recently_updated=recently_updated,
         )
         return query.count()
 
@@ -1223,9 +1251,29 @@ class ScrapeJobRepository:
         self._session.refresh(job)
         return job
 
+    def cancel_job(self, job_id: int) -> ScrapeJob | None:
+        """Mark job as cancelled.
+
+        Args:
+            job_id: Job ID.
+
+        Returns:
+            Updated ScrapeJob if found, None otherwise.
+        """
+        job = self.get_job(job_id)
+        if job is None:
+            return None
+
+        job.status = ScrapeStatus.CANCELLED
+        job.completed_at = datetime.now(timezone.utc)
+
+        self._session.commit()
+        self._session.refresh(job)
+        return job
+
     @with_db_retry
     def cleanup_old_jobs(self, days: int = 30) -> int:
-        """Delete completed/failed jobs older than specified days.
+        """Delete completed/failed/cancelled jobs older than specified days.
 
         Args:
             days: Delete jobs older than this many days.
@@ -1240,7 +1288,11 @@ class ScrapeJobRepository:
             self._session.query(ScrapeJob)
             .filter(
                 ScrapeJob.created_at < cutoff,
-                ScrapeJob.status.in_([ScrapeStatus.COMPLETED, ScrapeStatus.FAILED]),
+                ScrapeJob.status.in_([
+                    ScrapeStatus.COMPLETED,
+                    ScrapeStatus.FAILED,
+                    ScrapeStatus.CANCELLED,
+                ]),
             )
             .delete(synchronize_session=False)
         )
