@@ -198,6 +198,20 @@ class JobService:
             return None
         return self._to_pydantic(job)
 
+    def cancel_job(self, job_id: int) -> ScrapeJobRead | None:
+        """Mark job as cancelled.
+
+        Args:
+            job_id: Job ID.
+
+        Returns:
+            Updated ScrapeJobRead if found, None otherwise.
+        """
+        job = self._repo.cancel_job(job_id)
+        if job is None:
+            return None
+        return self._to_pydantic(job)
+
     def cleanup_old_jobs(self, days: int = 30) -> int:
         """Delete completed/failed jobs older than specified days.
 

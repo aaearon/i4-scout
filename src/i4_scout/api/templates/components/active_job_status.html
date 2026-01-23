@@ -1,0 +1,64 @@
+{# Active job status card - detailed view for scrape page #}
+{% if active_job %}
+<article class="active-job-card"
+         id="active-job-status"
+         hx-get="/partials/scrape/active-status"
+         hx-trigger="every 2s"
+         hx-swap="outerHTML">
+    <header>
+        <span class="badge status-{{ active_job.status.value }}">{{ active_job.status.value }}</span>
+        <strong>Job #{{ active_job.id }}</strong> - {{ active_job.source }}
+    </header>
+
+    <div class="active-job-progress">
+        <div class="progress-bar-container">
+            {% set progress_pct = ((active_job.current_page or 0) / active_job.max_pages * 100) | int %}
+            <div class="progress-bar" style="width: {{ progress_pct }}%"></div>
+        </div>
+        <div class="progress-text">
+            Page {{ active_job.current_page or 0 }} / {{ active_job.max_pages }}
+            ({{ progress_pct }}%)
+        </div>
+    </div>
+
+    <div class="active-job-stats">
+        <div class="stat">
+            <span class="stat-value">{{ active_job.total_found }}</span>
+            <span class="stat-label">Found</span>
+        </div>
+        <div class="stat">
+            <span class="stat-value">{{ active_job.new_listings }}</span>
+            <span class="stat-label">New</span>
+        </div>
+        <div class="stat">
+            <span class="stat-value">{{ active_job.updated_listings }}</span>
+            <span class="stat-label">Updated</span>
+        </div>
+    </div>
+
+    <footer>
+        {% if active_job.started_at %}
+        <span>Started: {{ active_job.started_at.strftime('%H:%M:%S') }}</span>
+        {% else %}
+        <span></span>
+        {% endif %}
+        <button
+            type="button"
+            class="stop-btn"
+            hx-post="/api/scrape/jobs/{{ active_job.id }}/cancel"
+            hx-target="#active-job-status"
+            hx-swap="outerHTML"
+            hx-confirm="Are you sure you want to stop this scrape job?"
+        >
+            Stop Job
+        </button>
+    </footer>
+</article>
+{% else %}
+{# No running job - show placeholder that polls less frequently #}
+<div id="active-job-status"
+     hx-get="/partials/scrape/active-status"
+     hx-trigger="every 10s"
+     hx-swap="outerHTML">
+</div>
+{% endif %}

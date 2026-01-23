@@ -1,0 +1,27 @@
+{# Global scrape progress banner - shown when a scrape is running #}
+{% if active_job %}
+<div class="scrape-progress-banner"
+     id="scrape-progress-banner"
+     hx-get="/partials/scrape/active"
+     hx-trigger="every 2s"
+     hx-swap="outerHTML">
+    <div class="progress-content">
+        <span class="spinner"></span>
+        <span class="progress-text">
+            <strong>{{ active_job.source }}</strong>: Page {{ active_job.current_page or 0 }} / {{ active_job.max_pages }}
+            {% if active_job.total_found > 0 %}
+            &mdash; {{ active_job.total_found }} found, {{ active_job.new_listings }} new
+            {% endif %}
+        </span>
+        <a href="/scrape" class="progress-link">View details</a>
+    </div>
+</div>
+{% else %}
+{# Empty placeholder that polls occasionally to check for new jobs #}
+<div id="scrape-progress-banner"
+     hx-get="/partials/scrape/active"
+     hx-trigger="every 10s"
+     hx-swap="outerHTML"
+     style="display: none;">
+</div>
+{% endif %}

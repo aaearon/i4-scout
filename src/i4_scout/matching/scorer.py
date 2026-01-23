@@ -2,17 +2,17 @@
 
 from i4_scout.models.pydantic_models import MatchResult, OptionsConfig
 
-# Scoring weights
-REQUIRED_WEIGHT = 100
-NICE_TO_HAVE_WEIGHT = 10
+# Scoring weights (3:1 ratio - nice-to-have contributes ~20% to total score)
+REQUIRED_WEIGHT = 75
+NICE_TO_HAVE_WEIGHT = 25
 
 
 def calculate_score(match_result: MatchResult, config: OptionsConfig) -> MatchResult:
     """Calculate match score based on matched options.
 
     Formula:
-        score = (required_matched * 100) + (nice_to_have_matched * 10)
-        max_score = (len(required) * 100) + (len(nice_to_have) * 10)
+        score = (required_matched * 75) + (nice_to_have_matched * 25)
+        max_score = (len(required) * 75) + (len(nice_to_have) * 25)
         normalized_score = (score / max_score) * 100
 
     Qualification:

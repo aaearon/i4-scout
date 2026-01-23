@@ -232,6 +232,17 @@ class TestScrapePage:
         assert response.status_code == 200
         assert "text/html" in response.headers["content-type"]
 
+    def test_scrape_active_partial_renders(self, client):
+        """Test that scrape active partial returns valid HTML."""
+        response = client.get("/partials/scrape/active")
+        assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
+        # Should have scrape-progress-banner id
+        assert "scrape-progress-banner" in response.text
+        # Should have HTMX attributes for polling
+        assert "hx-get" in response.text
+        assert "hx-trigger" in response.text
+
 
 class TestNavigation:
     """Tests for navigation between pages."""

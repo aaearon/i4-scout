@@ -5,6 +5,13 @@
 {% block content %}
 <h1>Scrape Control</h1>
 
+<!-- Active job status (polls for running jobs) -->
+<div id="active-job-status"
+     hx-get="/partials/scrape/active-status"
+     hx-trigger="load"
+     hx-swap="outerHTML">
+</div>
+
 <!-- Scrape form -->
 {% include "components/scrape_form.html" %}
 

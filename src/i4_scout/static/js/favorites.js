@@ -87,7 +87,8 @@
         const favorites = getFavorites();
 
         document.querySelectorAll('.listing-row').forEach(row => {
-            const listingId = parseInt(row.dataset.href.split('/').pop(), 10);
+            // Use data-listing-id directly (more reliable than parsing data-href)
+            const listingId = parseInt(row.dataset.listingId, 10);
             if (showFavoritesOnly && !favorites.includes(listingId)) {
                 row.style.display = 'none';
             } else {
@@ -109,12 +110,33 @@
                 paginationInfo.textContent = paginationInfo.dataset.originalText;
             }
         }
+
+        // Update URL with favorites_only param
+        const url = new URL(window.location.href);
+        if (showFavoritesOnly) {
+            url.searchParams.set('favorites_only', 'true');
+        } else {
+            url.searchParams.delete('favorites_only');
+        }
+        window.history.replaceState({}, '', url.toString());
     };
+
+    // Check URL for favorites_only param on init and restore state
+    function restoreFavoritesFilterFromUrl() {
+        const url = new URL(window.location.href);
+        const favoritesOnly = url.searchParams.get('favorites_only') === 'true';
+        const checkbox = document.getElementById('favorites-only');
+        if (checkbox && favoritesOnly) {
+            checkbox.checked = true;
+            filterFavoritesOnly(checkbox);
+        }
+    }
 
     // Initialize on page load
     function init() {
         updateFavoriteButtons();
         updateFavoritesFilter();
+        restoreFavoritesFilterFromUrl();
     }
 
     // Run init on DOMContentLoaded
@@ -126,7 +148,9 @@
 
     // Re-init after HTMX swaps (for pagination)
     document.body.addEventListener('htmx:afterSwap', function(evt) {
-        if (evt.target.id === 'listings-table' || evt.target.closest('#listings-table')) {
+        // HTMX uses evt.detail.target for the swap target, evt.target is the element that triggered the event
+        const swapTarget = evt.detail && evt.detail.target ? evt.detail.target : evt.target;
+        if (swapTarget.id === 'listings-table' || swapTarget.closest('#listings-table')) {
             updateFavoriteButtons();
 
             // Re-apply favorites filter if checked

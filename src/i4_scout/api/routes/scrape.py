@@ -201,6 +201,67 @@ async def get_scrape_job(
     return _job_to_response(job)
 
 
+@router.post("/{job_id}/cancel", response_model=None)
+async def cancel_scrape_job(
+    http_request: Request,
+    job_id: int,
+    session: DbSession,
+) -> HTMLResponse | JSONResponse:
+    """Cancel a running scrape job.
+
+    Marks the job as cancelled. The background task will stop at the next
+    checkpoint when it detects the cancellation.
+
+    Args:
+        job_id: Job ID to cancel.
+
+    Returns:
+        Updated job details (JSON) or success message (HTML for HTMX).
+
+    Raises:
+        HTTPException: 404 if job not found, 400 if job is not running.
+    """
+    from i4_scout.models.pydantic_models import ScrapeStatus
+
+    service = JobService(session)
+    job = service.get_job(job_id)
+
+    if job is None:
+        raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+
+    if job.status != ScrapeStatus.RUNNING:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Job {job_id} is not running (status: {job.status.value})",
+        )
+
+    # Cancel the job
+    updated_job = service.cancel_job(job_id)
+
+    # Check if this is an HTMX request
+    is_htmx = http_request.headers.get("HX-Request") == "true"
+
+    if is_htmx:
+        html_content = f"""
+        <div class="alert alert-success">
+            Job #{job_id} has been cancelled.
+        </div>
+        """
+        return HTMLResponse(
+            content=html_content,
+            status_code=200,
+            headers={"HX-Trigger": "jobCancelled"},
+        )
+
+    if updated_job:
+        return JSONResponse(
+            content=_job_to_response(updated_job).model_dump(mode="json"),
+            status_code=200,
+        )
+
+    raise HTTPException(status_code=500, detail="Failed to cancel job")
+
+
 async def run_scrape_job(
     job_id: int,
     source: Source,

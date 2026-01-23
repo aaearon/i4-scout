@@ -71,25 +71,17 @@
 
         <!-- Exterior Color row -->
         <div class="compare-row">
-            <div class="compare-label">Ext. Color</div>
+            <div class="compare-label">Exterior</div>
             {% for listing in listings %}
             <div class="compare-value">{{ listing.exterior_color or '--' }}</div>
             {% endfor %}
         </div>
 
-        <!-- Interior Color row -->
+        <!-- Interior row (combined) -->
         <div class="compare-row">
-            <div class="compare-label">Int. Color</div>
+            <div class="compare-label">Interior</div>
             {% for listing in listings %}
-            <div class="compare-value">{{ listing.interior_color or '--' }}</div>
-            {% endfor %}
-        </div>
-
-        <!-- Interior Material row -->
-        <div class="compare-row">
-            <div class="compare-label">Int. Material</div>
-            {% for listing in listings %}
-            <div class="compare-value">{{ listing.interior_material or '--' }}</div>
+            <div class="compare-value">{{ listing.interior_color or '--' }}{% if listing.interior_material %} / {{ listing.interior_material }}{% endif %}</div>
             {% endfor %}
         </div>
 

@@ -29,6 +29,20 @@
         </nav>
     </header>
 
+    {# Show scrape progress banner on all pages except detail and compare #}
+    {# Detail pages: /listings/123 (has something after /listings/) #}
+    {# Compare pages: /compare #}
+    {% set path = request.url.path %}
+    {% set is_detail_page = path.startswith('/listings/') and path != '/listings/' %}
+    {% set is_compare_page = path.startswith('/compare') %}
+    {% if not is_detail_page and not is_compare_page %}
+    <div id="scrape-progress-banner"
+         hx-get="/partials/scrape/active"
+         hx-trigger="load"
+         hx-swap="outerHTML">
+    </div>
+    {% endif %}
+
     <main class="container">
         {% block content %}{% endblock %}
     </main>

@@ -517,6 +517,70 @@ def export(
         console.print(f"[green]Export complete: {output}[/green]")
 
 
+@app.command(name="recalculate-scores")
+def recalculate_scores(
+    config: Path | None = typer.Option(
+        None,
+        "--config",
+        "-c",
+        help="Path to options config YAML file.",
+    ),
+    json_output: bool = typer.Option(
+        False,
+        "--json",
+        help="Output as JSON (for LLM/programmatic consumption).",
+    ),
+) -> None:
+    """Recalculate scores for all listings using current weights.
+
+    This command recalculates match_score and is_qualified for all listings
+    based on the current scoring weights and options configuration. Useful
+    after changing scoring weights to update existing listings without
+    re-scraping.
+    """
+    # Load config
+    options_config = load_options_config(config)
+
+    # Ensure database exists
+    init_db()
+
+    if not json_output:
+        console.print("[bold blue]Recalculating scores for all listings...[/bold blue]")
+
+    with get_session() as session:
+        service = ListingService(session)
+        result = service.recalculate_scores(options_config)
+
+        if json_output:
+            output_json({
+                "status": "success",
+                "total_processed": result.total_processed,
+                "score_changed": result.score_changed,
+                "qualification_changed": result.qualification_changed,
+                "changes": result.changes,
+            })
+        else:
+            console.print()
+            console.print("[green]Recalculation complete![/green]")
+            console.print(f"  Total listings processed: {result.total_processed}")
+            console.print(f"  Scores changed: {result.score_changed}")
+            console.print(f"  Qualification changed: {result.qualification_changed}")
+
+            if result.changes:
+                console.print()
+                console.print("[bold]Changes:[/bold]")
+                for change in result.changes[:20]:  # Show first 20
+                    qual_change = ""
+                    if change["old_qualified"] != change["new_qualified"]:
+                        qual_change = " [yellow](qualification changed)[/yellow]"
+                    console.print(
+                        f"  #{change['id']}: {change['old_score']}% -> "
+                        f"{change['new_score']}%{qual_change}"
+                    )
+                if len(result.changes) > 20:
+                    console.print(f"  ... and {len(result.changes) - 20} more")
+
+
 @app.command()
 def enrich(
     listing_id: int = typer.Argument(..., help="Listing ID to enrich."),

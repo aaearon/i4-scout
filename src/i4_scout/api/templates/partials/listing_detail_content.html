@@ -31,79 +31,50 @@
     </div>
 </div>
 
-<div class="detail-grid">
-    <div class="detail-item">
-        <div class="label">Price</div>
-        <div class="value">
-            {% if listing.price %}
-                {{ "{:,.0f}".format(listing.price) }}
-            {% else %}
-                N/A
-            {% endif %}
-        </div>
+<div class="detail-table">
+    <div class="detail-row">
+        <span class="label">Price</span>
+        <span class="value">{% if listing.price %}€{{ "{:,.0f}".format(listing.price) }}{% else %}N/A{% endif %}</span>
     </div>
-    <div class="detail-item">
-        <div class="label">Mileage</div>
-        <div class="value">
-            {% if listing.mileage_km %}
-                {{ "{:,.0f}".format(listing.mileage_km) }} km
-            {% else %}
-                N/A
-            {% endif %}
-        </div>
+    <div class="detail-row">
+        <span class="label">Mileage</span>
+        <span class="value">{% if listing.mileage_km %}{{ "{:,.0f}".format(listing.mileage_km) }} km{% else %}N/A{% endif %}</span>
     </div>
-    <div class="detail-item">
-        <div class="label">First Registration</div>
-        <div class="value">{{ listing.first_registration.strftime('%m/%Y') if listing.first_registration else 'N/A' }}</div>
+    <div class="detail-row">
+        <span class="label">First Registration</span>
+        <span class="value">{{ listing.first_registration.strftime('%m/%Y') if listing.first_registration else 'N/A' }}</span>
     </div>
-    <div class="detail-item">
-        <div class="label">Exterior Color</div>
-        <div class="value">{{ listing.exterior_color or '--' }}</div>
+    <div class="detail-row">
+        <span class="label">Match Score</span>
+        <span class="value">{% if listing.match_score is not none %}{{ "{:.1f}".format(listing.match_score) }}{% else %}--{% endif %}</span>
     </div>
-    <div class="detail-item">
-        <div class="label">Interior Color</div>
-        <div class="value">{{ listing.interior_color or '--' }}</div>
+    <div class="detail-row">
+        <span class="label">Location</span>
+        <span class="value">{{ listing.location_city or '--' }}{% if listing.location_country %}, {{ listing.location_country }}{% endif %}</span>
     </div>
-    <div class="detail-item">
-        <div class="label">Interior Material</div>
-        <div class="value">{{ listing.interior_material or '--' }}</div>
+    <div class="detail-row">
+        <span class="label">Dealer</span>
+        <span class="value">{{ listing.dealer_name or '--' }}{% if listing.dealer_type %} <small>({{ listing.dealer_type }})</small>{% endif %}</span>
     </div>
-    <div class="detail-item">
-        <div class="label">Match Score</div>
-        <div class="value">
-            {% if listing.match_score is not none %}
-                {{ "{:.1f}".format(listing.match_score) }}
-            {% else %}
-                --
-            {% endif %}
-        </div>
+    <div class="detail-row">
+        <span class="label">Exterior Color</span>
+        <span class="value">{{ listing.exterior_color or '--' }}</span>
     </div>
-    <div class="detail-item">
-        <div class="label">Location</div>
-        <div class="value">
-            {{ listing.location_city or '--' }}{% if listing.location_country %}, {{ listing.location_country }}{% endif %}
-        </div>
+    <div class="detail-row">
+        <span class="label">Interior</span>
+        <span class="value">{{ listing.interior_color or '--' }}{% if listing.interior_material %} / {{ listing.interior_material }}{% endif %}</span>
     </div>
-    <div class="detail-item">
-        <div class="label">Dealer</div>
-        <div class="value">
-            {{ listing.dealer_name or '--' }}
-            {% if listing.dealer_type %}<br><small>({{ listing.dealer_type }})</small>{% endif %}
-        </div>
+    <div class="detail-row">
+        <span class="label">Source</span>
+        <span class="value"><span class="badge badge-source">{{ listing.source.value if listing.source else '--' }}</span></span>
     </div>
-    <div class="detail-item">
-        <div class="label">Source</div>
-        <div class="value">
-            <span class="badge badge-source">{{ listing.source.value if listing.source else '--' }}</span>
-        </div>
+    <div class="detail-row">
+        <span class="label">First Seen</span>
+        <span class="value">{{ listing.first_seen_at.strftime('%Y-%m-%d') if listing.first_seen_at else '--' }}</span>
     </div>
-    <div class="detail-item">
-        <div class="label">First Seen</div>
-        <div class="value">{{ listing.first_seen_at.strftime('%Y-%m-%d %H:%M') if listing.first_seen_at else '--' }}</div>
-    </div>
-    <div class="detail-item">
-        <div class="label">Last Seen</div>
-        <div class="value">{{ listing.last_seen_at.strftime('%Y-%m-%d %H:%M') if listing.last_seen_at else '--' }}</div>
+    <div class="detail-row">
+        <span class="label">Last Seen</span>
+        <span class="value">{{ listing.last_seen_at.strftime('%Y-%m-%d') if listing.last_seen_at else '--' }}</span>
     </div>
 </div>
 

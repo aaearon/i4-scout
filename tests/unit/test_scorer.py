@@ -119,15 +119,15 @@ class TestScorer:
         assert result.is_qualified is False
         # Score might still be calculated but qualification is False
 
-    def test_score_formula_required_100_nice_10(
+    def test_score_formula_required_75_nice_25(
         self, sample_config: OptionsConfig
     ) -> None:
-        """Score formula: required=100, nice_to_have=10."""
+        """Score formula: required=75, nice_to_have=25 (3:1 ratio)."""
         from i4_scout.matching.scorer import calculate_score
 
-        # 1 required (100) + 2 nice (20) = 120
-        # max = 2*100 + 3*10 = 230
-        # normalized = 120/230 * 100 ≈ 52.17
+        # 1 required (75) + 2 nice (50) = 125
+        # max = 2*75 + 3*25 = 225
+        # normalized = 125/225 * 100 ≈ 55.56
         match_result = MatchResult(
             matched_required=["Head-Up Display"],
             matched_nice_to_have=["Seat Heating", "Laser Light"],
@@ -137,7 +137,7 @@ class TestScorer:
 
         result = calculate_score(match_result, sample_config)
 
-        expected_score = (1 * 100 + 2 * 10) / (2 * 100 + 3 * 10) * 100
+        expected_score = (1 * 75 + 2 * 25) / (2 * 75 + 3 * 25) * 100
         assert abs(result.score - expected_score) < 0.01
 
     def test_score_bounds_0_to_100(self, sample_config: OptionsConfig) -> None:
