@@ -792,7 +792,6 @@ Location: `src/i4_scout/cli.py`
 
 | Command | Purpose |
 |---------|---------|
-| `init-database` | Create database schema |
 | `scrape` | Run scraping job |
 | `list` | List listings with filters |
 | `show` | Show single listing |
@@ -800,6 +799,8 @@ Location: `src/i4_scout/cli.py`
 | `recalculate-scores` | Recalculate match scores |
 | `enrich` | PDF enrichment |
 | `serve` | Start API server |
+
+Note: Database tables are auto-created on first use. No initialization command needed.
 
 ### Common Options
 

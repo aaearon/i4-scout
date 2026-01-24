@@ -35,13 +35,10 @@ playwright install chromium
 ## Quick Start
 
 ```bash
-# Initialize database
-i4-scout init-database
-
 # Configure options (copy and edit)
 cp config/options.example.yaml config/options.yaml
 
-# Scrape listings
+# Scrape listings (database auto-initializes on first use)
 i4-scout scrape autoscout24_de --max-pages 5
 
 # List qualified listings
@@ -79,7 +76,6 @@ See [CLAUDE.md](CLAUDE.md) for full documentation.
 
 | Command | Description |
 |---------|-------------|
-| `init-database` | Initialize SQLite database |
 | `scrape <source>` | Scrape listings from source (autoscout24_de, autoscout24_nl) |
 | `list` | List scraped listings with filters |
 | `show <id>` | Show detailed listing information |

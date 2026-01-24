@@ -14,7 +14,7 @@ from rich.table import Table
 
 from i4_scout import __version__
 from i4_scout.config import load_options_config, load_search_filters, merge_search_filters
-from i4_scout.database.engine import get_session, init_db
+from i4_scout.database.engine import get_session
 from i4_scout.database.repository import ListingRepository
 from i4_scout.export.csv_exporter import export_to_csv
 from i4_scout.export.json_exporter import export_to_json
@@ -76,33 +76,6 @@ def main(
 ) -> None:
     """BMW i4 listing scraper."""
     pass
-
-
-@app.command()
-def init_database(
-    db_path: Path | None = typer.Option(
-        None,
-        "--db",
-        "-d",
-        help="Path to SQLite database file.",
-    ),
-    verbose: bool = typer.Option(
-        False,
-        "--verbose",
-        "-V",
-        help="Show SQL statements.",
-    ),
-) -> None:
-    """Initialize the database, creating all tables."""
-    console.print("[bold blue]Initializing database...[/bold blue]")
-
-    try:
-        init_db(db_path, echo=verbose)
-        db_location = db_path or "data/i4_scout.db"
-        console.print(f"[green]Database initialized at: {db_location}[/green]")
-    except Exception as e:
-        console.print(f"[red]Error initializing database: {e}[/red]")
-        raise typer.Exit(1) from e
 
 
 def _create_progress_callback(quiet: bool) -> Callable[[ScrapeProgress], None] | None:
@@ -241,8 +214,6 @@ def scrape(
         if search_filters.countries:
             console.print(f"  Countries: {', '.join(search_filters.countries)}")
 
-    # Ensure database exists
-    init_db()
 
     job_id: int | None = None
     was_cancelled = False
@@ -409,8 +380,6 @@ def list_listings(
     ),
 ) -> None:
     """List scraped listings."""
-    # Ensure database exists
-    init_db()
 
     with get_session() as session:
         service = ListingService(session)
@@ -482,8 +451,6 @@ def show(
     ),
 ) -> None:
     """Show detailed information for a specific listing."""
-    # Ensure database exists
-    init_db()
 
     with get_session() as session:
         service = ListingService(session)
@@ -574,8 +541,6 @@ def export(
         console.print(f"[red]Unknown format: {format}. Use 'csv' or 'json'.[/red]")
         raise typer.Exit(1)
 
-    # Ensure database exists
-    init_db()
 
     with get_session() as session:
         repo = ListingRepository(session)
@@ -628,8 +593,6 @@ def recalculate_scores(
     # Load config
     options_config = load_options_config(config)
 
-    # Ensure database exists
-    init_db()
 
     if not json_output:
         console.print("[bold blue]Recalculating scores for all listings...[/bold blue]")
@@ -707,8 +670,6 @@ def enrich(
             console.print("[red]File must have .pdf extension[/red]")
         raise typer.Exit(1)
 
-    # Ensure database exists
-    init_db()
 
     if not json_output:
         console.print(f"[bold blue]Enriching listing #{listing_id} with {pdf_path.name}[/bold blue]")
@@ -804,8 +765,6 @@ def serve(
     """Start the API server."""
     import uvicorn
 
-    # Ensure database exists
-    init_db()
 
     console.print("[bold blue]Starting API server...[/bold blue]")
     console.print(f"  Host: {host}")

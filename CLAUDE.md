@@ -33,10 +33,7 @@ ruff check src/ tests/
 # Type check
 mypy src/
 
-# Initialize database
-i4-scout init-database
-
-# Scrape listings
+# Scrape listings (database auto-initializes on first use)
 i4-scout scrape autoscout24_de --max-pages 5
 i4-scout scrape autoscout24_nl --max-pages 5 --no-headless
 
@@ -170,7 +167,7 @@ Scraper → Parser → OptionMatcher → Scorer → Repository → SQLite
    - **Tables**: `listings`, `options`, `listing_options` (many-to-many), `listing_documents`, `price_history`, `scrape_sessions`
    - **Retry Logic**: Write operations use `@with_db_retry` decorator (5 attempts, exponential backoff 1-8s) to handle SQLite "database is locked" errors during concurrent scraping
 
-4. **CLI** (`src/i4_scout/cli.py`) - Typer-based CLI with commands: `init-database`, `scrape`, `list`, `show`, `export`, `enrich`, `serve`
+4. **CLI** (`src/i4_scout/cli.py`) - Typer-based CLI with commands: `scrape`, `list`, `show`, `export`, `recalculate-scores`, `enrich`, `serve`
 
 5. **Services** (`src/i4_scout/services/`)
    - `listing_service.py`: Business logic for listing operations (get, list, delete)

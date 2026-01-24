@@ -88,26 +88,6 @@ def populated_db(test_db: Path) -> Path:
     return test_db
 
 
-class TestInitDatabaseCommand:
-    """Tests for init-database command."""
-
-    def test_init_database_creates_db(self, runner: CliRunner, tmp_path: Path) -> None:
-        """init-database should create the database file."""
-        db_path = tmp_path / "new_test.db"
-
-        result = runner.invoke(app, ["init-database", "--db", str(db_path)])
-
-        assert result.exit_code == 0
-        assert "initialized" in result.output.lower()
-        assert db_path.exists()
-
-    def test_init_database_idempotent(self, runner: CliRunner, test_db: Path) -> None:
-        """init-database should be safe to run multiple times."""
-        result = runner.invoke(app, ["init-database", "--db", str(test_db)])
-
-        assert result.exit_code == 0
-
-
 class TestListCommand:
     """Tests for list command."""
 

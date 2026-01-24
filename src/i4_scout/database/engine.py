@@ -62,6 +62,7 @@ def get_engine(db_path: Path | str | None = None, echo: bool = False) -> Engine:
         - Supports DATABASE_URL env var for PostgreSQL/external databases
         - Enables WAL mode for SQLite (better concurrent access)
         - Configures connection pooling
+        - Auto-creates tables on first use (idempotent)
     """
     global _engine
 
@@ -108,6 +109,9 @@ def get_engine(db_path: Path | str | None = None, echo: bool = False) -> Engine:
                 conn.execute(text("PRAGMA journal_mode=WAL"))
                 conn.commit()
 
+        # Auto-create tables (idempotent - safe to call on every startup)
+        Base.metadata.create_all(_engine)
+
     return _engine
 
 
@@ -151,6 +155,9 @@ def get_session(engine: Engine | None = None) -> Generator[Session, None, None]:
 def init_db(db_path: Path | str | None = None, echo: bool = False) -> Engine:
     """Initialize the database, creating all tables.
 
+    Note: This is now just an alias for get_engine(), which auto-creates
+    tables on first use. Kept for backwards compatibility with tests.
+
     Args:
         db_path: Path to SQLite database file.
         echo: Whether to echo SQL statements.
@@ -158,9 +165,7 @@ def init_db(db_path: Path | str | None = None, echo: bool = False) -> Engine:
     Returns:
         SQLAlchemy Engine instance.
     """
-    engine = get_engine(db_path, echo)
-    Base.metadata.create_all(engine)
-    return engine
+    return get_engine(db_path, echo)
 
 
 def reset_engine() -> None:
