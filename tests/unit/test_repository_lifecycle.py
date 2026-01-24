@@ -359,12 +359,14 @@ class TestJobListingAssociation:
         listings = repo.get_job_listings(sample_job.id)
         assert len(listings) == 0
 
-    def test_job_listing_association_unique(
+    def test_job_listing_association_idempotent(
         self, repo: ListingRepository, sample_listings: list[Listing], sample_job: ScrapeJob
     ) -> None:
-        """Should enforce unique job-listing combination."""
-        repo.add_job_listing_association(sample_job.id, sample_listings[0].id, "new")
+        """Should return existing association when listing appears on multiple pages."""
+        first = repo.add_job_listing_association(sample_job.id, sample_listings[0].id, "new")
 
-        # Trying to add the same association again should fail
-        with pytest.raises(Exception):  # IntegrityError wrapped in session error
-            repo.add_job_listing_association(sample_job.id, sample_listings[0].id, "updated")
+        # Adding the same listing again returns existing association (first status wins)
+        second = repo.add_job_listing_association(sample_job.id, sample_listings[0].id, "updated")
+
+        assert second.id == first.id
+        assert second.status == "new"  # First status preserved

@@ -1279,14 +1279,31 @@ class ListingRepository:
     ) -> ScrapeJobListing:
         """Record that a listing was processed by a scrape job.
 
+        If association already exists (listing appeared on multiple pages),
+        returns the existing association without updating.
+
         Args:
             job_id: Scrape job ID.
             listing_id: Listing ID.
             status: Processing status ("new", "updated", "unchanged").
 
         Returns:
-            Created ScrapeJobListing association.
+            Existing or newly created ScrapeJobListing association.
         """
+        # Check if association already exists (listing on multiple pages)
+        existing = (
+            self._session.query(ScrapeJobListing)
+            .filter(
+                ScrapeJobListing.scrape_job_id == job_id,
+                ScrapeJobListing.listing_id == listing_id,
+            )
+            .first()
+        )
+
+        if existing:
+            return existing  # Already tracked, keep first status
+
+        # Create new association
         assoc = ScrapeJobListing(
             scrape_job_id=job_id,
             listing_id=listing_id,
