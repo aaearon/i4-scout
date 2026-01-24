@@ -1,0 +1,35 @@
+<article class="widget market-velocity-widget">
+    <header>
+        <span class="widget-title">Market Pulse</span>
+        <span class="widget-period">({{ days }} days)</span>
+    </header>
+    <div class="velocity-stats">
+        <div class="velocity-stat velocity-new">
+            <span class="velocity-label">New</span>
+            <span class="velocity-value {% if velocity.new > 0 %}positive{% endif %}">
+                {% if velocity.new > 0 %}+{% endif %}{{ velocity.new }}
+            </span>
+        </div>
+        <div class="velocity-stat velocity-delisted">
+            <span class="velocity-label">Delisted</span>
+            <span class="velocity-value {% if velocity.delisted > 0 %}negative{% endif %}">
+                {% if velocity.delisted > 0 %}-{% endif %}{{ velocity.delisted }}
+            </span>
+        </div>
+        <div class="velocity-stat velocity-net">
+            <span class="velocity-label">Net</span>
+            <span class="velocity-value {% if velocity.net > 0 %}positive{% elif velocity.net < 0 %}negative{% endif %}">
+                {% if velocity.net > 0 %}+{% endif %}{{ velocity.net }}
+            </span>
+        </div>
+    </div>
+    <div class="velocity-totals">
+        <span class="velocity-total">
+            <strong>{{ velocity.active_total }}</strong> active
+        </span>
+        <span class="velocity-sep">|</span>
+        <span class="velocity-total">
+            <strong>{{ velocity.qualified_count }}</strong> qualified
+        </span>
+    </div>
+</article>

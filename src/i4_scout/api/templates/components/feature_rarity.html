@@ -1,0 +1,50 @@
+<article class="widget feature-rarity-widget">
+    <header>
+        <span class="widget-title">Feature Rarity</span>
+    </header>
+
+    {% if rarest %}
+    <div class="rarity-section">
+        <h4 class="rarity-heading">Hardest to Find</h4>
+        <ul class="rarity-list">
+            {% for item in rarest[:5] %}
+            <li class="rarity-item">
+                <span class="rarity-name {% if item.name in required_names %}required{% else %}nice-to-have{% endif %}">
+                    {{ item.name }}
+                </span>
+                <span class="rarity-bar-container">
+                    <span class="rarity-bar" style="width: {{ item.percentage }}%;"></span>
+                </span>
+                <span class="rarity-percentage">{{ item.percentage }}%</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if most_common %}
+    <div class="rarity-section">
+        <h4 class="rarity-heading">Most Common</h4>
+        <ul class="rarity-list">
+            {% for item in most_common[:5] %}
+            <li class="rarity-item">
+                <span class="rarity-name {% if item.name in required_names %}required{% else %}nice-to-have{% endif %}">
+                    {{ item.name }}
+                </span>
+                <span class="rarity-bar-container">
+                    <span class="rarity-bar" style="width: {{ item.percentage }}%;"></span>
+                </span>
+                <span class="rarity-percentage">{{ item.percentage }}%</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if not rarest and not most_common %}
+    <div class="widget-empty">
+        <p>No option data available yet.</p>
+        <p class="widget-hint">Option frequency will appear after scraping listings.</p>
+    </div>
+    {% endif %}
+</article>

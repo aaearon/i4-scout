@@ -27,6 +27,7 @@
     <td class="title-cell" title="{{ listing.title }}">
         <span class="title-text">{{ listing.title }}</span>
         <span class="title-actions">
+            {% if listing.status == "delisted" %}<span class="status-icon delisted" title="Delisted ({{ listing.days_on_market }} days on market)">&#x2612;</span>{% endif %}
             {% if listing.has_issue %}<span class="issue-icon" title="Has issue">&#x26A0;</span>{% endif %}
             {# Show "updated" badge only for listings with recent price changes (within 24h) #}
             {% if listing.last_price_change_at %}

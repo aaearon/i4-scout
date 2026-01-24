@@ -1,0 +1,33 @@
+<article class="widget near-miss-widget">
+    <header>
+        <span class="widget-title">Near-Miss Listings</span>
+        <span class="widget-subtitle">Score >= {{ threshold|int }}% but not qualified</span>
+    </header>
+    {% if near_misses %}
+    <ul class="near-miss-list">
+        {% for item in near_misses %}
+        <li class="near-miss-item">
+            <a href="/listings/{{ item.listing.id }}" class="near-miss-link">
+                <div class="near-miss-header">
+                    <span class="near-miss-score">{{ "{:.0f}".format(item.listing.match_score) }}%</span>
+                    <span class="near-miss-title">{{ item.listing.title[:40] }}{% if item.listing.title|length > 40 %}...{% endif %}</span>
+                </div>
+                {% if item.missing_required %}
+                <div class="near-miss-missing">
+                    Missing: {{ item.missing_required[:3]|join(", ") }}{% if item.missing_required|length > 3 %} (+{{ item.missing_required|length - 3 }} more){% endif %}
+                </div>
+                {% endif %}
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+    <footer>
+        <a href="/listings?qualified_only=false&min_score={{ threshold|int }}&sort_by=score&sort_order=desc" class="widget-link">See all &#8594;</a>
+    </footer>
+    {% else %}
+    <div class="widget-empty">
+        <p>No near-miss listings found.</p>
+        <p class="widget-hint">Listings with high scores but missing required options will appear here.</p>
+    </div>
+    {% endif %}
+</article>

@@ -10,6 +10,12 @@
             {% if listing.has_issue %}
             <span class="badge badge-issue">Has Issue</span>
             {% endif %}
+            {% if listing.status == "delisted" %}
+            <span class="badge badge-delisted">Delisted</span>
+            {% else %}
+            <span class="badge badge-active">Active</span>
+            {% endif %}
+            <span class="days-on-market">{{ listing.days_on_market }} days on market</span>
         </div>
     </div>
     <div class="detail-actions">
@@ -76,6 +82,24 @@
         <span class="label">Last Seen</span>
         <span class="value">{{ listing.last_seen_at.strftime('%Y-%m-%d') if listing.last_seen_at else '--' }}</span>
     </div>
+</div>
+
+<!-- Photo Gallery -->
+<div
+    id="gallery-section"
+    hx-get="/partials/listing/{{ listing.id }}/gallery"
+    hx-trigger="load"
+    hx-swap="innerHTML"
+>
+    <article class="photo-gallery-section">
+        <header>
+            Photos
+            <span class="htmx-indicator"><span class="spinner"></span></span>
+        </header>
+        <div class="empty-state">
+            <p>Loading photos...</p>
+        </div>
+    </article>
 </div>
 
 {% if options_status %}

@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from i4_scout.database.repository import ListingRepository
 from i4_scout.matching.scorer import calculate_score
-from i4_scout.models.pydantic_models import ListingRead, MatchResult, OptionsConfig, Source
+from i4_scout.models.pydantic_models import ListingRead, ListingStatus, MatchResult, OptionsConfig, Source
 
 
 @dataclass
@@ -54,6 +54,7 @@ class ListingService:
         has_issue: bool | None = None,
         has_price_change: bool | None = None,
         recently_updated: bool | None = None,
+        status: ListingStatus | None = None,
         sort_by: str | None = None,
         sort_order: str = "desc",
         limit: int = 20,
@@ -78,6 +79,7 @@ class ListingService:
             has_issue: Filter by issue status (True, False, or None for all).
             has_price_change: Filter by price change status (True for listings with changes).
             recently_updated: Filter by recent price changes (True for listings with price changes within 24h).
+            status: Filter by listing status (ACTIVE, DELISTED, or None for all).
             sort_by: Field to sort by (price, mileage, score, first_seen, last_seen).
             sort_order: Sort direction (asc, desc). Default: desc.
             limit: Maximum results to return.
@@ -103,6 +105,7 @@ class ListingService:
             has_issue=has_issue,
             has_price_change=has_price_change,
             recently_updated=recently_updated,
+            status=status,
             sort_by=sort_by,
             sort_order=sort_order,
             limit=limit,
@@ -127,6 +130,7 @@ class ListingService:
             has_issue=has_issue,
             has_price_change=has_price_change,
             recently_updated=recently_updated,
+            status=status,
         )
 
         # Convert ORM objects to Pydantic models
@@ -170,6 +174,21 @@ class ListingService:
             Updated ListingRead if found, None otherwise.
         """
         listing = self._repo.toggle_issue(listing_id, has_issue=has_issue)
+        if listing is None:
+            return None
+        return self._to_listing_read(listing)
+
+    def set_status(self, listing_id: int, status: ListingStatus) -> ListingRead | None:
+        """Set the status for a listing.
+
+        Args:
+            listing_id: Listing ID to update.
+            status: New status (ACTIVE or DELISTED).
+
+        Returns:
+            Updated ListingRead if found, None otherwise.
+        """
+        listing = self._repo.update_listing_status(listing_id, status)
         if listing is None:
             return None
         return self._to_listing_read(listing)
@@ -314,6 +333,9 @@ class ListingService:
             match_score=listing.match_score,
             is_qualified=listing.is_qualified,
             has_issue=listing.has_issue,
+            status=listing.status,
+            consecutive_misses=listing.consecutive_misses,
+            status_changed_at=listing.status_changed_at,
             first_seen_at=listing.first_seen_at,
             last_seen_at=listing.last_seen_at,
             matched_options=listing.matched_options,

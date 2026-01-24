@@ -501,23 +501,24 @@ class TestColorFieldsInTemplates:
         """Test that listing detail page shows interior color."""
         response = client_with_colors.get("/listings/1")
         assert response.status_code == 200
-        assert "Interior Color" in response.text
+        # Template uses "Interior" label for combined interior color/material
+        assert ">Interior<" in response.text
         assert "Beige" in response.text
 
     def test_listing_detail_shows_interior_material(self, client_with_colors):
-        """Test that listing detail page shows interior material."""
+        """Test that listing detail page shows interior material combined with color."""
         response = client_with_colors.get("/listings/1")
         assert response.status_code == 200
-        assert "Interior Material" in response.text
+        # Material is shown after interior color with " / " separator
         assert "Vollleder" in response.text
 
     def test_compare_page_shows_color_rows(self, client_with_colors):
         """Test that compare page shows color rows."""
         response = client_with_colors.get("/compare?ids=1,2")
         assert response.status_code == 200
-        assert "Ext. Color" in response.text
-        assert "Int. Color" in response.text
-        assert "Int. Material" in response.text
+        # Compare template uses "Exterior" and "Interior" labels
+        assert ">Exterior<" in response.text
+        assert ">Interior<" in response.text
 
     def test_compare_page_shows_color_values(self, client_with_colors):
         """Test that compare page shows actual color values."""

@@ -18,9 +18,27 @@
             {{ job.max_pages }} pages
         {% endif %}
     </td>
-    <td style="text-align: right;">{{ job.total_found }}</td>
-    <td style="text-align: right;">{{ job.new_listings }}</td>
-    <td style="text-align: right;">{{ job.updated_listings }}</td>
+    <td style="text-align: right;">
+        {% if job.total_found > 0 %}
+        <a href="/listings?job_id={{ job.id }}" hx-boost="true">{{ job.total_found }}</a>
+        {% else %}
+        {{ job.total_found }}
+        {% endif %}
+    </td>
+    <td style="text-align: right;">
+        {% if job.new_listings > 0 %}
+        <a href="/listings?job_id={{ job.id }}&job_status=new" hx-boost="true">{{ job.new_listings }}</a>
+        {% else %}
+        {{ job.new_listings }}
+        {% endif %}
+    </td>
+    <td style="text-align: right;">
+        {% if job.updated_listings > 0 %}
+        <a href="/listings?job_id={{ job.id }}&job_status=updated" hx-boost="true">{{ job.updated_listings }}</a>
+        {% else %}
+        {{ job.updated_listings }}
+        {% endif %}
+    </td>
     <td>{{ job.created_at.strftime('%Y-%m-%d %H:%M') if job.created_at else '--' }}</td>
     <td>
         {% if job.error_message %}

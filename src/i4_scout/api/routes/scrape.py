@@ -262,6 +262,58 @@ async def cancel_scrape_job(
     raise HTTPException(status_code=500, detail="Failed to cancel job")
 
 
+@router.get("/{job_id}/listings")
+async def get_job_listings(
+    job_id: int,
+    session: DbSession,
+    status: str | None = Query(
+        None,
+        regex="^(new|updated|unchanged)$",
+        description="Filter by status: new, updated, or unchanged",
+    ),
+) -> list[dict[str, Any]]:
+    """Get listings processed by a scrape job.
+
+    Returns listings that were processed during the specified scrape job,
+    optionally filtered by processing status.
+
+    Args:
+        job_id: Job ID to get listings for.
+        status: Optional status filter (new, updated, unchanged).
+
+    Returns:
+        List of listings with their job-specific status.
+
+    Raises:
+        HTTPException: 404 if job not found.
+    """
+    from i4_scout.database.repository import ListingRepository
+
+    job_service = JobService(session)
+    job = job_service.get_job(job_id)
+
+    if job is None:
+        raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+
+    repo = ListingRepository(session)
+    listings = repo.get_job_listings(job_id, status)
+
+    # Convert to dicts with basic listing info
+    return [
+        {
+            "id": listing.id,
+            "title": listing.title,
+            "price": listing.price,
+            "mileage_km": listing.mileage_km,
+            "match_score": listing.match_score,
+            "is_qualified": listing.is_qualified,
+            "url": listing.url,
+            "source": listing.source.value if hasattr(listing.source, "value") else str(listing.source),
+        }
+        for listing in listings
+    ]
+
+
 async def run_scrape_job(
     job_id: int,
     source: Source,
@@ -319,6 +371,15 @@ async def run_scrape_job(
                 updated_listings=progress.updated_count,
             )
 
+        # Cancellation check function (opens separate session to check status)
+        def is_cancelled() -> bool:
+            check_session = session_factory()
+            try:
+                check_job = JobService(check_session).get_job(job_id)
+                return check_job is not None and check_job.status == ScrapeStatus.CANCELLED
+            finally:
+                check_session.close()
+
         # Run the scrape
         scrape_service = ScrapeService(session, options_config)
         result = await scrape_service.run_scrape(
@@ -329,15 +390,22 @@ async def run_scrape_job(
             use_cache=use_cache,
             force_refresh=force_refresh,
             progress_callback=on_progress,
+            is_cancelled=is_cancelled,
+            job_id=job_id,
         )
 
-        # Mark job as completed
-        job_service.complete_job(
-            job_id,
-            total_found=result.total_found,
-            new_listings=result.new_listings,
-            updated_listings=result.updated_listings,
-        )
+        # Check if job was cancelled vs completed
+        if is_cancelled():
+            # Job was cancelled, status already set - nothing more to do
+            pass
+        else:
+            # Mark job as completed
+            job_service.complete_job(
+                job_id,
+                total_found=result.total_found,
+                new_listings=result.new_listings,
+                updated_listings=result.updated_listings,
+            )
 
     except Exception as e:
         # Mark job as failed

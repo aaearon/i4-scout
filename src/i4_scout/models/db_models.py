@@ -3,10 +3,22 @@
 from datetime import date, datetime, timezone
 from typing import Optional
 
-from sqlalchemy import JSON, Boolean, Date, DateTime, Enum, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Date,
+    DateTime,
+    Enum,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-from i4_scout.models.pydantic_models import ScrapeStatus, Source
+from i4_scout.models.pydantic_models import ListingStatus, ScrapeStatus, Source
 
 
 def utc_now() -> datetime:
@@ -67,6 +79,13 @@ class Listing(Base):
 
     # User flags
     has_issue: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+
+    # Lifecycle tracking
+    status: Mapped[str] = mapped_column(
+        Enum(ListingStatus), default=ListingStatus.ACTIVE, nullable=False, index=True
+    )
+    status_changed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    consecutive_misses: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     # Timestamps
     first_seen_at: Mapped[datetime] = mapped_column(
@@ -274,8 +293,40 @@ class ScrapeJob(Base):
     # Error tracking
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Relationships
+    listing_associations: Mapped[list["ScrapeJobListing"]] = relationship(
+        "ScrapeJobListing", back_populates="scrape_job", cascade="all, delete-orphan"
+    )
+
     def __repr__(self) -> str:
         return f"<ScrapeJob(id={self.id}, source={self.source}, status={self.status})>"
+
+
+class ScrapeJobListing(Base):
+    """Tracks which listings were processed by which scrape job."""
+
+    __tablename__ = "scrape_job_listings"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    scrape_job_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("scrape_jobs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    listing_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("listings.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    status: Mapped[str] = mapped_column(String(20), nullable=False)  # "new", "updated", "unchanged"
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+
+    # Relationships
+    scrape_job: Mapped["ScrapeJob"] = relationship("ScrapeJob", back_populates="listing_associations")
+    listing: Mapped["Listing"] = relationship("Listing")
+
+    __table_args__ = (
+        UniqueConstraint("scrape_job_id", "listing_id", name="uq_job_listing"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<ScrapeJobListing(job={self.scrape_job_id}, listing={self.listing_id}, status={self.status})>"
 
 
 class ListingNote(Base):

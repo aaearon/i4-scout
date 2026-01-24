@@ -234,6 +234,7 @@ class AutoScout24BaseScraper(BaseScraper):
         description = self.parse_description_sync(html)
         json_ld_data = self.parse_json_ld_sync(html)
         colors = self.parse_colors_sync(html)
+        photo_urls = self.parse_photo_urls_sync(html)
         soup = BeautifulSoup(html, "html.parser")
 
         # Extract basic info from detail page
@@ -280,6 +281,7 @@ class AutoScout24BaseScraper(BaseScraper):
             exterior_color=colors.get("exterior_color"),
             interior_color=colors.get("interior_color"),
             interior_material=colors.get("interior_material"),
+            photo_urls=photo_urls,
         )
 
     @classmethod
@@ -404,8 +406,11 @@ class AutoScout24BaseScraper(BaseScraper):
         return None
 
     # Color label mappings for DE and NL sites
+    # Note: exterior_color uses manufacturer color name (Farbe laut Hersteller / Oorspronkelijke kleur)
+    # with fallback to generic color (Außenfarbe / Kleur)
     COLOR_LABELS: ClassVar[dict[str, list[str]]] = {
-        "exterior_color": ["Außenfarbe", "Kleur"],
+        "exterior_color_manufacturer": ["Farbe laut Hersteller", "Oorspronkelijke kleur"],
+        "exterior_color_generic": ["Außenfarbe", "Kleur"],
         "interior_color": ["Farbe der Innenausstattung", "Kleur interieur"],
         "interior_material": ["Innenausstattung", "Materiaal"],
     }
@@ -415,6 +420,8 @@ class AutoScout24BaseScraper(BaseScraper):
         """Extract vehicle color information from detail page HTML.
 
         Parses dt/dd pairs for color labels (German and Dutch).
+        Uses manufacturer color name (Farbe laut Hersteller / Oorspronkelijke kleur)
+        with fallback to generic color (Außenfarbe / Kleur).
 
         Args:
             html: Raw HTML content of detail page.
@@ -423,8 +430,9 @@ class AutoScout24BaseScraper(BaseScraper):
             Dict with exterior_color, interior_color, interior_material.
         """
         soup = BeautifulSoup(html, "html.parser")
-        result: dict[str, str | None] = {
-            "exterior_color": None,
+        raw_values: dict[str, str | None] = {
+            "exterior_color_manufacturer": None,
+            "exterior_color_generic": None,
             "interior_color": None,
             "interior_material": None,
         }
@@ -442,10 +450,45 @@ class AutoScout24BaseScraper(BaseScraper):
                     if dd:
                         value = dd.get_text(strip=True)
                         if value:
-                            result[field] = value
+                            raw_values[field] = value
                     break
 
-        return result
+        # Build result with manufacturer color preferred over generic
+        return {
+            "exterior_color": raw_values["exterior_color_manufacturer"]
+            or raw_values["exterior_color_generic"],
+            "interior_color": raw_values["interior_color"],
+            "interior_material": raw_values["interior_material"],
+        }
+
+    @classmethod
+    def parse_photo_urls_sync(cls, html: str) -> list[str]:
+        """Extract unique photo URLs from detail page HTML.
+
+        Parses photo URLs from the listing images CDN, returning base URLs
+        without resolution suffixes. Order is preserved (first occurrence).
+
+        Args:
+            html: Raw HTML content of detail page.
+
+        Returns:
+            List of unique base photo URLs (e.g., https://prod.pictures.autoscout24.net/listing-images/{guid}_{guid}.jpg)
+        """
+        # Pattern matches full URL up to .jpg, excluding resolution suffix
+        pattern = r'https://prod\.pictures\.autoscout24\.net/listing-images/[a-f0-9-]+_[a-f0-9-]+\.jpg'
+
+        # Find all matches
+        matches = re.findall(pattern, html)
+
+        # Deduplicate while preserving order
+        seen: set[str] = set()
+        unique_urls: list[str] = []
+        for url in matches:
+            if url not in seen:
+                seen.add(url)
+                unique_urls.append(url)
+
+        return unique_urls
 
     @classmethod
     def parse_json_ld_sync(cls, html: str) -> dict[str, Any] | None:

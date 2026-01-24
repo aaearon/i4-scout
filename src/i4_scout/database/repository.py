@@ -27,8 +27,9 @@ from i4_scout.models.db_models import (
     Option,
     PriceHistory,
     ScrapeJob,
+    ScrapeJobListing,
 )
-from i4_scout.models.pydantic_models import ListingCreate, ScrapeStatus, Source
+from i4_scout.models.pydantic_models import ListingCreate, ListingStatus, ScrapeStatus, Source
 
 P = ParamSpec("P")
 R = TypeVar("R")
@@ -273,6 +274,7 @@ class ListingRepository:
         has_issue: bool | None = None,
         has_price_change: bool | None = None,
         recently_updated: bool | None = None,
+        status: ListingStatus | None = None,
     ) -> Query[Listing]:
         """Apply common filters to a listing query.
 
@@ -294,6 +296,7 @@ class ListingRepository:
             has_issue: Filter by issue status (True, False, or None for all).
             has_price_change: Filter by price change status (True for listings with changes).
             recently_updated: Filter by recent price changes (True for listings with price changes within 24h).
+            status: Filter by listing status (ACTIVE, DELISTED, or None for all).
 
         Returns:
             Filtered query.
@@ -394,6 +397,9 @@ class ListingRepository:
             else:
                 query = query.filter(~Listing.id.in_(recent_change_subq))
 
+        if status is not None:
+            query = query.filter(Listing.status == status)
+
         return query
 
     def get_listings(
@@ -414,6 +420,7 @@ class ListingRepository:
         has_issue: bool | None = None,
         has_price_change: bool | None = None,
         recently_updated: bool | None = None,
+        status: ListingStatus | None = None,
         sort_by: str | None = None,
         sort_order: str = "desc",
         limit: int | None = None,
@@ -438,6 +445,7 @@ class ListingRepository:
             has_issue: Filter by issue status (True, False, or None for all).
             has_price_change: Filter by price change status (True for listings with changes).
             recently_updated: Filter by recent price changes (True for listings with price changes within 24h).
+            status: Filter by listing status (ACTIVE, DELISTED, or None for all).
             sort_by: Field to sort by (price, mileage, score, first_seen, last_seen).
             sort_order: Sort direction (asc, desc). Default: desc.
             limit: Maximum number of results.
@@ -469,6 +477,7 @@ class ListingRepository:
             has_issue=has_issue,
             has_price_change=has_price_change,
             recently_updated=recently_updated,
+            status=status,
         )
 
         # Sorting
@@ -512,6 +521,7 @@ class ListingRepository:
         has_issue: bool | None = None,
         has_price_change: bool | None = None,
         recently_updated: bool | None = None,
+        status: ListingStatus | None = None,
     ) -> int:
         """Count listings with optional filters.
 
@@ -532,6 +542,7 @@ class ListingRepository:
             has_issue: Filter by issue status (True, False, or None for all).
             has_price_change: Filter by price change status (True for listings with changes).
             recently_updated: Filter by recent price changes (True for listings with price changes within 24h).
+            status: Filter by listing status (ACTIVE, DELISTED, or None for all).
 
         Returns:
             Number of matching listings.
@@ -555,6 +566,7 @@ class ListingRepository:
             has_issue=has_issue,
             has_price_change=has_price_change,
             recently_updated=recently_updated,
+            status=status,
         )
         return query.count()
 
@@ -605,6 +617,141 @@ class ListingRepository:
         self._session.refresh(listing)
 
         return listing
+
+    # ========== LIFECYCLE ==========
+
+    def get_active_listings_by_source(self, source: Source) -> list[Listing]:
+        """Get all active listings for a source.
+
+        Used for lifecycle tracking to identify which listings should be
+        checked during a scrape.
+
+        Args:
+            source: Source to filter by.
+
+        Returns:
+            List of active Listing objects for the source.
+        """
+        return (
+            self._session.query(Listing)
+            .filter(Listing.source == source, Listing.status == ListingStatus.ACTIVE)
+            .all()
+        )
+
+    @with_db_retry
+    def increment_consecutive_misses(self, listing_ids: list[int]) -> int:
+        """Increment consecutive_misses for listings not seen during a scrape.
+
+        Args:
+            listing_ids: IDs of listings that were not seen.
+
+        Returns:
+            Number of listings updated.
+        """
+        if not listing_ids:
+            return 0
+
+        updated = (
+            self._session.query(Listing)
+            .filter(Listing.id.in_(listing_ids))
+            .update(
+                {Listing.consecutive_misses: Listing.consecutive_misses + 1},
+                synchronize_session=False,
+            )
+        )
+        self._session.commit()
+        return updated
+
+    @with_db_retry
+    def reset_consecutive_misses(self, listing_ids: list[int]) -> int:
+        """Reset consecutive_misses to 0 for listings seen during a scrape.
+
+        Also resets status to ACTIVE if the listing was previously delisted
+        (the listing reappeared).
+
+        Args:
+            listing_ids: IDs of listings that were seen.
+
+        Returns:
+            Number of listings updated.
+        """
+        if not listing_ids:
+            return 0
+
+        updated = (
+            self._session.query(Listing)
+            .filter(Listing.id.in_(listing_ids))
+            .update(
+                {
+                    Listing.consecutive_misses: 0,
+                    Listing.status: ListingStatus.ACTIVE,
+                },
+                synchronize_session=False,
+            )
+        )
+        self._session.commit()
+        return updated
+
+    @with_db_retry
+    def update_listing_status(
+        self, listing_id: int, status: ListingStatus
+    ) -> Listing | None:
+        """Update the status of a listing.
+
+        Args:
+            listing_id: Listing ID to update.
+            status: New status (ACTIVE or DELISTED).
+
+        Returns:
+            Updated Listing if found, None otherwise.
+        """
+        listing = self.get_listing_by_id(listing_id)
+        if listing is None:
+            return None
+
+        listing.status = status
+        listing.status_changed_at = datetime.now(timezone.utc)
+        self._session.commit()
+        self._session.refresh(listing)
+
+        return listing
+
+    @with_db_retry
+    def mark_listings_at_delist_threshold(self, listing_ids: list[int]) -> int:
+        """Mark active listings with consecutive_misses >= 2 as delisted.
+
+        Uses an atomic bulk update to avoid stale session object issues.
+        Only affects listings that are currently ACTIVE and have missed
+        at least 2 consecutive scrapes.
+
+        Args:
+            listing_ids: IDs of listings that were not seen during scrape
+                (these have already had consecutive_misses incremented).
+
+        Returns:
+            Number of listings marked as delisted.
+        """
+        if not listing_ids:
+            return 0
+
+        now = datetime.now(timezone.utc)
+        updated = (
+            self._session.query(Listing)
+            .filter(
+                Listing.id.in_(listing_ids),
+                Listing.consecutive_misses >= 2,
+                Listing.status == ListingStatus.ACTIVE,
+            )
+            .update(
+                {
+                    Listing.status: ListingStatus.DELISTED,
+                    Listing.status_changed_at: now,
+                },
+                synchronize_session=False,
+            )
+        )
+        self._session.commit()
+        return updated
 
     # ========== DELETE ==========
 
@@ -801,6 +948,212 @@ class ListingRepository:
             .all()
         )
 
+    # ========== DASHBOARD QUERIES ==========
+
+    def get_listings_with_price_drops(
+        self, days: int = 7, limit: int = 10
+    ) -> list[tuple[Listing, int, int]]:
+        """Get listings with price drops in the last N days.
+
+        Returns listings where the current price is lower than the original price,
+        with the price drop occurring in the specified time window.
+
+        Args:
+            days: Number of days to look back for price changes.
+            limit: Maximum number of listings to return.
+
+        Returns:
+            List of tuples: (Listing, original_price, current_price)
+            Ordered by drop magnitude (largest drops first).
+        """
+        from sqlalchemy import and_
+
+        # Subquery: first price (original)
+        first_price_subq = (
+            sa_select(
+                PriceHistory.listing_id,
+                func.min(PriceHistory.recorded_at).label("first_recorded"),
+            )
+            .group_by(PriceHistory.listing_id)
+            .subquery()
+        )
+
+        # Get listings with their first price where current price is lower
+        results = (
+            self._session.query(Listing, PriceHistory.price)
+            .join(
+                first_price_subq,
+                Listing.id == first_price_subq.c.listing_id,
+            )
+            .join(
+                PriceHistory,
+                and_(
+                    PriceHistory.listing_id == Listing.id,
+                    PriceHistory.recorded_at == first_price_subq.c.first_recorded,
+                ),
+            )
+            .filter(
+                Listing.price.isnot(None),
+                Listing.price < PriceHistory.price,  # Current price < original
+                Listing.status == ListingStatus.ACTIVE,
+            )
+            .order_by(desc(PriceHistory.price - Listing.price))  # Largest drops first
+            .limit(limit)
+            .all()
+        )
+
+        # Format as (listing, original_price, current_price)
+        return [(listing, original, listing.price) for listing, original in results]
+
+    def get_near_miss_listings(
+        self, threshold: float = 80.0, limit: int = 10
+    ) -> list[tuple[Listing, list[str]]]:
+        """Get high-scoring listings that are not qualified.
+
+        Finds listings with match_score >= threshold but is_qualified = False.
+        These are "near-miss" listings that are close to qualifying.
+
+        Args:
+            threshold: Minimum match score (0-100).
+            limit: Maximum number of listings to return.
+
+        Returns:
+            List of tuples: (Listing, missing_required_options)
+            where missing_required_options is a list of option names
+            that the listing is missing from the required set.
+        """
+        listings = (
+            self._session.query(Listing)
+            .options(joinedload(Listing.options).joinedload(ListingOption.option))
+            .filter(
+                Listing.is_qualified.is_(False),
+                Listing.match_score >= threshold,
+                Listing.status == ListingStatus.ACTIVE,
+            )
+            .order_by(desc(Listing.match_score))
+            .limit(limit)
+            .all()
+        )
+
+        # We return listings with their matched options
+        # The missing options will be computed in the service/template layer
+        # where we have access to OptionsConfig
+        return [(listing, listing.matched_options) for listing in listings]
+
+    def get_market_velocity(self, days: int = 7) -> dict[str, int]:
+        """Get market velocity statistics for the last N days.
+
+        Returns counts of:
+        - new: Listings first seen within the time window
+        - delisted: Listings that became delisted within the time window
+        - net: new - delisted
+
+        Args:
+            days: Number of days to look back.
+
+        Returns:
+            Dict with keys: new, delisted, net, active_total, qualified_count
+        """
+        from datetime import timedelta
+
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+
+        # New listings (first_seen_at within window)
+        new_count = (
+            self._session.query(func.count(Listing.id))
+            .filter(Listing.first_seen_at >= cutoff)
+            .scalar()
+            or 0
+        )
+
+        # Delisted listings (status_changed_at within window AND status=DELISTED)
+        delisted_count = (
+            self._session.query(func.count(Listing.id))
+            .filter(
+                Listing.status == ListingStatus.DELISTED,
+                Listing.status_changed_at >= cutoff,
+            )
+            .scalar()
+            or 0
+        )
+
+        # Total active
+        active_total = (
+            self._session.query(func.count(Listing.id))
+            .filter(Listing.status == ListingStatus.ACTIVE)
+            .scalar()
+            or 0
+        )
+
+        # Qualified count (active + qualified)
+        qualified_count = (
+            self._session.query(func.count(Listing.id))
+            .filter(
+                Listing.status == ListingStatus.ACTIVE,
+                Listing.is_qualified.is_(True),
+            )
+            .scalar()
+            or 0
+        )
+
+        return {
+            "new": new_count,
+            "delisted": delisted_count,
+            "net": new_count - delisted_count,
+            "active_total": active_total,
+            "qualified_count": qualified_count,
+        }
+
+    def get_option_frequency(self, status: ListingStatus | None = ListingStatus.ACTIVE) -> list[dict[str, str | int | float]]:
+        """Get frequency of options across listings.
+
+        Counts how many listings have each option.
+
+        Args:
+            status: Filter by listing status (default: ACTIVE only).
+                   Pass None to include all listings.
+
+        Returns:
+            List of dicts: [{name, count, percentage}]
+            Sorted by count descending.
+        """
+        # Base query for total count
+        total_query = self._session.query(func.count(Listing.id))
+        if status is not None:
+            total_query = total_query.filter(Listing.status == status)
+        total_listings = total_query.scalar() or 0
+
+        if total_listings == 0:
+            return []
+
+        # Count options with join
+        option_query = (
+            self._session.query(
+                Option.canonical_name,
+                func.count(ListingOption.listing_id.distinct()).label("count"),
+            )
+            .join(ListingOption, Option.id == ListingOption.option_id)
+            .join(Listing, ListingOption.listing_id == Listing.id)
+        )
+
+        if status is not None:
+            option_query = option_query.filter(Listing.status == status)
+
+        option_counts = (
+            option_query.group_by(Option.canonical_name)
+            .order_by(desc("count"))
+            .all()
+        )
+
+        return [
+            {
+                "name": name,
+                "count": count,
+                "percentage": round((count / total_listings) * 100, 1),
+            }
+            for name, count in option_counts
+        ]
+
     # ========== OPTIONS ==========
 
     @with_db_retry
@@ -917,6 +1270,53 @@ class ListingRepository:
         self._session.commit()
         self._session.refresh(option)
         return option, True
+
+    # ========== JOB-LISTING TRACKING ==========
+
+    @with_db_retry
+    def add_job_listing_association(
+        self, job_id: int, listing_id: int, status: str
+    ) -> ScrapeJobListing:
+        """Record that a listing was processed by a scrape job.
+
+        Args:
+            job_id: Scrape job ID.
+            listing_id: Listing ID.
+            status: Processing status ("new", "updated", "unchanged").
+
+        Returns:
+            Created ScrapeJobListing association.
+        """
+        assoc = ScrapeJobListing(
+            scrape_job_id=job_id,
+            listing_id=listing_id,
+            status=status,
+        )
+        self._session.add(assoc)
+        self._session.commit()
+        self._session.refresh(assoc)
+        return assoc
+
+    def get_job_listings(
+        self, job_id: int, status: str | None = None
+    ) -> list[Listing]:
+        """Get listings processed by a job, optionally filtered by status.
+
+        Args:
+            job_id: Scrape job ID.
+            status: Filter by status ("new", "updated", "unchanged"), or None for all.
+
+        Returns:
+            List of Listing objects processed by the job.
+        """
+        query = (
+            sa_select(Listing)
+            .join(ScrapeJobListing, ScrapeJobListing.listing_id == Listing.id)
+            .where(ScrapeJobListing.scrape_job_id == job_id)
+        )
+        if status:
+            query = query.where(ScrapeJobListing.status == status)
+        return list(self._session.scalars(query))
 
 
 class DocumentRepository:

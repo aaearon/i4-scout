@@ -87,6 +87,8 @@ class ScrapeService:
         use_cache: bool = True,
         force_refresh: bool = False,
         progress_callback: Callable[[ScrapeProgress], None] | None = None,
+        is_cancelled: Callable[[], bool] | None = None,
+        job_id: int | None = None,
     ) -> ScrapeResult:
         """Run the scraping process.
 
@@ -98,6 +100,8 @@ class ScrapeService:
             use_cache: Whether to use HTML caching.
             force_refresh: Force re-fetch detail pages even if listing exists with same price.
             progress_callback: Optional callback for progress updates.
+            is_cancelled: Optional callback to check if scrape was cancelled.
+            job_id: Optional job ID for tracking listing associations.
 
         Returns:
             ScrapeResult with counts of processed listings.
@@ -107,11 +111,17 @@ class ScrapeService:
         updated_count = 0
         skipped_count = 0
         fetched_count = 0
+        seen_listing_ids: list[int] = []
 
         async with self._create_browser_context(headless) as (browser, page):
             scraper = self._create_scraper(source, browser)
 
             for page_num in range(1, max_pages + 1):
+                # Check for cancellation before starting each page
+                if is_cancelled and is_cancelled():
+                    logger.info("Scrape cancelled by user before page %d", page_num)
+                    break
+
                 # Emit progress update at start of page
                 if progress_callback:
                     progress_callback(ScrapeProgress(
@@ -149,6 +159,18 @@ class ScrapeService:
                         elif result["status"] == "skipped":
                             skipped_count += 1
 
+                        # Track seen listing ID for lifecycle tracking
+                        if result.get("listing_id"):
+                            seen_listing_ids.append(result["listing_id"])
+
+                        # Track job-listing association
+                        if job_id is not None and result.get("listing_id"):
+                            self._repo.add_job_listing_association(
+                                job_id=job_id,
+                                listing_id=result["listing_id"],
+                                status=result["status"],
+                            )
+
                         # Emit progress with current listing
                         if progress_callback:
                             progress_callback(ScrapeProgress(
@@ -161,11 +183,19 @@ class ScrapeService:
                                 current_listing=listing_data.get("title"),
                             ))
 
+                    # Check for cancellation before delay
+                    if is_cancelled and is_cancelled():
+                        logger.info("Scrape cancelled by user after page %d", page_num)
+                        break
+
                     await scraper.random_delay()
 
                 except Exception:
                     logger.exception("Error scraping page %d, continuing to next page", page_num)
                     continue
+
+        # Update lifecycle tracking after scrape
+        self._update_lifecycle_after_scrape(source, seen_listing_ids)
 
         return ScrapeResult(
             total_found=total_found,
@@ -183,7 +213,7 @@ class ScrapeService:
         source: Source,
         use_cache: bool,
         force_refresh: bool = False,
-    ) -> dict[str, str]:
+    ) -> dict[str, Any]:
         """Process a single listing from search results.
 
         Args:
@@ -195,7 +225,7 @@ class ScrapeService:
             force_refresh: Force re-fetch even if listing exists with same price.
 
         Returns:
-            Dict with "status" key: "new", "updated", or "skipped".
+            Dict with "status" (new/updated/skipped) and "listing_id" (int or None).
         """
         url = listing_data.get("url")
         price = listing_data.get("price")
@@ -212,16 +242,21 @@ class ScrapeService:
                 existing = self._repo.get_listing_by_url(url)
             if existing:
                 self._repo.update_listing(existing.id)
-            return {"status": "skipped"}
+                return {"status": "skipped", "listing_id": existing.id}
+            return {"status": "skipped", "listing_id": None}
 
-        # Get detail page for options, description, and location/dealer info
-        options_list = []
+        # Get detail page for options, description, location/dealer info, colors, and photos
+        options_list: list[str] = []
         description = None
         location_city = None
         location_zip = None
         location_country = None
         dealer_name = None
         dealer_type = None
+        exterior_color = None
+        interior_color = None
+        interior_material = None
+        photo_urls: list[str] = []
         if url:
             try:
                 detail = await scraper.scrape_listing_detail(page, url, use_cache=use_cache)
@@ -232,6 +267,10 @@ class ScrapeService:
                 location_country = detail.location_country
                 dealer_name = detail.dealer_name
                 dealer_type = detail.dealer_type
+                exterior_color = detail.exterior_color
+                interior_color = detail.interior_color
+                interior_material = detail.interior_material
+                photo_urls = detail.photo_urls
             except Exception:
                 logger.exception("Error fetching detail page %s", url)
 
@@ -263,6 +302,10 @@ class ScrapeService:
             location_country=location_country,
             dealer_name=dealer_name,
             dealer_type=dealer_type,
+            exterior_color=exterior_color,
+            interior_color=interior_color,
+            interior_material=interior_material,
+            photo_urls=photo_urls,
             match_score=scored_result.score,
             is_qualified=scored_result.is_qualified,
         )
@@ -280,7 +323,40 @@ class ScrapeService:
             option, _ = self._repo.get_or_create_option(option_name)
             self._repo.add_option_to_listing(listing.id, option.id)
 
-        return {"status": "new" if created else "updated"}
+        return {"status": "new" if created else "updated", "listing_id": listing.id}
+
+    def _update_lifecycle_after_scrape(
+        self, source: Source, seen_listing_ids: list[int]
+    ) -> None:
+        """Update listing lifecycle status after a scrape.
+
+        - Reset consecutive_misses for seen listings
+        - Increment consecutive_misses for unseen listings
+        - Mark listings as delisted when consecutive_misses >= 2
+
+        Args:
+            source: The source that was scraped.
+            seen_listing_ids: IDs of listings that were seen during the scrape.
+        """
+        # Get all active listings for this source
+        active_listings = self._repo.get_active_listings_by_source(source)
+        active_ids = {listing.id for listing in active_listings}
+
+        # Calculate seen and unseen listings
+        seen_set = set(seen_listing_ids)
+        unseen_active_ids = list(active_ids - seen_set)
+
+        # Reset misses for seen listings (including new ones)
+        self._repo.reset_consecutive_misses(list(seen_set))
+
+        # Increment misses for unseen listings
+        self._repo.increment_consecutive_misses(unseen_active_ids)
+
+        # Mark listings as delisted if they've missed 2+ scrapes (atomic operation)
+        # This checks the actual DB value, not stale session objects
+        delisted_count = self._repo.mark_listings_at_delist_threshold(unseen_active_ids)
+        if delisted_count > 0:
+            logger.info("Marked %d listings as delisted", delisted_count)
 
     def _get_scraper_class(self, source: Source) -> type:
         """Get the scraper class for a source.
