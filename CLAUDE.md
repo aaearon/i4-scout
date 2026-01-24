@@ -47,10 +47,6 @@ i4-scout scrape autoscout24_de --max-pages 5 --no-cache
 # Force re-fetch detail pages for all listings (updates dealer/location info)
 i4-scout scrape autoscout24_de --max-pages 5 --force-refresh
 
-# List/export
-i4-scout list --qualified
-i4-scout export --format csv --qualified
-
 # Recalculate scores after changing scoring weights
 i4-scout recalculate-scores
 i4-scout recalculate-scores --json  # JSON output
@@ -64,40 +60,17 @@ alembic revision --autogenerate -m "description"  # Create new migration
 
 ## LLM-Friendly Output (--json flag)
 
-All data commands support `--json` for structured output optimized for programmatic/LLM consumption:
+CLI commands support `--json` for structured output optimized for programmatic/LLM consumption:
 
 ```bash
-# List all listings as JSON
-i4-scout list --json
-
-# List qualified listings with filters as JSON
-i4-scout list --qualified --min-score 70 --json
-
-# Show single listing as JSON
-i4-scout show 1 --json
-
 # Scrape and get JSON summary (suppresses progress output)
 i4-scout scrape autoscout24_de --max-pages 3 --json
+
+# Recalculate scores with JSON output
+i4-scout recalculate-scores --json
 ```
 
 ### JSON Output Schemas
-
-**`list --json`:**
-```json
-{
-  "listings": [
-    {"id": 1, "title": "...", "price": 45000, "mileage_km": 15000, "match_score": 85.0, "is_qualified": true, "url": "...", "location_city": "Berlin", "dealer_name": "...", ...}
-  ],
-  "count": 10,
-  "total": 50,
-  "filters": {"qualified_only": true, "min_score": 70.0, "source": null, "limit": 20}
-}
-```
-
-**`show --json`:**
-```json
-{"id": 1, "title": "...", "price": 45000, "mileage_km": 15000, "match_score": 85.0, "is_qualified": true, "url": "...", "description": "...", "location_city": "...", "location_zip": "...", "location_country": "DE", "dealer_name": "...", "dealer_type": "dealer", ...}
-```
 
 **`scrape --json`:**
 ```json
@@ -167,7 +140,7 @@ Scraper → Parser → OptionMatcher → Scorer → Repository → SQLite
    - **Tables**: `listings`, `options`, `listing_options` (many-to-many), `listing_documents`, `price_history`, `scrape_sessions`
    - **Retry Logic**: Write operations use `@with_db_retry` decorator (5 attempts, exponential backoff 1-8s) to handle SQLite "database is locked" errors during concurrent scraping
 
-4. **CLI** (`src/i4_scout/cli.py`) - Typer-based CLI with commands: `scrape`, `list`, `show`, `export`, `recalculate-scores`, `enrich`, `serve`
+4. **CLI** (`src/i4_scout/cli.py`) - Typer-based CLI with commands: `scrape`, `recalculate-scores`, `serve`
 
 5. **Services** (`src/i4_scout/services/`)
    - `listing_service.py`: Business logic for listing operations (get, list, delete)
@@ -230,30 +203,7 @@ During scraping, matched options (both required and nice-to-have) are persisted:
 
 ### PDF Enrichment
 
-Dealers often have incomplete listings on AutoScout24. Users can upload dealer specification PDFs to extract additional options:
-
-**CLI:**
-```bash
-# Enrich a listing with options from a PDF
-i4-scout enrich 42 /path/to/dealer_specs.pdf
-
-# With JSON output for scripting
-i4-scout enrich 42 /path/to/dealer_specs.pdf --json
-```
-
-**JSON output:**
-```json
-{
-  "listing_id": 42,
-  "document_id": 7,
-  "options_found": ["M Sport Package", "Laser Light", "Head-Up Display"],
-  "new_options_added": ["Laser Light", "Head-Up Display"],
-  "score_before": 65.5,
-  "score_after": 82.0,
-  "is_qualified_before": false,
-  "is_qualified_after": true
-}
-```
+Dealers often have incomplete listings on AutoScout24. Users can upload dealer specification PDFs via the web interface to extract additional options.
 
 **API Endpoints:**
 - `POST /api/listings/{id}/document` - Upload/replace PDF (multipart/form-data)
@@ -538,6 +488,12 @@ i4-scout serve --reload
 - `GET /api/scrape/jobs/{id}` - Get scrape job status
 - `POST /api/scrape/jobs/{id}/cancel` - Cancel a running scrape job
 - `GET /api/scrape/jobs/{id}/listings` - Get listings processed by job (with optional status filter)
+
+**Export:**
+- `GET /api/export/listings` - Export listings as CSV or JSON file download
+  - `?format=csv` (default) or `?format=json`
+  - Supports all listing filters (source, qualified_only, min_score, price, mileage, year, country, search, has_issue)
+  - Returns file with `Content-Disposition: attachment` header
 
 **Other:**
 - `GET /health` - Health check

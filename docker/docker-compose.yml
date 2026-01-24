@@ -39,28 +39,5 @@ services:
       - PYTHONUNBUFFERED=1
     command: ["scrape", "autoscout24_nl", "--max-pages", "5"]
 
-  # List qualified listings
-  list:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
-    volumes:
-      - scraper-data:/app/data
-    environment:
-      - PYTHONUNBUFFERED=1
-    command: ["list", "--qualified"]
-
-  # Export to JSON
-  export:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
-    volumes:
-      - scraper-data:/app/data
-      - ./exports:/app/exports
-    environment:
-      - PYTHONUNBUFFERED=1
-    command: ["export", "--format", "json", "--output", "/app/exports/listings.json"]
-
 volumes:
   scraper-data:

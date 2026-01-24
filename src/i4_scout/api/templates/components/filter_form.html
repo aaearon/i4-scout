@@ -240,5 +240,55 @@
         <button type="button" class="secondary outline" onclick="clearFilters()">
             Clear
         </button>
+        <div class="export-dropdown">
+            <button type="button" class="secondary outline" onclick="toggleExportMenu(this)">
+                Export
+            </button>
+            <div class="export-menu" style="display: none;">
+                <a href="#" onclick="exportListings('csv'); return false;">Export CSV</a>
+                <a href="#" onclick="exportListings('json'); return false;">Export JSON</a>
+            </div>
+        </div>
     </div>
 </form>
+
+<script>
+function toggleExportMenu(btn) {
+    const menu = btn.nextElementSibling;
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+
+function exportListings(format) {
+    // Build query string from current filter form values
+    const form = document.querySelector('.filter-form');
+    const formData = new FormData(form);
+    const params = new URLSearchParams();
+
+    // Add format
+    params.set('format', format);
+
+    // Add all form values
+    for (const [key, value] of formData.entries()) {
+        if (value && key !== 'has_option') {
+            params.set(key, value);
+        }
+    }
+
+    // Handle has_option (multiple values)
+    const hasOptions = formData.getAll('has_option');
+    hasOptions.forEach(opt => params.append('has_option', opt));
+
+    // Trigger download
+    window.location.href = '/api/export/listings?' + params.toString();
+
+    // Close the menu
+    document.querySelectorAll('.export-menu').forEach(m => m.style.display = 'none');
+}
+
+// Close export menu when clicking outside
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.export-dropdown')) {
+        document.querySelectorAll('.export-menu').forEach(m => m.style.display = 'none');
+    }
+});
+</script>

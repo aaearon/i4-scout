@@ -2687,3 +2687,34 @@ body:has(.compare-bar:not([hidden])) main {
 .filter-link:hover {
     border-bottom-style: solid;
 }
+
+/* ===== Export Dropdown ===== */
+.export-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.export-menu {
+    position: absolute;
+    bottom: 100%;
+    right: 0;
+    margin-bottom: 0.25rem;
+    background: var(--pico-card-background-color);
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: 0.25rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+    min-width: 120px;
+}
+
+.export-menu a {
+    display: block;
+    padding: 0.5rem 1rem;
+    color: var(--pico-color);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.export-menu a:hover {
+    background: var(--pico-primary-hover-background);
+}

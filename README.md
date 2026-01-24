@@ -41,18 +41,14 @@ cp config/options.example.yaml config/options.yaml
 # Scrape listings (database auto-initializes on first use)
 i4-scout scrape autoscout24_de --max-pages 5
 
-# List qualified listings
-i4-scout list --qualified
-
-# Show listing details
-i4-scout show 1
-
-# Export to CSV
-i4-scout export --format csv --qualified
+# Recalculate scores after editing options.yaml
+i4-scout recalculate-scores
 
 # Start web interface
 i4-scout serve
 ```
+
+For listing management, export, and document enrichment, use the web interface at http://localhost:8000.
 
 ## Web Interface
 
@@ -77,12 +73,10 @@ See [CLAUDE.md](CLAUDE.md) for full documentation.
 | Command | Description |
 |---------|-------------|
 | `scrape <source>` | Scrape listings from source (autoscout24_de, autoscout24_nl) |
-| `list` | List scraped listings with filters |
-| `show <id>` | Show detailed listing information |
-| `export` | Export listings to CSV/JSON |
 | `recalculate-scores` | Recalculate match scores for all listings |
-| `enrich <id> <pdf>` | Enrich listing with options from dealer PDF |
 | `serve` | Start web interface and API server |
+
+For listing/export/enrichment features, use the web interface or REST API.
 
 ## Configuration
 
@@ -97,8 +91,6 @@ cd docker
 docker-compose build
 docker-compose run scrape-de  # Scrape German listings
 docker-compose run scrape-nl  # Scrape Dutch listings
-docker-compose run list       # List qualified listings
-docker-compose run export     # Export to JSON
 ```
 
 ## Development
