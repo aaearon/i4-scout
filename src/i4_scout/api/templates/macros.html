@@ -1,0 +1,27 @@
+{# Shared macros for template components #}
+
+{% macro widget_icons(listing, now) %}
+<span class="widget-icons">
+    {% if listing.status == "delisted" %}<span class="status-icon delisted" title="Delisted">&#x2612;</span>{% endif %}
+    {% if listing.has_issue %}<span class="issue-icon" title="Has issue">&#x26A0;</span>{% endif %}
+    {% if listing.last_price_change_at %}
+        {% set change_hours_ago = ((now - listing.last_price_change_at).total_seconds() / 3600) | int %}
+        {% if change_hours_ago >= 0 and change_hours_ago < 24 %}<span class="updated-icon" title="Price changed {{ change_hours_ago }}h ago">&#x21BB;</span>{% endif %}
+    {% endif %}
+    {% if listing.document_count > 0 %}<span class="document-icon" title="Has dealer document">&#x1F4C4;</span>{% endif %}
+    {% if listing.notes_count > 0 %}
+        <span
+            class="notes-indicator"
+            hx-get="/partials/listing/{{ listing.id }}/notes-summary"
+            hx-trigger="mouseenter once, focus once"
+            hx-target="next .notes-popover"
+            hx-swap="innerHTML"
+            title="{{ listing.notes_count }} note{% if listing.notes_count != 1 %}s{% endif %}"
+            tabindex="0"
+        >({{ listing.notes_count }})</span>
+        <div class="notes-popover" role="tooltip" aria-hidden="true">
+            <span class="spinner"></span> Loading...
+        </div>
+    {% endif %}
+</span>
+{% endmacro %}

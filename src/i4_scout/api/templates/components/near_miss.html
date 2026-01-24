@@ -1,3 +1,4 @@
+{% from "macros.html" import widget_icons %}
 <article class="widget near-miss-widget">
     <header>
         <span class="widget-title">Near-Miss Listings</span>
@@ -7,17 +8,26 @@
     <ul class="near-miss-list">
         {% for item in near_misses %}
         <li class="near-miss-item">
-            <a href="/listings/{{ item.listing.id }}" class="near-miss-link">
-                <div class="near-miss-header">
-                    <span class="near-miss-score">{{ "{:.0f}".format(item.listing.match_score) }}%</span>
-                    <span class="near-miss-title">{{ item.listing.title[:40] }}{% if item.listing.title|length > 40 %}...{% endif %}</span>
-                </div>
-                {% if item.missing_required %}
-                <div class="near-miss-missing">
-                    Missing: {{ item.missing_required[:3]|join(", ") }}{% if item.missing_required|length > 3 %} (+{{ item.missing_required|length - 3 }} more){% endif %}
-                </div>
-                {% endif %}
-            </a>
+            <div class="near-miss-row">
+                <button type="button" class="favorite-btn widget-favorite-btn"
+                        data-listing-id="{{ item.listing.id }}"
+                        onclick="toggleFavorite({{ item.listing.id }}, event)"
+                        title="Toggle favorite">&#x2606;</button>
+                <a href="/listings/{{ item.listing.id }}" class="near-miss-link">
+                    <div class="near-miss-header">
+                        <span class="near-miss-score">{{ "{:.0f}".format(item.listing.match_score) }}%</span>
+                        <span class="near-miss-title">
+                            {{ item.listing.title[:40] }}{% if item.listing.title|length > 40 %}...{% endif %}
+                            {{ widget_icons(item.listing, now) }}
+                        </span>
+                    </div>
+                    {% if item.missing_required %}
+                    <div class="near-miss-missing">
+                        Missing: {{ item.missing_required[:3]|join(", ") }}{% if item.missing_required|length > 3 %} (+{{ item.missing_required|length - 3 }} more){% endif %}
+                    </div>
+                    {% endif %}
+                </a>
+            </div>
         </li>
         {% endfor %}
     </ul>

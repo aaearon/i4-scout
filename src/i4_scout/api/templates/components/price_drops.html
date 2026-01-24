@@ -1,3 +1,4 @@
+{% from "macros.html" import widget_icons %}
 <article class="widget price-drops-widget">
     <header>
         <span class="widget-title">Price Drops</span>
@@ -7,17 +8,26 @@
     <ul class="price-drops-list">
         {% for item in price_drops %}
         <li class="price-drop-item">
-            <a href="/listings/{{ item.listing.id }}" class="price-drop-link">
-                <div class="price-drop-title">{{ item.listing.title[:50] }}{% if item.listing.title|length > 50 %}...{% endif %}</div>
-                <div class="price-drop-details">
-                    <span class="price-drop-amount">-{{ "{:,.0f}".format(item.drop_amount) }}</span>
-                    <span class="price-drop-prices">
-                        <span class="price-original">{{ "{:,.0f}".format(item.original_price) }}</span>
-                        <span class="price-arrow">&#8594;</span>
-                        <span class="price-current">{{ "{:,.0f}".format(item.current_price) }}</span>
-                    </span>
-                </div>
-            </a>
+            <div class="price-drop-row">
+                <button type="button" class="favorite-btn widget-favorite-btn"
+                        data-listing-id="{{ item.listing.id }}"
+                        onclick="toggleFavorite({{ item.listing.id }}, event)"
+                        title="Toggle favorite">&#x2606;</button>
+                <a href="/listings/{{ item.listing.id }}" class="price-drop-link">
+                    <div class="price-drop-title">
+                        {{ item.listing.title[:50] }}{% if item.listing.title|length > 50 %}...{% endif %}
+                        {{ widget_icons(item.listing, now) }}
+                    </div>
+                    <div class="price-drop-details">
+                        <span class="price-drop-amount">-{{ "{:,.0f}".format(item.drop_amount) }}</span>
+                        <span class="price-drop-prices">
+                            <span class="price-original">{{ "{:,.0f}".format(item.original_price) }}</span>
+                            <span class="price-arrow">&#8594;</span>
+                            <span class="price-current">{{ "{:,.0f}".format(item.current_price) }}</span>
+                        </span>
+                    </div>
+                </a>
+            </div>
         </li>
         {% endfor %}
     </ul>

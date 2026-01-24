@@ -1,13 +1,20 @@
 """Service layer for listing operations."""
 
 from dataclasses import dataclass
+from datetime import timezone
 from typing import Any
 
 from sqlalchemy.orm import Session
 
 from i4_scout.database.repository import ListingRepository
 from i4_scout.matching.scorer import calculate_score
-from i4_scout.models.pydantic_models import ListingRead, ListingStatus, MatchResult, OptionsConfig, Source
+from i4_scout.models.pydantic_models import (
+    ListingRead,
+    ListingStatus,
+    MatchResult,
+    OptionsConfig,
+    Source,
+)
 
 
 @dataclass
@@ -134,7 +141,7 @@ class ListingService:
         )
 
         # Convert ORM objects to Pydantic models
-        listing_reads = [self._to_listing_read(listing) for listing in listings]
+        listing_reads = [self.to_listing_read(listing) for listing in listings]
 
         return listing_reads, total
 
@@ -150,7 +157,7 @@ class ListingService:
         listing = self._repo.get_listing_by_id(listing_id)
         if listing is None:
             return None
-        return self._to_listing_read(listing)
+        return self.to_listing_read(listing)
 
     def delete_listing(self, listing_id: int) -> bool:
         """Delete a listing by ID.
@@ -176,7 +183,7 @@ class ListingService:
         listing = self._repo.toggle_issue(listing_id, has_issue=has_issue)
         if listing is None:
             return None
-        return self._to_listing_read(listing)
+        return self.to_listing_read(listing)
 
     def set_status(self, listing_id: int, status: ListingStatus) -> ListingRead | None:
         """Set the status for a listing.
@@ -191,7 +198,7 @@ class ListingService:
         listing = self._repo.update_listing_status(listing_id, status)
         if listing is None:
             return None
-        return self._to_listing_read(listing)
+        return self.to_listing_read(listing)
 
     def recalculate_scores(
         self,
@@ -284,7 +291,7 @@ class ListingService:
             changes=changes,
         )
 
-    def _to_listing_read(self, listing: Any) -> ListingRead:
+    def to_listing_read(self, listing: Any) -> ListingRead:
         """Convert ORM Listing to ListingRead Pydantic model.
 
         Args:
@@ -305,7 +312,9 @@ class ListingService:
             price_change = current_price - original_price
             price_change_count = len(listing.price_history) - 1
             # The most recent price change is the last entry (after the initial)
-            last_price_change_at = sorted_history[-1].recorded_at
+            # Make timezone-aware (SQLite stores as naive UTC)
+            recorded_at = sorted_history[-1].recorded_at
+            last_price_change_at = recorded_at.replace(tzinfo=timezone.utc) if recorded_at else None
 
         return ListingRead(
             id=listing.id,

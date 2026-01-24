@@ -79,6 +79,53 @@
 </div>
 
 <script>
+// Notes popover positioning for dashboard widgets
+(function() {
+    const POPOVER_OFFSET_X = 15;
+    const POPOVER_OFFSET_Y = 15;
+    const NOTES_POPOVER_WIDTH = 400;
+
+    function positionPopover(popover, e, width) {
+        if (!popover) return;
+
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const popoverWidth = width || NOTES_POPOVER_WIDTH;
+        const popoverHeight = popover.offsetHeight || 200;
+
+        let x = e.clientX + POPOVER_OFFSET_X;
+        let y = e.clientY + POPOVER_OFFSET_Y;
+
+        // Prevent popover from going off the right edge
+        if (x + popoverWidth > viewportWidth - 10) {
+            x = e.clientX - popoverWidth - POPOVER_OFFSET_X;
+        }
+
+        // Prevent popover from going off the bottom edge
+        if (y + popoverHeight > viewportHeight - 10) {
+            y = e.clientY - popoverHeight - POPOVER_OFFSET_Y;
+        }
+
+        // Ensure minimum positions
+        x = Math.max(10, x);
+        y = Math.max(10, y);
+
+        popover.style.left = x + 'px';
+        popover.style.top = y + 'px';
+    }
+
+    // Position notes popover on mousemove
+    document.addEventListener('mousemove', function(e) {
+        const notesIndicator = e.target.closest('.notes-indicator');
+        if (notesIndicator) {
+            const notesPopover = notesIndicator.nextElementSibling;
+            if (notesPopover && notesPopover.classList.contains('notes-popover')) {
+                positionPopover(notesPopover, e, NOTES_POPOVER_WIDTH);
+            }
+        }
+    });
+})();
+
 // Load favorites from localStorage and fetch their details
 document.addEventListener('DOMContentLoaded', function() {
     const favoritesContent = document.getElementById('favorites-content');

@@ -1,6 +1,6 @@
 """HTMX partial routes for dynamic content updates."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from urllib.parse import quote
 
 from fastapi import APIRouter, Query, Request, UploadFile
@@ -158,8 +158,9 @@ async def listings_partial(
         job_listings_raw = repo.get_job_listings(job_id, job_status)
         # Convert to ListingRead for consistency with service
         from i4_scout.services.listing_service import ListingService
+        listing_service = ListingService(session)
         listings = [
-            ListingService(session)._to_listing_read(listing)
+            listing_service.to_listing_read(listing)
             for listing in job_listings_raw
         ]
         total = len(listings)
@@ -268,7 +269,7 @@ async def listings_partial(
             "limit": limit,
             "offset": offset,
             "filters": filters,
-            "now": datetime.utcnow(),
+            "now": datetime.now(timezone.utc),
         },
     )
     response.headers["HX-Push-Url"] = push_url
@@ -746,6 +747,7 @@ async def market_velocity_partial(
 async def price_drops_partial(
     request: Request,
     session: DbSession,
+    service: ListingServiceDep,
     templates: TemplatesDep,
     days: int = Query(7, ge=1, le=90),
     limit: int = Query(5, ge=1, le=20),
@@ -755,9 +757,10 @@ async def price_drops_partial(
     price_drops = repo.get_listings_with_price_drops(days=days, limit=limit)
 
     # Format for template: list of dicts with listing, original_price, current_price, drop_amount
+    # Convert raw Listing to ListingRead for computed fields (document_count, notes_count, etc.)
     formatted = [
         {
-            "listing": listing,
+            "listing": service.to_listing_read(listing),
             "original_price": original,
             "current_price": current,
             "drop_amount": original - current,
@@ -768,7 +771,7 @@ async def price_drops_partial(
     return templates.TemplateResponse(
         request=request,
         name="components/price_drops.html",
-        context={"price_drops": formatted, "days": days},
+        context={"price_drops": formatted, "days": days, "now": datetime.now(timezone.utc)},
     )
 
 
@@ -776,6 +779,7 @@ async def price_drops_partial(
 async def near_miss_partial(
     request: Request,
     session: DbSession,
+    service: ListingServiceDep,
     options_config: OptionsConfigDep,
     templates: TemplatesDep,
     threshold: float = Query(70.0, ge=0, le=100),
@@ -786,13 +790,14 @@ async def near_miss_partial(
     near_misses = repo.get_near_miss_listings(threshold=threshold, limit=limit)
 
     # Compute missing required options for each listing
+    # Convert raw Listing to ListingRead for computed fields (document_count, notes_count, etc.)
     required_names = {opt.name for opt in options_config.required}
     formatted = []
     for listing, matched_options in near_misses:
         matched_set = set(matched_options)
         missing = [name for name in required_names if name not in matched_set]
         formatted.append({
-            "listing": listing,
+            "listing": service.to_listing_read(listing),
             "matched_options": matched_options,
             "missing_required": missing,
         })
@@ -800,7 +805,7 @@ async def near_miss_partial(
     return templates.TemplateResponse(
         request=request,
         name="components/near_miss.html",
-        context={"near_misses": formatted, "threshold": threshold},
+        context={"near_misses": formatted, "threshold": threshold, "now": datetime.now(timezone.utc)},
     )
 
 
