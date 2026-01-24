@@ -5,37 +5,120 @@
 {% block content %}
 <h1>Dashboard</h1>
 
-<!-- Stats section - auto-refreshes every 60 seconds -->
-<section
-    id="stats-section"
-    hx-get="/partials/stats"
-    hx-trigger="load, every 60s"
-    hx-swap="innerHTML"
->
-    <div class="stats-grid">
-        <article class="stat-card">
-            <div class="stat-value"><span class="spinner"></span></div>
-            <div class="stat-label">Loading...</div>
+<!-- Market Velocity Widget - full width -->
+<section class="dashboard-grid-full">
+    <div
+        id="market-velocity"
+        hx-get="/partials/market-velocity"
+        hx-trigger="load"
+        hx-swap="innerHTML"
+    >
+        <article class="widget">
+            <div class="widget-loading"><span class="spinner"></span> Loading market data...</div>
         </article>
     </div>
 </section>
 
-<!-- Recent qualified listings section -->
-<section>
-    <h2>
-        Recent Qualified Listings
-        <span id="qualified-indicator" class="htmx-indicator"><span class="spinner"></span></span>
-    </h2>
-    <div
-        id="recent-qualified"
-        hx-get="/partials/recent-qualified"
-        hx-trigger="load"
-        hx-swap="innerHTML"
-        hx-indicator="#qualified-indicator"
-    >
-        <div class="empty-state">
-            <p>Loading...</p>
+<!-- Two column grid for widgets -->
+<div class="dashboard-grid">
+    <!-- Price Drops Widget -->
+    <section>
+        <div
+            id="price-drops"
+            hx-get="/partials/price-drops"
+            hx-trigger="load"
+            hx-swap="innerHTML"
+        >
+            <article class="widget">
+                <div class="widget-loading"><span class="spinner"></span> Loading price drops...</div>
+            </article>
         </div>
-    </div>
-</section>
+    </section>
+
+    <!-- Near Miss Widget -->
+    <section>
+        <div
+            id="near-miss"
+            hx-get="/partials/near-miss"
+            hx-trigger="load"
+            hx-swap="innerHTML"
+        >
+            <article class="widget">
+                <div class="widget-loading"><span class="spinner"></span> Loading near-miss listings...</div>
+            </article>
+        </div>
+    </section>
+
+    <!-- Feature Rarity Widget -->
+    <section>
+        <div
+            id="feature-rarity"
+            hx-get="/partials/feature-rarity"
+            hx-trigger="load"
+            hx-swap="innerHTML"
+        >
+            <article class="widget">
+                <div class="widget-loading"><span class="spinner"></span> Loading feature data...</div>
+            </article>
+        </div>
+    </section>
+
+    <!-- Favorites Widget -->
+    <section>
+        <div id="favorites-widget">
+            <article class="widget favorites-widget">
+                <header>
+                    <span class="widget-title">Your Favorites</span>
+                </header>
+                <div id="favorites-content">
+                    <div class="widget-loading"><span class="spinner"></span> Loading favorites...</div>
+                </div>
+            </article>
+        </div>
+    </section>
+</div>
+
+<script>
+// Load favorites from localStorage and fetch their details
+document.addEventListener('DOMContentLoaded', function() {
+    const favoritesContent = document.getElementById('favorites-content');
+    const storedFavorites = localStorage.getItem('i4scout_favorites');
+
+    if (storedFavorites) {
+        try {
+            const favorites = JSON.parse(storedFavorites);
+            if (Array.isArray(favorites) && favorites.length > 0) {
+                // Fetch favorites via HTMX
+                const ids = favorites.join(',');
+                htmx.ajax('GET', '/partials/favorites?ids=' + encodeURIComponent(ids), {
+                    target: '#favorites-widget',
+                    swap: 'innerHTML'
+                });
+            } else {
+                // No favorites
+                favoritesContent.innerHTML = `
+                    <div class="widget-empty">
+                        <p>No favorites yet.</p>
+                        <p class="widget-hint">Click the star icon on listings to add them here.</p>
+                    </div>
+                `;
+            }
+        } catch (e) {
+            favoritesContent.innerHTML = `
+                <div class="widget-empty">
+                    <p>No favorites yet.</p>
+                    <p class="widget-hint">Click the star icon on listings to add them here.</p>
+                </div>
+            `;
+        }
+    } else {
+        favoritesContent.innerHTML = `
+            <div class="widget-empty">
+                <p>No favorites yet.</p>
+                <p class="widget-hint">Click the star icon on listings to add them here.</p>
+            </div>
+        `;
+    }
+});
+</script>
 {% endblock %}

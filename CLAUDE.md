@@ -153,8 +153,9 @@ Scraper → Parser → OptionMatcher → Scorer → Repository → SQLite
      - Handles missing/malformed JSON-LD gracefully
    - **Vehicle Colors**: Extracts color information from dt/dd pairs:
      - `parse_colors_sync()`: Extracts `exterior_color`, `interior_color`, `interior_material`
-     - German labels: Außenfarbe, Farbe der Innenausstattung, Innenausstattung
-     - Dutch labels: Kleur, Kleur interieur, Materiaal
+     - Exterior color uses manufacturer color name (e.g., "Portimao Blau") with fallback to generic color (e.g., "blau")
+     - German labels: Farbe laut Hersteller (manufacturer), Außenfarbe (generic fallback), Farbe der Innenausstattung, Innenausstattung
+     - Dutch labels: Oorspronkelijke kleur (manufacturer), Kleur (generic fallback), Kleur interieur, Materiaal
 
 2. **Matching Engine** (`src/i4_scout/matching/`)
    - `normalizer.py`: Text normalization (German umlauts, case, punctuation)
@@ -430,6 +431,32 @@ The banner polls every 2 seconds for updates and automatically disappears when t
 **HTMX endpoint:**
 - `GET /partials/scrape/active` - Returns progress banner HTML or empty placeholder
 
+### CLI Scrape Job Tracking
+
+CLI-initiated scrapes are now fully integrated with the web interface:
+
+**Features:**
+- CLI scrapes create ScrapeJob records visible in `/scrape` page
+- Job progress is updated in real-time during scraping
+- Jobs can be cancelled from the web interface (scrape stops at next checkpoint)
+- KeyboardInterrupt (Ctrl+C) marks the job as CANCELLED
+
+**How cancellation works:**
+1. User clicks "Stop Job" in web interface, which sets job status to CANCELLED
+2. ScrapeService checks cancellation status before each page and after processing listings
+3. When cancelled, the scrape stops gracefully and returns partial results
+4. CLI shows cancellation message: "Scrape was cancelled from web interface"
+
+**Job-Listing Association:**
+- Each scrape tracks which listings were processed
+- Listings are tracked as "new", "updated", or "unchanged"
+- Click on Found/New/Updated counts in job history to filter listings
+- API: `GET /api/scrape/jobs/{id}/listings?status=new`
+
+**Database:**
+- `scrape_job_listings` table tracks job-listing associations
+- Foreign keys with CASCADE delete for cleanup
+
 ### Scraper Performance Optimizations
 
 The scraper includes two performance optimizations to reduce unnecessary network requests:
@@ -513,6 +540,7 @@ i4-scout serve --reload
 - `GET /api/scrape/jobs` - List recent scrape jobs
 - `GET /api/scrape/jobs/{id}` - Get scrape job status
 - `POST /api/scrape/jobs/{id}/cancel` - Cancel a running scrape job
+- `GET /api/scrape/jobs/{id}/listings` - Get listings processed by job (with optional status filter)
 
 **Other:**
 - `GET /health` - Health check
@@ -606,10 +634,11 @@ i4-scout serve
 ### Pages
 
 **Dashboard (`/`):**
-- Statistics overview (total listings, qualified count, averages)
-- Listings by source breakdown
-- Recent qualified listings
-- Auto-refresh every 60 seconds
+- **Market Pulse** - 7-day velocity stats (new/delisted/net listings, active and qualified totals)
+- **Price Drops** - Listings with recent price reductions, sorted by drop magnitude
+- **Near-Miss Listings** - High-score unqualified listings (threshold configurable, default 70%)
+- **Feature Rarity** - Option frequency showing hardest-to-find and most common options
+- **Your Favorites** - Status of starred listings (loaded from localStorage)
 
 **Listings (`/listings`):**
 - Full listings table with all fields
@@ -672,8 +701,24 @@ i4-scout serve
 
 These endpoints return HTML fragments for HTMX requests:
 
+**Dashboard Widgets:**
+- `GET /partials/market-velocity` - Market pulse stats (new/delisted/net)
+  - `?days=7` (default): Time window for stats
+- `GET /partials/price-drops` - Listings with price drops
+  - `?days=7` (default): Time window for price changes
+  - `?limit=5` (default): Max listings to show
+- `GET /partials/near-miss` - High-score unqualified listings
+  - `?threshold=70` (default): Minimum match score
+  - `?limit=5` (default): Max listings to show
+- `GET /partials/feature-rarity` - Option frequency stats
+- `GET /partials/favorites` - User's favorited listings
+  - `?ids=1,2,3`: Comma-separated listing IDs from localStorage
+
+**Legacy Dashboard (deprecated):**
 - `GET /partials/stats` - Stats cards
 - `GET /partials/recent-qualified` - Recent qualified listings
+
+**Listings:**
 - `GET /partials/listings` - Listings table with pagination
   - Options filtering: `?has_option=Laser%20Light&has_option=Harman%20Kardon&options_match=all`
   - `has_option` (repeatable): Filter by option name

@@ -1,0 +1,41 @@
+<article class="widget favorites-widget">
+    <header>
+        <span class="widget-title">Your Favorites</span>
+    </header>
+    {% if listings %}
+    <ul class="favorites-list">
+        {% for listing in listings %}
+        <li class="favorite-item">
+            <a href="/listings/{{ listing.id }}" class="favorite-link">
+                <div class="favorite-header">
+                    <span class="favorite-status {% if listing.status.value == 'delisted' %}delisted{% endif %}">
+                        {% if listing.status.value == 'delisted' %}
+                        &#x2717;
+                        {% else %}
+                        &#x2713;
+                        {% endif %}
+                    </span>
+                    <span class="favorite-title">{{ listing.title[:35] }}{% if listing.title|length > 35 %}...{% endif %}</span>
+                </div>
+                <div class="favorite-details">
+                    <span class="favorite-price">{{ "{:,.0f}".format(listing.price) if listing.price else "N/A" }}</span>
+                    <span class="favorite-score {% if listing.is_qualified %}qualified{% endif %}">{{ "{:.0f}".format(listing.match_score) }}%</span>
+                </div>
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+    <footer>
+        <a href="/listings" class="widget-link" onclick="document.getElementById('favorites-only-checkbox')?.click()">See all favorites &#8594;</a>
+    </footer>
+    {% elif empty %}
+    <div class="widget-empty">
+        <p>No favorites yet.</p>
+        <p class="widget-hint">Click the star icon on listings to add them here.</p>
+    </div>
+    {% else %}
+    <div class="widget-loading">
+        <span class="spinner"></span> Loading...
+    </div>
+    {% endif %}
+</article>

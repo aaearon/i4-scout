@@ -14,7 +14,6 @@ from i4_scout.matching.option_matcher import match_options
 from i4_scout.matching.scorer import calculate_score
 from i4_scout.models.pydantic_models import (
     ListingCreate,
-    ListingStatus,
     OptionsConfig,
     ScrapeProgress,
     ScrapeResult,
@@ -88,6 +87,8 @@ class ScrapeService:
         use_cache: bool = True,
         force_refresh: bool = False,
         progress_callback: Callable[[ScrapeProgress], None] | None = None,
+        is_cancelled: Callable[[], bool] | None = None,
+        job_id: int | None = None,
     ) -> ScrapeResult:
         """Run the scraping process.
 
@@ -99,6 +100,8 @@ class ScrapeService:
             use_cache: Whether to use HTML caching.
             force_refresh: Force re-fetch detail pages even if listing exists with same price.
             progress_callback: Optional callback for progress updates.
+            is_cancelled: Optional callback to check if scrape was cancelled.
+            job_id: Optional job ID for tracking listing associations.
 
         Returns:
             ScrapeResult with counts of processed listings.
@@ -114,6 +117,11 @@ class ScrapeService:
             scraper = self._create_scraper(source, browser)
 
             for page_num in range(1, max_pages + 1):
+                # Check for cancellation before starting each page
+                if is_cancelled and is_cancelled():
+                    logger.info("Scrape cancelled by user before page %d", page_num)
+                    break
+
                 # Emit progress update at start of page
                 if progress_callback:
                     progress_callback(ScrapeProgress(
@@ -155,6 +163,14 @@ class ScrapeService:
                         if result.get("listing_id"):
                             seen_listing_ids.append(result["listing_id"])
 
+                        # Track job-listing association
+                        if job_id is not None and result.get("listing_id"):
+                            self._repo.add_job_listing_association(
+                                job_id=job_id,
+                                listing_id=result["listing_id"],
+                                status=result["status"],
+                            )
+
                         # Emit progress with current listing
                         if progress_callback:
                             progress_callback(ScrapeProgress(
@@ -166,6 +182,11 @@ class ScrapeService:
                                 skipped_count=skipped_count,
                                 current_listing=listing_data.get("title"),
                             ))
+
+                    # Check for cancellation before delay
+                    if is_cancelled and is_cancelled():
+                        logger.info("Scrape cancelled by user after page %d", page_num)
+                        break
 
                     await scraper.random_delay()
 
@@ -192,7 +213,7 @@ class ScrapeService:
         source: Source,
         use_cache: bool,
         force_refresh: bool = False,
-    ) -> dict[str, str]:
+    ) -> dict[str, Any]:
         """Process a single listing from search results.
 
         Args:
@@ -204,7 +225,7 @@ class ScrapeService:
             force_refresh: Force re-fetch even if listing exists with same price.
 
         Returns:
-            Dict with "status" key: "new", "updated", or "skipped".
+            Dict with "status" (new/updated/skipped) and "listing_id" (int or None).
         """
         url = listing_data.get("url")
         price = listing_data.get("price")
@@ -224,7 +245,7 @@ class ScrapeService:
                 return {"status": "skipped", "listing_id": existing.id}
             return {"status": "skipped", "listing_id": None}
 
-        # Get detail page for options, description, location/dealer info, and photos
+        # Get detail page for options, description, location/dealer info, colors, and photos
         options_list: list[str] = []
         description = None
         location_city = None
@@ -232,6 +253,9 @@ class ScrapeService:
         location_country = None
         dealer_name = None
         dealer_type = None
+        exterior_color = None
+        interior_color = None
+        interior_material = None
         photo_urls: list[str] = []
         if url:
             try:
@@ -243,6 +267,9 @@ class ScrapeService:
                 location_country = detail.location_country
                 dealer_name = detail.dealer_name
                 dealer_type = detail.dealer_type
+                exterior_color = detail.exterior_color
+                interior_color = detail.interior_color
+                interior_material = detail.interior_material
                 photo_urls = detail.photo_urls
             except Exception:
                 logger.exception("Error fetching detail page %s", url)
@@ -275,6 +302,9 @@ class ScrapeService:
             location_country=location_country,
             dealer_name=dealer_name,
             dealer_type=dealer_type,
+            exterior_color=exterior_color,
+            interior_color=interior_color,
+            interior_material=interior_material,
             photo_urls=photo_urls,
             match_score=scored_result.score,
             is_qualified=scored_result.is_qualified,
@@ -314,7 +344,6 @@ class ScrapeService:
 
         # Calculate seen and unseen listings
         seen_set = set(seen_listing_ids)
-        seen_active_ids = list(seen_set & active_ids)
         unseen_active_ids = list(active_ids - seen_set)
 
         # Reset misses for seen listings (including new ones)
@@ -323,20 +352,11 @@ class ScrapeService:
         # Increment misses for unseen listings
         self._repo.increment_consecutive_misses(unseen_active_ids)
 
-        # Mark listings as delisted if they've missed 2+ scrapes
-        # We need to check which unseen listings now have >= 2 misses
-        for listing in active_listings:
-            if listing.id in unseen_active_ids:
-                # After increment, check if threshold reached
-                # Note: consecutive_misses was 0-based before increment,
-                # so after increment it's 1 for first miss, 2 for second miss
-                if listing.consecutive_misses >= 1:  # Will be 2 after increment
-                    self._repo.update_listing_status(listing.id, ListingStatus.DELISTED)
-                    logger.info(
-                        "Marked listing %d as delisted (consecutive_misses=%d)",
-                        listing.id,
-                        listing.consecutive_misses + 1,
-                    )
+        # Mark listings as delisted if they've missed 2+ scrapes (atomic operation)
+        # This checks the actual DB value, not stale session objects
+        delisted_count = self._repo.mark_listings_at_delist_threshold(unseen_active_ids)
+        if delisted_count > 0:
+            logger.info("Marked %d listings as delisted", delisted_count)
 
     def _get_scraper_class(self, source: Source) -> type:
         """Get the scraper class for a source.

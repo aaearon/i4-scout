@@ -975,7 +975,7 @@ footer {
 
 .option-checkbox input[type="checkbox"] {
     margin: 0;
-    width: auto;
+    flex-shrink: 0;
 }
 
 /* ===== Active Filter Chips ===== */
@@ -2233,4 +2233,397 @@ body:has(.compare-bar:not([hidden])) main {
 .days-on-market {
     font-size: 0.75rem;
     color: var(--pico-muted-color);
+}
+
+/* ===== Dashboard Widget Styles ===== */
+
+/* Widget base styles */
+.widget {
+    margin-bottom: 1.5rem;
+}
+
+.widget header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--pico-muted-border-color);
+}
+
+.widget-title {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.widget-period,
+.widget-subtitle {
+    font-size: 0.75rem;
+    color: var(--pico-muted-color);
+}
+
+.widget footer {
+    margin-top: 0.75rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--pico-muted-border-color);
+    text-align: right;
+}
+
+.widget-link {
+    font-size: 0.8rem;
+    text-decoration: none;
+    color: var(--pico-primary);
+}
+
+.widget-link:hover {
+    text-decoration: underline;
+}
+
+.widget-empty {
+    text-align: center;
+    padding: 1.5rem;
+    color: var(--pico-muted-color);
+}
+
+.widget-empty p {
+    margin: 0;
+}
+
+.widget-hint {
+    font-size: 0.8rem;
+    margin-top: 0.5rem !important;
+}
+
+.widget-loading {
+    text-align: center;
+    padding: 1.5rem;
+    color: var(--pico-muted-color);
+}
+
+/* Dashboard layout grid */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.dashboard-grid-full {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 992px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Market Velocity Widget */
+.market-velocity-widget .velocity-stats {
+    display: flex;
+    justify-content: space-around;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.velocity-stat {
+    text-align: center;
+    padding: 0.75rem;
+    background: var(--pico-card-sectioning-background-color);
+    border-radius: var(--pico-border-radius);
+    flex: 1;
+}
+
+.velocity-label {
+    display: block;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: var(--pico-muted-color);
+    margin-bottom: 0.25rem;
+}
+
+.velocity-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.velocity-value.positive {
+    color: var(--color-success);
+}
+
+.velocity-value.negative {
+    color: var(--color-danger);
+}
+
+.velocity-totals {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    font-size: 0.9rem;
+    color: var(--pico-muted-color);
+}
+
+.velocity-sep {
+    opacity: 0.4;
+}
+
+/* Price Drops Widget */
+.price-drops-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.price-drop-item {
+    border-bottom: 1px solid var(--pico-muted-border-color);
+}
+
+.price-drop-item:last-child {
+    border-bottom: none;
+}
+
+.price-drop-link {
+    display: block;
+    padding: 0.75rem 0;
+    text-decoration: none;
+    color: inherit;
+    transition: background-color 0.15s;
+}
+
+.price-drop-link:hover {
+    background: var(--pico-card-sectioning-background-color);
+}
+
+.price-drop-title {
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+}
+
+.price-drop-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.price-drop-amount {
+    font-weight: bold;
+    font-size: 1rem;
+    color: var(--color-success);
+}
+
+.price-drop-prices {
+    font-size: 0.75rem;
+    color: var(--pico-muted-color);
+}
+
+.price-original {
+    text-decoration: line-through;
+}
+
+.price-arrow {
+    margin: 0 0.35rem;
+}
+
+.price-current {
+    font-weight: 600;
+    color: var(--pico-color);
+}
+
+/* Near Miss Widget */
+.near-miss-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.near-miss-item {
+    border-bottom: 1px solid var(--pico-muted-border-color);
+}
+
+.near-miss-item:last-child {
+    border-bottom: none;
+}
+
+.near-miss-link {
+    display: block;
+    padding: 0.75rem 0;
+    text-decoration: none;
+    color: inherit;
+    transition: background-color 0.15s;
+}
+
+.near-miss-link:hover {
+    background: var(--pico-card-sectioning-background-color);
+}
+
+.near-miss-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.near-miss-score {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.5rem;
+    padding: 0.2rem 0.5rem;
+    background: var(--color-warning-bg);
+    color: var(--color-warning);
+    font-size: 0.8rem;
+    font-weight: bold;
+    border-radius: var(--pico-border-radius);
+}
+
+.near-miss-title {
+    font-size: 0.9rem;
+    flex: 1;
+}
+
+.near-miss-missing {
+    font-size: 0.75rem;
+    color: var(--color-danger);
+    margin-top: 0.25rem;
+    padding-left: 3rem;
+}
+
+/* Feature Rarity Widget */
+.rarity-section {
+    margin-bottom: 1rem;
+}
+
+.rarity-section:last-child {
+    margin-bottom: 0;
+}
+
+.rarity-heading {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--pico-muted-color);
+    margin-bottom: 0.5rem;
+}
+
+.rarity-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.rarity-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0;
+    font-size: 0.85rem;
+}
+
+.rarity-name {
+    flex: 0 0 160px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rarity-name.required {
+    color: var(--pico-primary);
+}
+
+.rarity-name.nice-to-have {
+    color: var(--color-info);
+}
+
+.rarity-bar-container {
+    flex: 1;
+    height: 6px;
+    background: var(--pico-muted-border-color);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.rarity-bar {
+    height: 100%;
+    background: var(--pico-primary);
+    border-radius: 3px;
+    transition: width 0.3s;
+}
+
+.rarity-item .rarity-name.nice-to-have + .rarity-bar-container .rarity-bar {
+    background: var(--color-info);
+}
+
+.rarity-percentage {
+    flex: 0 0 40px;
+    text-align: right;
+    font-size: 0.75rem;
+    color: var(--pico-muted-color);
+}
+
+/* Favorites Widget */
+.favorites-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.favorite-item {
+    border-bottom: 1px solid var(--pico-muted-border-color);
+}
+
+.favorite-item:last-child {
+    border-bottom: none;
+}
+
+.favorite-link {
+    display: block;
+    padding: 0.75rem 0;
+    text-decoration: none;
+    color: inherit;
+    transition: background-color 0.15s;
+}
+
+.favorite-link:hover {
+    background: var(--pico-card-sectioning-background-color);
+}
+
+.favorite-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.favorite-status {
+    font-size: 0.75rem;
+    color: var(--color-success);
+}
+
+.favorite-status.delisted {
+    color: var(--color-muted);
+}
+
+.favorite-title {
+    font-size: 0.9rem;
+    flex: 1;
+}
+
+.favorite-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.25rem;
+    padding-left: 1.5rem;
+}
+
+.favorite-price {
+    font-weight: 600;
+}
+
+.favorite-score {
+    font-size: 0.8rem;
+    color: var(--pico-muted-color);
+}
+
+.favorite-score.qualified {
+    color: var(--color-success);
 }

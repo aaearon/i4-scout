@@ -18,8 +18,8 @@ from i4_scout.database.engine import get_session, init_db
 from i4_scout.database.repository import ListingRepository
 from i4_scout.export.csv_exporter import export_to_csv
 from i4_scout.export.json_exporter import export_to_json
-from i4_scout.models.pydantic_models import ScrapeProgress, Source
-from i4_scout.services import DocumentService, ListingService, ScrapeService
+from i4_scout.models.pydantic_models import ScrapeProgress, ScrapeStatus, Source
+from i4_scout.services import DocumentService, JobService, ListingService, ScrapeService
 from i4_scout.services.document_service import (
     InvalidFileError,
     ListingNotFoundError,
@@ -244,12 +244,51 @@ def scrape(
     # Ensure database exists
     init_db()
 
-    try:
-        # Use ScrapeService
-        with get_session() as session:
-            service = ScrapeService(session, options_config)
-            progress_callback = _create_progress_callback(quiet=json_output)
+    job_id: int | None = None
+    was_cancelled = False
 
+    try:
+        # Create job record and run scrape
+        with get_session() as session:
+            job_service = JobService(session)
+
+            # Create job before starting
+            search_filters_dict = search_filters.model_dump() if search_filters else None
+            job = job_service.create_job(
+                source=source,
+                max_pages=max_pages,
+                search_filters=search_filters_dict,
+            )
+            job_id = job.id
+            job_service.update_status(job_id, ScrapeStatus.RUNNING)
+
+            if not json_output:
+                console.print(f"  Job ID: {job_id}")
+
+            # Create cancellation check function (uses separate session)
+            def check_cancelled() -> bool:
+                with get_session() as check_session:
+                    check_job = JobService(check_session).get_job(job_id)
+                    return check_job is not None and check_job.status == ScrapeStatus.CANCELLED
+
+            # Create combined progress callback
+            cli_callback = _create_progress_callback(quiet=json_output)
+
+            def combined_progress(progress: ScrapeProgress) -> None:
+                # Update job progress
+                job_service.update_progress(
+                    job_id,
+                    current_page=progress.page,
+                    total_found=progress.listings_found,
+                    new_listings=progress.new_count,
+                    updated_listings=progress.updated_count,
+                )
+                # Also call CLI callback if present
+                if cli_callback:
+                    cli_callback(progress)
+
+            # Run scrape
+            service = ScrapeService(session, options_config)
             result = asyncio.run(
                 service.run_scrape(
                     source=source,
@@ -258,14 +297,42 @@ def scrape(
                     headless=headless,
                     use_cache=use_cache,
                     force_refresh=force_refresh,
-                    progress_callback=progress_callback,
+                    progress_callback=combined_progress,
+                    is_cancelled=check_cancelled,
+                    job_id=job_id,
                 )
             )
+
+            # Check if job was cancelled from web UI
+            if check_cancelled():
+                was_cancelled = True
+                if not json_output:
+                    console.print()
+                    console.print("[yellow]Scrape was cancelled from web interface[/yellow]")
+            else:
+                # Mark job as completed
+                job_service.complete_job(
+                    job_id,
+                    total_found=result.total_found,
+                    new_listings=result.new_listings,
+                    updated_listings=result.updated_listings,
+                )
+
+        if was_cancelled:
+            if json_output:
+                output_json({
+                    "status": "cancelled",
+                    "source": source.value,
+                    "job_id": job_id,
+                    "results": result.model_dump(),
+                })
+            raise typer.Exit(0)
 
         if json_output:
             output_json({
                 "status": "success",
                 "source": source.value,
+                "job_id": job_id,
                 "max_pages": max_pages,
                 "cache_enabled": use_cache,
                 "results": result.model_dump(),
@@ -278,11 +345,31 @@ def scrape(
             console.print(f"  Updated: {result.updated_listings}")
             console.print(f"  Skipped (unchanged): {result.skipped_unchanged}")
             console.print(f"  Detail pages fetched: {result.fetched_details}")
+
+    except KeyboardInterrupt:
+        # Handle Ctrl+C as cancellation
+        if job_id is not None:
+            with get_session() as session:
+                JobService(session).cancel_job(job_id)
+        if not json_output:
+            console.print()
+            console.print("[yellow]Scrape cancelled by user (Ctrl+C)[/yellow]")
+        raise typer.Exit(130) from None
+
     except Exception as e:
+        # Mark job as failed
+        if job_id is not None:
+            try:
+                with get_session() as session:
+                    JobService(session).fail_job(job_id, str(e))
+            except Exception:
+                pass  # Best effort
+
         if json_output:
             output_json({
                 "status": "error",
                 "source": source.value,
+                "job_id": job_id,
                 "error": str(e),
             })
         else:

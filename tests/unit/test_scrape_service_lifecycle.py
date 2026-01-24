@@ -21,7 +21,7 @@ class TestLifecycleTracking:
         repo.get_active_listings_by_source.return_value = []
         repo.increment_consecutive_misses.return_value = 0
         repo.reset_consecutive_misses.return_value = 0
-        repo.update_listing_status.return_value = None
+        repo.mark_listings_at_delist_threshold.return_value = 0
         return repo
 
     @pytest.fixture
@@ -86,18 +86,15 @@ class TestLifecycleTracking:
         # Should increment misses for unseen listing
         mock_repo.increment_consecutive_misses.assert_called_once_with([3])
 
-    def test_marks_as_delisted_after_threshold(
+    def test_calls_mark_listings_at_delist_threshold_for_unseen(
         self, scrape_service: ScrapeService, mock_repo: MagicMock
     ) -> None:
-        """Should mark listing as delisted when consecutive_misses >= 2."""
-        # Existing active listings with different miss counts
-        listing_at_threshold = MagicMock(id=1, consecutive_misses=1, spec=Listing)  # Will be 2 after increment
-        listing_below_threshold = MagicMock(id=2, consecutive_misses=0, spec=Listing)  # Will be 1 after increment
+        """Should call mark_listings_at_delist_threshold with unseen listing IDs."""
+        # Existing active listings
+        listing1 = MagicMock(id=1, consecutive_misses=1, spec=Listing)
+        listing2 = MagicMock(id=2, consecutive_misses=0, spec=Listing)
 
-        mock_repo.get_active_listings_by_source.return_value = [
-            listing_at_threshold,
-            listing_below_threshold,
-        ]
+        mock_repo.get_active_listings_by_source.return_value = [listing1, listing2]
 
         # No listings seen - both will have misses incremented
         seen_ids: list[int] = []
@@ -108,19 +105,19 @@ class TestLifecycleTracking:
             seen_listing_ids=seen_ids,
         )
 
-        # Should mark listing with consecutive_misses >= 2 as delisted
-        mock_repo.update_listing_status.assert_called_once_with(1, ListingStatus.DELISTED)
+        # Should call atomic delist method with all unseen listing IDs
+        mock_repo.mark_listings_at_delist_threshold.assert_called_once_with([1, 2])
 
-    def test_no_delisting_below_threshold(
+    def test_delist_threshold_only_called_for_unseen(
         self, scrape_service: ScrapeService, mock_repo: MagicMock
     ) -> None:
-        """Should not mark listing as delisted when consecutive_misses < 2."""
-        # Existing active listing with 0 misses
+        """Should only pass unseen listing IDs to delist threshold method."""
+        # Existing active listing
         listing = MagicMock(id=1, consecutive_misses=0, spec=Listing)
         mock_repo.get_active_listings_by_source.return_value = [listing]
 
-        # Listing not seen
-        seen_ids: list[int] = []
+        # Listing is seen - should not be checked for delisting
+        seen_ids = [1]
 
         # Call lifecycle update
         scrape_service._update_lifecycle_after_scrape(
@@ -128,8 +125,8 @@ class TestLifecycleTracking:
             seen_listing_ids=seen_ids,
         )
 
-        # Should not mark as delisted (only 1 miss after increment)
-        mock_repo.update_listing_status.assert_not_called()
+        # Should call with empty list (no unseen listings)
+        mock_repo.mark_listings_at_delist_threshold.assert_called_once_with([])
 
     def test_handles_empty_seen_list(
         self, scrape_service: ScrapeService, mock_repo: MagicMock

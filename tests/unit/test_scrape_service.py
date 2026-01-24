@@ -124,6 +124,10 @@ class TestScrapeServiceRunScrape:
         mock_detail.location_country = "DE"
         mock_detail.dealer_name = "Test Dealer"
         mock_detail.dealer_type = "dealer"
+        mock_detail.exterior_color = "Portimao Blau"
+        mock_detail.interior_color = "Black"
+        mock_detail.interior_material = "Leather"
+        mock_detail.photo_urls = []
 
         with patch.object(scrape_service, '_create_scraper') as mock_create:
             mock_scraper = AsyncMock()
@@ -147,6 +151,139 @@ class TestScrapeServiceRunScrape:
         assert result.total_found == 1
         assert result.new_listings == 1
         assert result.fetched_details == 1
+
+
+class TestScrapeServiceCancellation:
+    """Tests for ScrapeService cancellation support."""
+
+    @pytest.mark.asyncio
+    async def test_run_scrape_stops_on_cancellation(self, scrape_service):
+        """Should stop scraping when cancellation callback returns True."""
+        cancellation_checks = []
+
+        def check_cancelled():
+            cancellation_checks.append(True)
+            # Cancel on 2nd check (after first page's listings)
+            return len(cancellation_checks) >= 2
+
+        # Create mock listings so pages don't break early
+        mock_listing = {
+            "url": "https://www.autoscout24.de/angebote/test-123",
+            "title": "BMW i4 eDrive40",
+            "price": 45000,
+            "external_id": "test-123",
+        }
+
+        mock_detail = MagicMock()
+        mock_detail.options_list = []
+        mock_detail.description = ""
+        mock_detail.location_city = None
+        mock_detail.location_zip = None
+        mock_detail.location_country = None
+        mock_detail.dealer_name = None
+        mock_detail.dealer_type = None
+        mock_detail.exterior_color = None
+        mock_detail.interior_color = None
+        mock_detail.interior_material = None
+        mock_detail.photo_urls = []
+
+        with patch.object(scrape_service, '_create_scraper') as mock_create:
+            mock_scraper = AsyncMock()
+            # Return listings for pages 1-5
+            mock_scraper.scrape_search_page = AsyncMock(
+                side_effect=[[mock_listing], [mock_listing], [mock_listing], [mock_listing], [mock_listing]]
+            )
+            mock_scraper.scrape_listing_detail = AsyncMock(return_value=mock_detail)
+            mock_scraper.random_delay = AsyncMock()
+            mock_create.return_value = mock_scraper
+
+            with patch.object(scrape_service, '_create_browser_context') as mock_browser:
+                mock_browser.return_value.__aenter__ = AsyncMock(return_value=(MagicMock(), MagicMock()))
+                mock_browser.return_value.__aexit__ = AsyncMock(return_value=None)
+
+                result = await scrape_service.run_scrape(
+                    source=Source.AUTOSCOUT24_DE,
+                    max_pages=5,  # Would normally process 5 pages
+                    is_cancelled=check_cancelled,
+                )
+
+        # Should have processed only 1 page before cancellation
+        # Check sequence: start page 1 (check) -> process listings -> after listings (check - cancelled)
+        assert result.total_found == 1  # Only 1 listing processed before cancel
+        assert len(cancellation_checks) == 2  # Checked twice before stopping
+
+    @pytest.mark.asyncio
+    async def test_run_scrape_checks_cancellation_after_listings(self, scrape_service):
+        """Should check cancellation callback after processing listings."""
+        cancellation_checks = []
+
+        def check_cancelled():
+            cancellation_checks.append(True)
+            # Cancel after processing first page of listings
+            return len(cancellation_checks) >= 2
+
+        mock_listing = {
+            "url": "https://www.autoscout24.de/angebote/test-123",
+            "title": "BMW i4 eDrive40",
+            "price": 45000,
+            "external_id": "test-123",
+        }
+
+        mock_detail = MagicMock()
+        mock_detail.options_list = []
+        mock_detail.description = ""
+        mock_detail.location_city = None
+        mock_detail.location_zip = None
+        mock_detail.location_country = None
+        mock_detail.dealer_name = None
+        mock_detail.dealer_type = None
+        mock_detail.exterior_color = None
+        mock_detail.interior_color = None
+        mock_detail.interior_material = None
+        mock_detail.photo_urls = []
+
+        with patch.object(scrape_service, '_create_scraper') as mock_create:
+            mock_scraper = AsyncMock()
+            mock_scraper.scrape_search_page = AsyncMock(
+                side_effect=[[mock_listing], [mock_listing], [mock_listing], [], []]
+            )
+            mock_scraper.scrape_listing_detail = AsyncMock(return_value=mock_detail)
+            mock_scraper.random_delay = AsyncMock()
+            mock_create.return_value = mock_scraper
+
+            with patch.object(scrape_service, '_create_browser_context') as mock_browser:
+                mock_browser.return_value.__aenter__ = AsyncMock(return_value=(MagicMock(), MagicMock()))
+                mock_browser.return_value.__aexit__ = AsyncMock(return_value=None)
+
+                result = await scrape_service.run_scrape(
+                    source=Source.AUTOSCOUT24_DE,
+                    max_pages=5,
+                    is_cancelled=check_cancelled,
+                )
+
+        # Should have processed only first page listings before cancellation
+        assert result.total_found == 1  # Only one listing processed
+
+    @pytest.mark.asyncio
+    async def test_run_scrape_no_cancellation_callback(self, scrape_service):
+        """Should work normally without cancellation callback."""
+        with patch.object(scrape_service, '_create_scraper') as mock_create:
+            mock_scraper = AsyncMock()
+            mock_scraper.scrape_search_page = AsyncMock(return_value=[])
+            mock_scraper.random_delay = AsyncMock()
+            mock_create.return_value = mock_scraper
+
+            with patch.object(scrape_service, '_create_browser_context') as mock_browser:
+                mock_browser.return_value.__aenter__ = AsyncMock(return_value=(MagicMock(), MagicMock()))
+                mock_browser.return_value.__aexit__ = AsyncMock(return_value=None)
+
+                result = await scrape_service.run_scrape(
+                    source=Source.AUTOSCOUT24_DE,
+                    max_pages=2,
+                    is_cancelled=None,  # No cancellation callback
+                )
+
+        assert isinstance(result, ScrapeResult)
 
 
 class TestScrapeServiceHelpers:

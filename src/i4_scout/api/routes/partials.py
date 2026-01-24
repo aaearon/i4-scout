@@ -96,6 +96,7 @@ async def recent_qualified_partial(
 async def listings_partial(
     request: Request,
     service: ListingServiceDep,
+    session: DbSession,
     templates: TemplatesDep,
     source: str | None = Query(None),
     qualified_only: bool = Query(False),
@@ -116,6 +117,8 @@ async def listings_partial(
     sort_order: str = Query("desc"),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
+    job_id: int | None = Query(None, description="Filter by scrape job ID"),
+    job_status: str | None = Query(None, description="Filter by job processing status (new, updated, unchanged)"),
 ) -> HTMLResponse:
     """Return listings table HTML fragment."""
     # Convert empty strings to None for numeric params (HTML forms send empty strings)
@@ -149,27 +152,41 @@ async def listings_partial(
         except ValueError:
             pass
 
-    listings, total = service.get_listings(
-        source=source_enum,
-        qualified_only=qualified_only,
-        has_issue=has_issue,
-        has_price_change=has_price_change,
-        recently_updated=recently_updated,
-        status=status_enum,
-        min_score=min_score_val,
-        price_min=price_min_val,
-        price_max=price_max_val,
-        mileage_max=mileage_max_val,
-        year_min=year_min_val,
-        country=country_val,
-        search=search_val,
-        has_options=has_options_val if has_options_val else None,
-        options_match=options_match_val,
-        sort_by=sort_by_val,
-        sort_order=sort_order,
-        limit=limit,
-        offset=offset,
-    )
+    # Handle job_id filtering - when job_id is provided, get listings from that job
+    if job_id is not None:
+        repo = ListingRepository(session)
+        job_listings_raw = repo.get_job_listings(job_id, job_status)
+        # Convert to ListingRead for consistency with service
+        from i4_scout.services.listing_service import ListingService
+        listings = [
+            ListingService(session)._to_listing_read(listing)
+            for listing in job_listings_raw
+        ]
+        total = len(listings)
+        # Apply pagination manually
+        listings = listings[offset:offset + limit]
+    else:
+        listings, total = service.get_listings(
+            source=source_enum,
+            qualified_only=qualified_only,
+            has_issue=has_issue,
+            has_price_change=has_price_change,
+            recently_updated=recently_updated,
+            status=status_enum,
+            min_score=min_score_val,
+            price_min=price_min_val,
+            price_max=price_max_val,
+            mileage_max=mileage_max_val,
+            year_min=year_min_val,
+            country=country_val,
+            search=search_val,
+            has_options=has_options_val if has_options_val else None,
+            options_match=options_match_val,
+            sort_by=sort_by_val,
+            sort_order=sort_order,
+            limit=limit,
+            offset=offset,
+        )
 
     filters = {
         "source": source_val,
@@ -189,6 +206,8 @@ async def listings_partial(
         "options_match": options_match_val,
         "sort_by": sort_by_val,
         "sort_order": sort_order,
+        "job_id": job_id,
+        "job_status": job_status,
     }
 
     # Build the push URL with active filters
@@ -230,6 +249,10 @@ async def listings_partial(
         push_url_params.append(f"sort_order={sort_order}")
     if offset > 0:
         push_url_params.append(f"offset={offset}")
+    if job_id is not None:
+        push_url_params.append(f"job_id={job_id}")
+    if job_status:
+        push_url_params.append(f"job_status={job_status}")
 
     push_url = "/listings"
     if push_url_params:
@@ -696,3 +719,167 @@ async def delete_note_partial(
         return HTMLResponse(content="", status_code=200)
     except NoteNotFoundError:
         return HTMLResponse(content="", status_code=200)
+
+
+# ========== DASHBOARD WIDGET PARTIALS ==========
+
+
+@router.get("/market-velocity")
+async def market_velocity_partial(
+    request: Request,
+    session: DbSession,
+    templates: TemplatesDep,
+    days: int = Query(7, ge=1, le=90),
+) -> HTMLResponse:
+    """Return market velocity widget HTML fragment."""
+    repo = ListingRepository(session)
+    velocity = repo.get_market_velocity(days=days)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="components/market_velocity.html",
+        context={"velocity": velocity, "days": days},
+    )
+
+
+@router.get("/price-drops")
+async def price_drops_partial(
+    request: Request,
+    session: DbSession,
+    templates: TemplatesDep,
+    days: int = Query(7, ge=1, le=90),
+    limit: int = Query(5, ge=1, le=20),
+) -> HTMLResponse:
+    """Return price drops widget HTML fragment."""
+    repo = ListingRepository(session)
+    price_drops = repo.get_listings_with_price_drops(days=days, limit=limit)
+
+    # Format for template: list of dicts with listing, original_price, current_price, drop_amount
+    formatted = [
+        {
+            "listing": listing,
+            "original_price": original,
+            "current_price": current,
+            "drop_amount": original - current,
+        }
+        for listing, original, current in price_drops
+    ]
+
+    return templates.TemplateResponse(
+        request=request,
+        name="components/price_drops.html",
+        context={"price_drops": formatted, "days": days},
+    )
+
+
+@router.get("/near-miss")
+async def near_miss_partial(
+    request: Request,
+    session: DbSession,
+    options_config: OptionsConfigDep,
+    templates: TemplatesDep,
+    threshold: float = Query(70.0, ge=0, le=100),
+    limit: int = Query(5, ge=1, le=20),
+) -> HTMLResponse:
+    """Return near-miss listings widget HTML fragment."""
+    repo = ListingRepository(session)
+    near_misses = repo.get_near_miss_listings(threshold=threshold, limit=limit)
+
+    # Compute missing required options for each listing
+    required_names = {opt.name for opt in options_config.required}
+    formatted = []
+    for listing, matched_options in near_misses:
+        matched_set = set(matched_options)
+        missing = [name for name in required_names if name not in matched_set]
+        formatted.append({
+            "listing": listing,
+            "matched_options": matched_options,
+            "missing_required": missing,
+        })
+
+    return templates.TemplateResponse(
+        request=request,
+        name="components/near_miss.html",
+        context={"near_misses": formatted, "threshold": threshold},
+    )
+
+
+@router.get("/feature-rarity")
+async def feature_rarity_partial(
+    request: Request,
+    session: DbSession,
+    options_config: OptionsConfigDep,
+    templates: TemplatesDep,
+    limit: int = Query(10, ge=1, le=50),
+) -> HTMLResponse:
+    """Return feature rarity widget HTML fragment."""
+    repo = ListingRepository(session)
+    all_frequencies = repo.get_option_frequency()
+
+    # Filter to only include options from config (required + nice-to-have)
+    required_names = {opt.name for opt in options_config.required}
+    nice_to_have_names = {opt.name for opt in options_config.nice_to_have}
+    config_options = required_names | nice_to_have_names
+
+    # Separate into rarest and most common
+    frequencies = [f for f in all_frequencies if f["name"] in config_options]
+
+    # Sort by percentage ascending for rarity view
+    rarest = sorted(frequencies, key=lambda x: x["percentage"])[:limit]
+    most_common = sorted(frequencies, key=lambda x: x["percentage"], reverse=True)[:limit]
+
+    return templates.TemplateResponse(
+        request=request,
+        name="components/feature_rarity.html",
+        context={
+            "rarest": rarest,
+            "most_common": most_common,
+            "required_names": required_names,
+            "nice_to_have_names": nice_to_have_names,
+        },
+    )
+
+
+@router.get("/favorites")
+async def favorites_partial(
+    request: Request,
+    service: ListingServiceDep,
+    templates: TemplatesDep,
+    ids: str = Query("", description="Comma-separated listing IDs"),
+) -> HTMLResponse:
+    """Return favorites widget HTML fragment.
+
+    This endpoint is called from JS with localStorage favorite IDs.
+    """
+    if not ids:
+        return templates.TemplateResponse(
+            request=request,
+            name="components/favorites.html",
+            context={"listings": [], "empty": True},
+        )
+
+    # Parse IDs
+    try:
+        listing_ids = [int(x.strip()) for x in ids.split(",") if x.strip()]
+    except ValueError:
+        listing_ids = []
+
+    if not listing_ids:
+        return templates.TemplateResponse(
+            request=request,
+            name="components/favorites.html",
+            context={"listings": [], "empty": True},
+        )
+
+    # Fetch listings
+    listings = []
+    for lid in listing_ids[:10]:  # Limit to 10 favorites
+        listing = service.get_listing(lid)
+        if listing:
+            listings.append(listing)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="components/favorites.html",
+        context={"listings": listings, "empty": len(listings) == 0},
+    )

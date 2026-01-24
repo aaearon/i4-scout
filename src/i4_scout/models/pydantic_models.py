@@ -158,7 +158,15 @@ class ListingRead(ListingCreate):
         For delisted listings: from first_seen_at to status_changed_at.
         """
         end_time = self.status_changed_at if self.status == ListingStatus.DELISTED else utc_now()
-        delta = end_time - self.first_seen_at
+
+        # Ensure both datetimes are comparable (handle naive vs aware)
+        first_seen = self.first_seen_at
+        if first_seen.tzinfo is None:
+            first_seen = first_seen.replace(tzinfo=timezone.utc)
+        if end_time.tzinfo is None:
+            end_time = end_time.replace(tzinfo=timezone.utc)
+
+        delta = end_time - first_seen
         return max(0, delta.days)
 
 

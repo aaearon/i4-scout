@@ -6,8 +6,8 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from i4_scout.database.repository import ListingRepository
-from i4_scout.models.db_models import Base, Listing
+from i4_scout.database.repository import ListingRepository, ScrapeJobRepository
+from i4_scout.models.db_models import Base, Listing, ScrapeJob
 from i4_scout.models.pydantic_models import ListingCreate, ListingStatus, Source
 
 
@@ -174,6 +174,95 @@ class TestUpdateListingStatus:
         assert result is None
 
 
+class TestMarkListingsAtDelistThreshold:
+    """Test mark_listings_at_delist_threshold method."""
+
+    def test_marks_listings_with_two_misses(
+        self, repo: ListingRepository, sample_listings: list[Listing]
+    ) -> None:
+        """Should mark listings with consecutive_misses >= 2 as delisted."""
+        listing_ids = [sample_listings[0].id]
+        # First miss
+        repo.increment_consecutive_misses(listing_ids)
+        # Second miss
+        repo.increment_consecutive_misses(listing_ids)
+
+        # Verify consecutive_misses is 2
+        listing = repo.get_listing_by_id(sample_listings[0].id)
+        assert listing is not None and listing.consecutive_misses == 2
+
+        # Call the method
+        count = repo.mark_listings_at_delist_threshold(listing_ids)
+
+        assert count == 1
+        listing = repo.get_listing_by_id(sample_listings[0].id)
+        assert listing is not None
+        assert listing.status == ListingStatus.DELISTED
+        assert listing.status_changed_at is not None
+
+    def test_does_not_mark_listings_with_one_miss(
+        self, repo: ListingRepository, sample_listings: list[Listing]
+    ) -> None:
+        """Should not mark listings with consecutive_misses < 2."""
+        listing_ids = [sample_listings[0].id]
+        # Only one miss
+        repo.increment_consecutive_misses(listing_ids)
+
+        # Verify consecutive_misses is 1
+        listing = repo.get_listing_by_id(sample_listings[0].id)
+        assert listing is not None and listing.consecutive_misses == 1
+
+        # Call the method
+        count = repo.mark_listings_at_delist_threshold(listing_ids)
+
+        assert count == 0
+        listing = repo.get_listing_by_id(sample_listings[0].id)
+        assert listing is not None
+        assert listing.status == ListingStatus.ACTIVE
+
+    def test_only_marks_active_listings(
+        self, repo: ListingRepository, sample_listings: list[Listing]
+    ) -> None:
+        """Should only affect listings with ACTIVE status."""
+        listing_ids = [sample_listings[0].id]
+        # Two misses
+        repo.increment_consecutive_misses(listing_ids)
+        repo.increment_consecutive_misses(listing_ids)
+        # Manually mark as delisted first
+        repo.update_listing_status(sample_listings[0].id, ListingStatus.DELISTED)
+
+        # Call again - should not double-mark
+        count = repo.mark_listings_at_delist_threshold(listing_ids)
+        assert count == 0
+
+    def test_handles_empty_list(self, repo: ListingRepository) -> None:
+        """Should handle empty list gracefully."""
+        count = repo.mark_listings_at_delist_threshold([])
+        assert count == 0
+
+    def test_atomic_operation_preserves_consecutive_misses(
+        self, repo: ListingRepository, sample_listings: list[Listing]
+    ) -> None:
+        """Should preserve consecutive_misses value when marking as delisted.
+
+        This is the key test for the bug fix - ensures the atomic update
+        doesn't overwrite consecutive_misses with stale values.
+        """
+        listing_id = sample_listings[0].id
+        # Simulate two misses
+        repo.increment_consecutive_misses([listing_id])
+        repo.increment_consecutive_misses([listing_id])
+
+        # Mark as delisted
+        repo.mark_listings_at_delist_threshold([listing_id])
+
+        # Verify consecutive_misses is still 2, not reset to a stale value
+        listing = repo.get_listing_by_id(listing_id)
+        assert listing is not None
+        assert listing.consecutive_misses == 2
+        assert listing.status == ListingStatus.DELISTED
+
+
 class TestStatusFilter:
     """Test status filter in _apply_listing_filters."""
 
@@ -201,3 +290,81 @@ class TestStatusFilter:
 
         listings = repo.get_listings()
         assert len(listings) == 3
+
+
+class TestJobListingAssociation:
+    """Tests for job-listing association tracking."""
+
+    @pytest.fixture
+    def job_repo(self, session: Session) -> ScrapeJobRepository:
+        """Create a job repository instance."""
+        return ScrapeJobRepository(session)
+
+    @pytest.fixture
+    def sample_job(self, job_repo: ScrapeJobRepository) -> ScrapeJob:
+        """Create a sample scrape job."""
+        return job_repo.create_job(
+            source=Source.AUTOSCOUT24_DE,
+            max_pages=10,
+            search_filters=None,
+        )
+
+    def test_add_job_listing_association(
+        self, repo: ListingRepository, sample_listings: list[Listing], sample_job: ScrapeJob
+    ) -> None:
+        """Should create job-listing association."""
+        assoc = repo.add_job_listing_association(
+            job_id=sample_job.id,
+            listing_id=sample_listings[0].id,
+            status="new",
+        )
+
+        assert assoc.scrape_job_id == sample_job.id
+        assert assoc.listing_id == sample_listings[0].id
+        assert assoc.status == "new"
+
+    def test_get_job_listings_all(
+        self, repo: ListingRepository, sample_listings: list[Listing], sample_job: ScrapeJob
+    ) -> None:
+        """Should return all listings for a job."""
+        # Add associations
+        repo.add_job_listing_association(sample_job.id, sample_listings[0].id, "new")
+        repo.add_job_listing_association(sample_job.id, sample_listings[1].id, "updated")
+        repo.add_job_listing_association(sample_job.id, sample_listings[2].id, "unchanged")
+
+        listings = repo.get_job_listings(sample_job.id)
+        assert len(listings) == 3
+
+    def test_get_job_listings_filtered_by_status(
+        self, repo: ListingRepository, sample_listings: list[Listing], sample_job: ScrapeJob
+    ) -> None:
+        """Should filter job listings by status."""
+        # Add associations with different statuses
+        repo.add_job_listing_association(sample_job.id, sample_listings[0].id, "new")
+        repo.add_job_listing_association(sample_job.id, sample_listings[1].id, "updated")
+        repo.add_job_listing_association(sample_job.id, sample_listings[2].id, "unchanged")
+
+        new_listings = repo.get_job_listings(sample_job.id, status="new")
+        assert len(new_listings) == 1
+        assert new_listings[0].id == sample_listings[0].id
+
+        updated_listings = repo.get_job_listings(sample_job.id, status="updated")
+        assert len(updated_listings) == 1
+        assert updated_listings[0].id == sample_listings[1].id
+
+    def test_get_job_listings_empty(
+        self, repo: ListingRepository, sample_job: ScrapeJob
+    ) -> None:
+        """Should return empty list for job with no listings."""
+        listings = repo.get_job_listings(sample_job.id)
+        assert len(listings) == 0
+
+    def test_job_listing_association_unique(
+        self, repo: ListingRepository, sample_listings: list[Listing], sample_job: ScrapeJob
+    ) -> None:
+        """Should enforce unique job-listing combination."""
+        repo.add_job_listing_association(sample_job.id, sample_listings[0].id, "new")
+
+        # Trying to add the same association again should fail
+        with pytest.raises(Exception):  # IntegrityError wrapped in session error
+            repo.add_job_listing_association(sample_job.id, sample_listings[0].id, "updated")
