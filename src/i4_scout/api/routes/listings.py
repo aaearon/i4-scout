@@ -29,6 +29,8 @@ async def list_listings(
     year_min: int | None = Query(None, ge=2015, le=2030, description="Minimum model year"),
     year_max: int | None = Query(None, ge=2015, le=2030, description="Maximum model year"),
     country: str | None = Query(None, max_length=5, description="Country code (D, NL, B, etc.)"),
+    location_city: str | None = Query(None, max_length=100, description="Filter by city name"),
+    dealer_name: str | None = Query(None, max_length=200, description="Filter by dealer name"),
     search: str | None = Query(
         None, min_length=2, max_length=100, description="Search in title and description"
     ),
@@ -64,6 +66,8 @@ async def list_listings(
         year_min=year_min,
         year_max=year_max,
         country=country,
+        location_city=location_city,
+        dealer_name=dealer_name,
         search=search,
         has_issue=has_issue,
         has_price_change=has_price_change,

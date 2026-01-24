@@ -56,11 +56,11 @@
     </div>
     <div class="detail-row">
         <span class="label">Location</span>
-        <span class="value">{{ listing.location_city or '--' }}{% if listing.location_country %}, {{ listing.location_country }}{% endif %}</span>
+        <span class="value">{% if listing.location_city %}<a href="/listings?location_city={{ listing.location_city | urlencode }}" class="filter-link">{{ listing.location_city }}</a>{% else %}--{% endif %}{% if listing.location_country %}, {{ listing.location_country }}{% endif %}</span>
     </div>
     <div class="detail-row">
         <span class="label">Dealer</span>
-        <span class="value">{{ listing.dealer_name or '--' }}{% if listing.dealer_type %} <small>({{ listing.dealer_type }})</small>{% endif %}</span>
+        <span class="value">{% if listing.dealer_name %}<a href="/listings?dealer_name={{ listing.dealer_name | urlencode }}" class="filter-link">{{ listing.dealer_name }}</a>{% else %}--{% endif %}{% if listing.dealer_type %} <small>({{ listing.dealer_type }})</small>{% endif %}</span>
     </div>
     <div class="detail-row">
         <span class="label">Exterior Color</span>

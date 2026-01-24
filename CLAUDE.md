@@ -569,6 +569,8 @@ i4-scout serve --reload
 **Other Filters:**
 ```
 ?country=D                 # Country code (D, NL, B, etc.)
+?location_city=Berlin      # Filter by city name (exact match)
+?dealer_name=BMW%20AG      # Filter by dealer name (exact match, URL-encoded)
 ?search=M%20Sport          # Text search in title/description (URL-encoded)
 ?has_issue=true            # Filter by issue status (true/false)
 ?has_price_change=true     # Filter by price change status (true/false)
@@ -665,7 +667,7 @@ i4-scout serve
 
 **Listing Detail (`/listings/{id}`):**
 - Full listing information
-- Location and dealer details
+- Clickable location and dealer links (filters listings by city/dealer)
 - Issue badge (red warning indicator when marked as having issues)
 - Issue toggle button (mark/unmark listings with issues, e.g., from DEKRA reports)
 - Favorite button (persists in localStorage)
@@ -725,6 +727,8 @@ These endpoints return HTML fragments for HTMX requests:
   - `options_match`: `all` (AND, default) or `any` (OR)
   - `has_issue`: Filter by issue status (true/false)
   - `recently_updated`: Filter by recent price changes (true/false)
+  - `location_city`: Filter by city name (exact match)
+  - `dealer_name`: Filter by dealer name (exact match)
 - `GET /partials/listing/{id}` - Listing detail content
 - `GET /partials/listing/{id}/options-summary` - Options summary for hover popover
 - `GET /partials/listing/{id}/notes-summary` - Notes summary for hover popover

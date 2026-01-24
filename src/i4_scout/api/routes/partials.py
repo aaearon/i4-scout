@@ -110,6 +110,8 @@ async def listings_partial(
     mileage_max: str | None = Query(None),
     year_min: str | None = Query(None),
     country: str | None = Query(None),
+    location_city: str | None = Query(None),
+    dealer_name: str | None = Query(None),
     search: str | None = Query(None),
     has_option: list[str] | None = Query(None),
     options_match: str = Query("all"),
@@ -129,6 +131,8 @@ async def listings_partial(
     year_min_val = int(year_min) if year_min else None
     source_val = source if source else None
     country_val = country if country else None
+    location_city_val = location_city if location_city else None
+    dealer_name_val = dealer_name if dealer_name else None
     search_val = search if search else None
     sort_by_val = sort_by if sort_by else None
 
@@ -180,6 +184,8 @@ async def listings_partial(
             mileage_max=mileage_max_val,
             year_min=year_min_val,
             country=country_val,
+            location_city=location_city_val,
+            dealer_name=dealer_name_val,
             search=search_val,
             has_options=has_options_val if has_options_val else None,
             options_match=options_match_val,
@@ -202,6 +208,8 @@ async def listings_partial(
         "mileage_max": mileage_max_val,
         "year_min": year_min_val,
         "country": country_val,
+        "location_city": location_city_val,
+        "dealer_name": dealer_name_val,
         "search": search_val,
         "has_options": has_options_val,
         "options_match": options_match_val,
@@ -237,6 +245,10 @@ async def listings_partial(
         push_url_params.append(f"year_min={year_min_val}")
     if country_val:
         push_url_params.append(f"country={country_val}")
+    if location_city_val:
+        push_url_params.append(f"location_city={quote(location_city_val)}")
+    if dealer_name_val:
+        push_url_params.append(f"dealer_name={quote(dealer_name_val)}")
     if search_val:
         push_url_params.append(f"search={quote(search_val)}")
     if has_options_val:

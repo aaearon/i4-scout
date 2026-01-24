@@ -2430,6 +2430,17 @@ body:has(.compare-bar:not([hidden])) main {
     color: var(--pico-color);
 }
 
+.price-drop-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.price-drop-row .price-drop-link {
+    flex: 1;
+    min-width: 0;
+}
+
 /* Near Miss Widget */
 .near-miss-list {
     list-style: none;
@@ -2486,6 +2497,43 @@ body:has(.compare-bar:not([hidden])) main {
     color: var(--color-danger);
     margin-top: 0.25rem;
     padding-left: 3rem;
+}
+
+.near-miss-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.near-miss-row .near-miss-link {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Widget Icons (shared for dashboard widgets) */
+.widget-icons {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-left: 0.35rem;
+    vertical-align: middle;
+}
+
+.widget-icons .status-icon,
+.widget-icons .issue-icon,
+.widget-icons .updated-icon,
+.widget-icons .document-icon,
+.widget-icons .notes-indicator {
+    font-size: 0.75rem;
+}
+
+.widget-favorite-btn {
+    padding: 0.2rem 0.3rem;
+    font-size: 0.85rem;
+    line-height: 1;
+    min-height: auto;
+    flex-shrink: 0;
+    margin-top: 0.65rem;
 }
 
 /* Feature Rarity Widget */
@@ -2626,4 +2674,16 @@ body:has(.compare-bar:not([hidden])) main {
 
 .favorite-score.qualified {
     color: var(--color-success);
+}
+
+/* ===== Filter Link Styles ===== */
+
+.filter-link {
+    color: var(--pico-primary);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--pico-primary);
+}
+
+.filter-link:hover {
+    border-bottom-style: solid;
 }

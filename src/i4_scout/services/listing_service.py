@@ -62,6 +62,8 @@ class ListingService:
         has_price_change: bool | None = None,
         recently_updated: bool | None = None,
         status: ListingStatus | None = None,
+        location_city: str | None = None,
+        dealer_name: str | None = None,
         sort_by: str | None = None,
         sort_order: str = "desc",
         limit: int = 20,
@@ -87,6 +89,8 @@ class ListingService:
             has_price_change: Filter by price change status (True for listings with changes).
             recently_updated: Filter by recent price changes (True for listings with price changes within 24h).
             status: Filter by listing status (ACTIVE, DELISTED, or None for all).
+            location_city: Filter by city name (exact match).
+            dealer_name: Filter by dealer name (exact match).
             sort_by: Field to sort by (price, mileage, score, first_seen, last_seen).
             sort_order: Sort direction (asc, desc). Default: desc.
             limit: Maximum results to return.
@@ -113,6 +117,8 @@ class ListingService:
             has_price_change=has_price_change,
             recently_updated=recently_updated,
             status=status,
+            location_city=location_city,
+            dealer_name=dealer_name,
             sort_by=sort_by,
             sort_order=sort_order,
             limit=limit,
@@ -138,6 +144,8 @@ class ListingService:
             has_price_change=has_price_change,
             recently_updated=recently_updated,
             status=status,
+            location_city=location_city,
+            dealer_name=dealer_name,
         )
 
         # Convert ORM objects to Pydantic models

@@ -22,6 +22,8 @@
 {% if filters.mileage_max %}{% set ns.query = ns.query ~ '&mileage_max=' ~ filters.mileage_max %}{% endif %}
 {% if filters.year_min %}{% set ns.query = ns.query ~ '&year_min=' ~ filters.year_min %}{% endif %}
 {% if filters.country %}{% set ns.query = ns.query ~ '&country=' ~ filters.country %}{% endif %}
+{% if filters.location_city %}{% set ns.query = ns.query ~ '&location_city=' ~ (filters.location_city | urlencode) %}{% endif %}
+{% if filters.dealer_name %}{% set ns.query = ns.query ~ '&dealer_name=' ~ (filters.dealer_name | urlencode) %}{% endif %}
 {% if filters.search %}{% set ns.query = ns.query ~ '&search=' ~ filters.search %}{% endif %}
 {% if filters.has_options %}{% for opt in filters.has_options %}{% set ns.query = ns.query ~ '&has_option=' ~ (opt | urlencode) %}{% endfor %}{% endif %}
 {% if filters.options_match %}{% set ns.query = ns.query ~ '&options_match=' ~ filters.options_match %}{% endif %}
@@ -36,7 +38,7 @@
 
 {% if listings %}
 {# Active filter chips #}
-{% set has_active_filters = filters.source or filters.qualified_only or filters.has_issue or filters.has_price_change or filters.recently_updated or filters.min_score or filters.price_min or filters.price_max or filters.mileage_max or filters.year_min or filters.country or filters.search or filters.has_options %}
+{% set has_active_filters = filters.source or filters.qualified_only or filters.has_issue or filters.has_price_change or filters.recently_updated or filters.min_score or filters.price_min or filters.price_max or filters.mileage_max or filters.year_min or filters.country or filters.location_city or filters.dealer_name or filters.search or filters.has_options %}
 {% if has_active_filters %}
 <div class="active-filters" id="active-filters">
     <span class="active-filters-label">Active filters:</span>
@@ -103,6 +105,18 @@
     {% if filters.country %}
     <button type="button" class="filter-chip" onclick="removeFilter('country')" aria-label="Remove country filter">
         Country: {{ filters.country }}
+        <span class="chip-remove">&times;</span>
+    </button>
+    {% endif %}
+    {% if filters.location_city %}
+    <button type="button" class="filter-chip" onclick="removeFilter('location_city')" aria-label="Remove city filter">
+        City: {{ filters.location_city }}
+        <span class="chip-remove">&times;</span>
+    </button>
+    {% endif %}
+    {% if filters.dealer_name %}
+    <button type="button" class="filter-chip" onclick="removeFilter('dealer_name')" aria-label="Remove dealer filter">
+        Dealer: {{ filters.dealer_name[:30] }}{% if filters.dealer_name|length > 30 %}...{% endif %}
         <span class="chip-remove">&times;</span>
     </button>
     {% endif %}
