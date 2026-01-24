@@ -14,6 +14,8 @@ CLI tool to scrape BMW i4 listings from AutoScout24 DE/NL, match against user-de
 - PDF enrichment to extract options from dealer spec sheets
 - Issue tracking and notes for dealer communication
 - Vehicle color extraction (exterior, interior, material)
+- Listing lifecycle tracking (active/delisted status, days on market)
+- Photo gallery with lightbox viewer
 - Docker support
 
 ## Installation
@@ -59,8 +61,9 @@ i4-scout serve
 
 Start the server with `i4-scout serve` and navigate to http://localhost:8000.
 
-- **Dashboard**: Statistics overview with auto-refresh
-- **Listings**: Filterable table with sorting, pagination, and hover popovers
+- **Dashboard**: Market pulse (7-day velocity), price drops, near-miss listings, feature rarity, favorites
+- **Listings**: Filterable table with sorting, pagination, hover popovers, and status indicators
+- **Photo Gallery**: Image viewer with thumbnails and lightbox
 - **Price Changes**: Visual indicators for price drops (green) and increases (red)
 - **Comparison**: Select up to 4 listings for side-by-side comparison (includes colors)
 - **Copy to Clipboard**: Export selected listings as LLM-friendly markdown
@@ -68,7 +71,7 @@ Start the server with `i4-scout serve` and navigate to http://localhost:8000.
 - **Issue Tracking**: Mark listings with issues (e.g., DEKRA findings)
 - **Notes**: Add work log style notes to track dealer communication
 - **PDF Enrichment**: Upload dealer spec PDFs to extract additional options
-- **Advanced Scrape Options**: Configure search filters, cache, and browser settings
+- **Scrape Control**: Start/stop scrapes with live progress tracking, job history
 
 See [CLAUDE.md](CLAUDE.md) for full documentation.
 
@@ -81,6 +84,7 @@ See [CLAUDE.md](CLAUDE.md) for full documentation.
 | `list` | List scraped listings with filters |
 | `show <id>` | Show detailed listing information |
 | `export` | Export listings to CSV/JSON |
+| `recalculate-scores` | Recalculate match scores for all listings |
 | `enrich <id> <pdf>` | Enrich listing with options from dealer PDF |
 | `serve` | Start web interface and API server |
 
@@ -121,9 +125,12 @@ i4-scout/
 ├── src/i4_scout/
 │   ├── cli.py              # CLI interface (Typer)
 │   ├── config.py           # YAML config loader
+│   ├── api/                # FastAPI routes and templates
 │   ├── scrapers/           # Site scrapers (AutoScout24 DE/NL)
 │   ├── matching/           # Option matching engine
+│   ├── services/           # Business logic layer
 │   ├── database/           # SQLAlchemy models & repository
+│   ├── models/             # Pydantic & ORM models
 │   └── export/             # CSV/JSON exporters
 ├── tests/
 │   ├── unit/               # Unit tests
@@ -131,10 +138,11 @@ i4-scout/
 │   └── fixtures/           # HTML test fixtures
 ├── config/
 │   └── options.yaml        # Options configuration
+├── data/                   # Database & uploaded documents
 ├── docker/
 │   ├── Dockerfile
 │   └── docker-compose.yml
-└── docs/
+└── docs/                   # Documentation (see ARCHITECTURE.md)
 ```
 
 ## License

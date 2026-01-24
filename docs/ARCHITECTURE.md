@@ -113,7 +113,14 @@ Location: `src/i4_scout/models/pydantic_models.py`
 |-------|---------|
 | `ScrapedListing` | Raw data from scraping (immutable, frozen=True) |
 | `ListingCreate` | Input for creating/upserting listings |
-| `ListingRead` | Output from database with computed fields (matched_options, price_change) |
+| `ListingRead` | Output from database with computed fields |
+
+**`ListingRead` computed fields:**
+- `matched_options`: List of matched option names
+- `document_count`, `notes_count`: Related entity counts
+- `price_change`, `price_change_count`, `last_price_change_at`: Price history
+- `status`, `status_changed_at`, `consecutive_misses`: Lifecycle tracking
+- `days_on_market`: Computed property (first_seen to status_changed_at or now)
 
 #### Matching Models
 | Model | Purpose |
@@ -121,13 +128,19 @@ Location: `src/i4_scout/models/pydantic_models.py`
 | `MatchResult` | Matched/missing options, dealbreaker status |
 | `ScoredResult` | Extended MatchResult with score (0-100) and is_qualified |
 
+#### Enums
+| Enum | Values |
+|------|--------|
+| `Source` | AUTOSCOUT24_DE, AUTOSCOUT24_NL, MOBILE_DE |
+| `ScrapeStatus` | PENDING, RUNNING, COMPLETED, FAILED, CANCELLED |
+| `ListingStatus` | ACTIVE, DELISTED |
+
 #### Process Models
 | Model | Purpose |
 |-------|---------|
 | `ScrapeProgress` | Real-time progress updates (page, counts, current_listing) |
 | `ScrapeResult` | Final scrape summary (total_found, new_listings, updated, skipped) |
 | `ScrapeJobRead` | Background job status and progress |
-| `ScrapeStatus` | Enum: PENDING, RUNNING, COMPLETED, FAILED |
 
 #### Enhancement Models
 | Model | Purpose |
@@ -142,66 +155,89 @@ Location: `src/i4_scout/models/db_models.py`
 
 #### Entity Relationship Diagram
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                              listings                                    │
-│ ─────────────────────────────────────────────────────────────────────── │
-│ PK id                                                                    │
-│    source (indexed)          external_id            url (unique)         │
-│    title                     price                  mileage_km           │
-│    year                      first_registration     vin                  │
-│    exterior_color            interior_color         interior_material    │
-│    location_city/zip/country dealer_name/type                           │
-│    description               raw_options_text       photo_urls (JSON)    │
-│    match_score               is_qualified (indexed) dedup_hash (indexed) │
-│    has_issue (indexed)       first_seen_at          last_seen_at         │
-└────────────────────────────────┬─────────┬──────────┬──────────┬────────┘
-                                 │         │          │          │
-                     ┌───────────┘         │          │          └──────────┐
-                     ▼                     ▼          ▼                     ▼
-         ┌──────────────────┐  ┌──────────────────┐  ┌─────────────────┐  ┌──────────────┐
-         │  listing_options │  │  price_history   │  │listing_documents│  │listing_notes │
-         │ ───────────────  │  │ ──────────────── │  │ ─────────────── │  │ ──────────── │
-         │ PK id            │  │ PK id            │  │ PK id           │  │ PK id        │
-         │ FK listing_id    │  │ FK listing_id    │  │ FK listing_id   │  │ FK listing_id│
-         │ FK option_id     │  │    price         │  │    filename     │  │    content   │
-         │ FK document_id   │  │    recorded_at   │  │    original_fn  │  │    created_at│
-         │    raw_text      │  └──────────────────┘  │    file_path    │  └──────────────┘
-         │    confidence    │                        │    file_size    │
-         │    source        │                        │    extracted_txt│
-         └────────┬─────────┘                        │    options_json │
-                  │                                  │    uploaded_at  │
-                  ▼                                  │    processed_at │
-         ┌──────────────────┐                        └─────────────────┘
-         │     options      │
-         │ ──────────────── │
-         │ PK id            │
-         │    canonical_name│
-         │    display_name  │
-         │    category      │
-         │    is_bundle     │
-         └──────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                listings                                      │
+│ ─────────────────────────────────────────────────────────────────────────── │
+│ PK id                                                                        │
+│    source (indexed)          external_id            url (unique)             │
+│    title                     price                  mileage_km               │
+│    year                      first_registration     vin                      │
+│    exterior_color            interior_color         interior_material        │
+│    location_city/zip/country dealer_name/type                               │
+│    description               raw_options_text       photo_urls (JSON)        │
+│    match_score               is_qualified (indexed) dedup_hash (indexed)     │
+│    has_issue (indexed)       status (indexed)       status_changed_at        │
+│    consecutive_misses        first_seen_at          last_seen_at             │
+└──────────────────┬──────────┬──────────┬──────────┬──────────────────────────┘
+                   │          │          │          │
+       ┌───────────┘          │          │          └──────────┐
+       ▼                      ▼          ▼                     ▼
+┌──────────────────┐  ┌──────────────┐  ┌─────────────────┐  ┌──────────────┐
+│  listing_options │  │ price_history│  │listing_documents│  │listing_notes │
+│ ───────────────  │  │ ──────────── │  │ ─────────────── │  │ ──────────── │
+│ PK id            │  │ PK id        │  │ PK id           │  │ PK id        │
+│ FK listing_id    │  │ FK listing_id│  │ FK listing_id   │  │ FK listing_id│
+│ FK option_id     │  │    price     │  │    filename     │  │    content   │
+│ FK document_id   │  │    recorded_at│ │    original_fn  │  │    created_at│
+│    raw_text      │  └──────────────┘  │    file_path    │  └──────────────┘
+│    confidence    │                    │    file_size    │
+│    source        │                    │    extracted_txt│
+└────────┬─────────┘                    │    options_json │
+         │                              │    uploaded_at  │
+         ▼                              │    processed_at │
+┌──────────────────┐                    └─────────────────┘
+│     options      │
+│ ──────────────── │
+│ PK id            │
+│    canonical_name│
+│    display_name  │
+│    category      │
+│    is_bundle     │
+└──────────────────┘
+
+┌──────────────────┐      ┌─────────────────────┐
+│   scrape_jobs    │      │ scrape_job_listings │
+│ ──────────────── │      │ ─────────────────── │
+│ PK id            │◄─────│ FK scrape_job_id    │
+│    source        │      │ FK listing_id       │
+│    status        │      │    status           │
+│    max_pages     │      │    created_at       │
+│    current_page  │      └─────────────────────┘
+│    total_found   │
+│    new_listings  │
+│    updated_lstng │
+│    created_at    │
+│    started_at    │
+│    completed_at  │
+│    error_message │
+└──────────────────┘
 ```
 
 #### Tables
 
 | Table | Purpose | Key Indexes |
 |-------|---------|-------------|
-| `listings` | Main car listing entity | source, is_qualified, has_issue, dedup_hash |
+| `listings` | Main car listing entity | source, is_qualified, has_issue, status, dedup_hash |
 | `options` | Canonical options registry | canonical_name (unique) |
 | `listing_options` | Many-to-many with source tracking | listing_id, option_id |
 | `price_history` | Price change audit trail | listing_id |
 | `listing_documents` | PDF metadata and extracted text | listing_id |
 | `listing_notes` | Work log notes | listing_id |
 | `scrape_jobs` | Background job tracking | - |
+| `scrape_job_listings` | Job-listing association tracking | scrape_job_id, listing_id |
 | `scrape_sessions` | Historical scrape records | - |
 
 #### Key Fields
 
 **`listings.source`**: Enum (`autoscout24_de`, `autoscout24_nl`, `mobile_de`)
 
+**`listings.status`**: Enum (`active`, `delisted`) - lifecycle tracking for listings
+
 **`listing_options.source`**: String (`scrape` or `pdf`) - tracks origin of matched options
 
 **`listings.dedup_hash`**: SHA256 hash of (source, title, price, mileage, year) for cross-listing deduplication
+
+**`scrape_job_listings.status`**: String (`new`, `updated`, `unchanged`) - tracks how listing was processed in job
 
 ---
 
@@ -582,29 +618,41 @@ GET    /api/scrape/jobs/{id}            # Get job status
 
 ```
 templates/
-├── base.html                 # Layout, nav, scripts
+├── base.html                    # Layout, nav, scripts
+├── macros.html                  # Template utilities
 ├── pages/
-│   ├── dashboard.html        # Stats overview
-│   ├── listings.html         # Listings table with filters
-│   ├── listing_detail.html   # Full listing view
-│   ├── compare.html          # Side-by-side comparison
-│   └── scrape.html           # Scrape control panel
+│   ├── dashboard.html           # Dashboard with widgets
+│   ├── listings.html            # Listings table with filters
+│   ├── listing_detail.html      # Full listing view
+│   ├── compare.html             # Side-by-side comparison
+│   └── scrape.html              # Scrape control panel
 ├── partials/
-│   ├── listings_table.html   # HTMX fragment
+│   ├── listings_table.html      # HTMX fragment
 │   ├── listing_detail_content.html
 │   ├── recent_qualified.html
 │   └── scrape_jobs_list.html
 └── components/
-    ├── filter_form.html      # Filter controls
-    ├── listing_row.html      # Single table row
-    ├── listing_card.html     # Card view
-    ├── pagination.html       # Page navigation
-    ├── stats_cards.html      # Stats display
-    ├── compare_bar.html      # Selection bar
-    ├── document_section.html # PDF upload
-    ├── notes_section.html    # Notes list
-    ├── options_summary.html  # Options popover
-    └── price_chart.html      # Price history
+    ├── filter_form.html         # Filter controls
+    ├── listing_row.html         # Single table row
+    ├── listing_card.html        # Card view
+    ├── pagination.html          # Page navigation
+    ├── stats_cards.html         # Stats display
+    ├── compare_bar.html         # Selection bar
+    ├── document_section.html    # PDF upload
+    ├── notes_section.html       # Notes list
+    ├── notes_summary.html       # Notes popover
+    ├── options_summary.html     # Options popover
+    ├── price_chart.html         # Price history
+    ├── photo_gallery.html       # Photo gallery with lightbox
+    ├── scrape_form.html         # Scrape job form
+    ├── scrape_progress_banner.html  # Global progress banner
+    ├── scrape_job_row.html      # Job row for polling
+    ├── active_job_status.html   # Active job status card
+    ├── market_velocity.html     # Market pulse widget
+    ├── price_drops.html         # Price drops widget
+    ├── near_miss.html           # Near-miss listings widget
+    ├── feature_rarity.html      # Option frequency widget
+    └── favorites.html           # User favorites widget
 ```
 
 ### 9.3 HTMX Patterns
@@ -632,6 +680,53 @@ templates/
 
 #### URL State Preservation
 Filters are preserved in URL query params for bookmarking and sharing.
+
+### 9.4 HTMX Partial Endpoints
+
+All partial endpoints return HTML fragments for dynamic updates.
+
+**Dashboard Widgets (`/partials/`):**
+| Endpoint | Purpose | Parameters |
+|----------|---------|------------|
+| `GET /market-velocity` | Market pulse stats | `days` (default 7) |
+| `GET /price-drops` | Listings with price drops | `days` (7), `limit` (5) |
+| `GET /near-miss` | High-score unqualified listings | `threshold` (70), `limit` (5) |
+| `GET /feature-rarity` | Option frequency stats | `limit` (10) |
+| `GET /favorites` | User's favorited listings | `ids` (comma-separated) |
+
+**Listings (`/partials/`):**
+| Endpoint | Purpose | Notable Parameters |
+|----------|---------|-------------------|
+| `GET /listings` | Listings table | All filters, `job_id`, `job_status` |
+| `GET /listing/{id}` | Detail content | - |
+| `GET /listing/{id}/options-summary` | Options hover popover | - |
+| `GET /listing/{id}/notes-summary` | Notes hover popover | - |
+| `GET /listing/{id}/price-chart` | Price history chart | - |
+| `GET /listing/{id}/gallery` | Photo gallery | - |
+| `PATCH /listing/{id}/issue` | Toggle issue flag | `has_issue` (form) |
+
+**Notes (`/partials/listing/{id}/notes`):**
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /` | Notes section |
+| `POST /` | Add note (form: `content`) |
+| `DELETE /{note_id}` | Delete note |
+
+**Documents (`/partials/listing/{id}/document`):**
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /` | Document section |
+| `POST /` | Upload PDF (multipart) |
+| `DELETE /` | Delete document |
+| `POST /reprocess` | Re-extract options |
+
+**Scrape Jobs (`/partials/scrape/`):**
+| Endpoint | Purpose | Polling |
+|----------|---------|---------|
+| `GET /active` | Global progress banner | 2s when running, 10s idle |
+| `GET /active-status` | Detailed job status card | 2s |
+| `GET /jobs` | Jobs list | - |
+| `GET /job/{id}` | Single job row | 2s when running |
 
 ---
 
@@ -702,6 +797,7 @@ Location: `src/i4_scout/cli.py`
 | `list` | List listings with filters |
 | `show` | Show single listing |
 | `export` | Export to CSV/JSON |
+| `recalculate-scores` | Recalculate match scores |
 | `enrich` | PDF enrichment |
 | `serve` | Start API server |
 
@@ -766,12 +862,15 @@ repo.clear_listing_options(listing.id, source="scrape")
 
 ```
 i4-scout/
+├── alembic/                  # Database migrations
+│   ├── env.py
+│   └── versions/            # Migration scripts
 ├── config/
-│   └── options.yaml           # Options configuration
+│   └── options.yaml         # Options configuration
 ├── data/
-│   ├── i4_scout.db           # SQLite database
-│   └── documents/            # Uploaded PDFs
-├── docs/                     # Documentation
+│   ├── i4_scout.db          # SQLite database
+│   └── documents/           # Uploaded PDFs
+├── docs/                    # Documentation
 ├── src/i4_scout/
 │   ├── __init__.py
 │   ├── cli.py               # Typer CLI
@@ -785,6 +884,9 @@ i4-scout/
 │   ├── database/
 │   │   ├── engine.py        # SQLAlchemy engine
 │   │   └── repository.py    # Repository classes
+│   ├── export/
+│   │   ├── csv_exporter.py  # CSV export
+│   │   └── json_exporter.py # JSON export
 │   ├── matching/
 │   │   ├── normalizer.py
 │   │   ├── bundle_expander.py
@@ -794,9 +896,9 @@ i4-scout/
 │   │   ├── pydantic_models.py
 │   │   └── db_models.py
 │   ├── scrapers/
-│   │   ├── browser.py
-│   │   ├── cache.py
-│   │   ├── base.py
+│   │   ├── browser.py       # Playwright browser manager
+│   │   ├── cache.py         # HTML cache with TTL
+│   │   ├── base.py          # Abstract base scraper
 │   │   ├── autoscout24_base.py
 │   │   ├── autoscout24_de.py
 │   │   └── autoscout24_nl.py
@@ -808,10 +910,10 @@ i4-scout/
 │       └── job_service.py
 ├── tests/
 │   ├── fixtures/            # HTML fixtures
-│   ├── unit/               # Unit tests
-│   └── integration/        # Integration tests
+│   ├── unit/                # Unit tests
+│   └── integration/         # Integration tests
 ├── .cache/
-│   └── html/               # HTML cache files
+│   └── html/                # HTML cache files
 ├── pyproject.toml
 └── README.md
 ```
